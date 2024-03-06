@@ -26,6 +26,7 @@ fn main() {
         .add_systems(Update, (physics, gravity, fix_y).chain())
         .run();
 }
+//needa clean up my code
 
 /// A marker component for our shapes so we can query them separately from the ground plane
 #[derive(Component)]
