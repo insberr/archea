@@ -18,8 +18,10 @@ use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 
 // Why
 mod engine;
-use engine::systems::gravity_system;
-use engine::systems::collision_system;
+use engine::systems::gravity_system::*;
+use engine::systems::collision_system::*;
+use engine::systems::sideways_movement::*;
+use engine::systems::timestep_system::*;
 
 fn main() {
     App::new()
@@ -29,8 +31,9 @@ fn main() {
         // .add_plugins(RapierDebugRenderPlugin::default())
         .add_systems(Startup, setup)
         // .add_systems(Update, gravity)
-        .add_systems(Update, (collision_system::collision_system, gravity_system::gravity_system, fix_y).chain())
-        .add_systems(Update, test_yes)
+        .add_systems(Update, time_step)
+        .add_systems(Update, (collision_system, gravity_system, fix_y).chain())
+        .add_systems(Update, sideways_movement)
         .run();
 }
 //needa clean up my code
@@ -151,12 +154,12 @@ fn setup(
     commands.spawn(PointLightBundle {
         point_light: PointLight {
             shadows_enabled: false,
-            intensity: 90_000_000.,
+            intensity: 300_000_000.,
             range: 100.0,
-            color: Color::YELLOW_GREEN,
+            color: Color::WHITE,
             ..default()
         },
-        transform: Transform::from_xyz(8.0, 10.0, 8.0),
+        transform: Transform::from_xyz(0.0, 50.0, 0.0),
         ..default()
     });
 
