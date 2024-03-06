@@ -5,7 +5,7 @@ const TIMESTEP: f32 = 0.5;
 static mut TIMER: f32 = 0.0;
 
 pub fn gravity_system(
-    mut transforms: Query<&mut Transform, With<Pixel>>,
+    mut pixels: Query<(&mut Pixel, &mut Transform)>,
     time: Res<Time>
 ) {
     unsafe {
@@ -13,7 +13,12 @@ pub fn gravity_system(
         if (TIMER > TIMESTEP) {
             TIMER = 0.0;
 
-            for mut transform in &mut transforms {
+            for (mut pix, mut transform) in pixels.iter_mut() {
+                if pix.dont_move {
+                    pix.dont_move = false;
+                    continue;
+                }
+
                 if (transform.translation.y > 1.0) {
                     transform.translation.y -= 1.0;
                 }

@@ -13,6 +13,7 @@ use bevy::{
         render_resource::{Extent3d, TextureDimension, TextureFormat},
     },
 };
+use bevy::ecs::bundle::DynamicBundle;
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 
 // Why
@@ -29,6 +30,7 @@ fn main() {
         .add_systems(Startup, setup)
         // .add_systems(Update, gravity)
         .add_systems(Update, (collision_system::collision_system, gravity_system::gravity_system, fix_y).chain())
+        .add_systems(Update, test_yes)
         .run();
 }
 //needa clean up my code
@@ -37,11 +39,18 @@ fn main() {
 #[derive(Component)]
 struct Pixel {
     dont_move: bool,
-    transform: Transform,
 }
 
 const X_EXTENT: f32 = 12.0;
 const GRID_SIZE: f32 = 1.0;
+
+fn test_yes(
+    mut query: Query<(&Pixel, &mut Transform)>
+) {
+    for (mut pix, mut transform) in query.iter_mut() {
+        // transform.translation = pix.transform.translation;
+    }
+}
 
 fn spawn_cube(
     commands: &mut Commands,
@@ -80,11 +89,7 @@ fn spawn_cube(
                 z//rng.gen_range(-50..=50) as f32 * GRID_SIZE,
             ),
             ..default()
-        }, Pixel { dont_move: false, transform: Transform::from_xyz(
-            x,//rng.gen_range(-50..=50) as f32 * GRID_SIZE, //-X_EXTENT,// / 2. + 0 as f32 / (1 - 1) as f32 * X_EXTENT,
-            y,//10.0,
-            z//rng.gen_range(-50..=50) as f32 * GRID_SIZE,
-            ) }));
+        }, Pixel { dont_move: false }));
         // .insert(TransformBundle::from();
         // .insert(Velocity {
         //     linvel: Vec3::new(0.0, 0.0, 0.0),

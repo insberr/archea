@@ -4,16 +4,12 @@ use bevy::prelude::{Commands, Mesh, Query, Res, ResMut, Time, Transform, With};
 use crate::Pixel;
 
 pub fn collision_system(
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-    mut transforms: Query<&mut Transform, With<Pixel>>,
-    time: Res<Time>
+    mut pixels: Query<(&mut Pixel, &mut Transform)>,
 ) {
     // for transform1I in 0..query.iter().len() {
     //     for mut transform2 in &query {
-    let mut combinations = transforms.iter_combinations_mut();
-    while let Some([mut transform1, mut transform2]) = combinations.fetch_next() {
+    let mut combinations = pixels.iter_combinations_mut();
+    while let Some([(mut pix1, mut transform1), (mut pix2, mut transform2)]) = combinations.fetch_next() {
         // if (transform1.translation.y == transform2.translation.y) {
         //     transform1.translation.y += 1.0;
         // }
@@ -26,6 +22,9 @@ pub fn collision_system(
                 // if (transform1.translation.y - 0.5 < transform2.translation.y + 0.5) {
                 transform1.translation.y += (transform2.translation.y + 0.5) - (transform1.translation.y - 0.5);
                 // continue;
+            }
+            if (transform1.translation.y - 0.5 == transform2.translation.y + 0.5) {
+                pix1.dont_move = true;
             }
             // if bottom1 is same as top2, set a don't move flag
 
