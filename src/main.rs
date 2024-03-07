@@ -7,15 +7,18 @@ use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 
 // Why
 mod engine;
-use engine::systems::sideways_movement::*;
 use engine::systems::sand_movement::*;
 use engine::systems::water_movement::*;
 use crate::engine::systems::update_pixel_color::update_pixel_color;
 
+struct PixelTransform {
+    transform: Transform,
+    entity: Entity,
+}
 
 #[derive(Resource, Default)]
 struct PixelPositions {
-    transforms: Vec<Transform>,
+    positions: Vec<PixelTransform>,
 }
 
 fn main() {
@@ -31,12 +34,12 @@ fn main() {
 
         .add_systems(Startup, setup)
 
-        .add_systems(FixedPostUpdate, update_transforms_list)
+        .add_systems(FixedPreUpdate, update_transforms_list)
         // .add_systems(FixedUpdate, collision_system)
         // .add_systems(FixedUpdate, fix_y)
         // .add_systems(FixedUpdate, sideways_movement)
 
-        // .add_systems(FixedUpdate, sand_movement)
+        .add_systems(FixedUpdate, sand_movement)
         .add_systems(FixedUpdate, water_movement)
 
         .add_systems(FixedPostUpdate, update_pixel_color)
@@ -45,17 +48,14 @@ fn main() {
         .run();
 }
 
-struct PixelTransform {
-    transform: Transform,
-    entity: Entity,
-}
+
 fn update_transforms_list(
-    mut pixel_transforms: Local<Vec<PixelTransform>>,
+    mut pixel_transforms: ResMut<PixelPositions>,
     pixels: Query<(&Transform, &Pixel)>
 ) {
-    pixel_transforms.clear();
+    pixel_transforms.positions.clear();
     for (tr, pix) in pixels.iter() {
-        pixel_transforms.push(PixelTransform {
+        pixel_transforms.positions.push(PixelTransform {
             transform: tr.clone(),
             entity: pix.id,
         });
@@ -165,7 +165,7 @@ fn setup(
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     commands.insert_resource(PixelPositions {
-        transforms: Vec::new(),
+        positions: Vec::new(),
     });
 
     let shapes = [

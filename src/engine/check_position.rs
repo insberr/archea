@@ -1,8 +1,10 @@
+use bevy::ecs::storage::SparseSetIndex;
 use bevy::math::Vec3;
+use bevy::prelude::Entity;
 use crate::PixelTransform;
 
 // Return true if the position is free to use.
-pub fn check_pos(pos: Vec3, transforms: &Vec<PixelTransform>) -> bool {
+pub fn check_pos(pos: Vec3, transforms: &Vec<PixelTransform>, id: Option<Entity>) -> bool {
     if pos.y < 0.0 {
         return false;
     }
@@ -18,8 +20,16 @@ pub fn check_pos(pos: Vec3, transforms: &Vec<PixelTransform>) -> bool {
     //     i.x == pos.x && i.y == pos.y && i.z == pos.z
     // )
     for t in transforms.iter() {
-        if (t.x == pos.x && t.y == pos.y && t.z == pos.z) {
-            return false;
+        if (t.transform.translation.x == pos.x && t.transform.translation.y == pos.y && t.transform.translation.z == pos.z) {
+            if (id.is_some()) {
+                if (t.entity == id.unwrap()) {
+                    continue;
+                } else {
+                    return false;
+                }
+            } else {
+                return false;
+            }
         }
     }
 

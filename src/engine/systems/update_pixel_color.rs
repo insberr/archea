@@ -17,7 +17,7 @@ pub fn update_pixel_color(
                 c
             },
             PixelType::Water => {
-                let mut c = Color::GREEN;
+                let mut c = Color::YELLOW;
                 c.set_a(0.7);
                 c
             },
