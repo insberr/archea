@@ -12,13 +12,13 @@ pub fn update_pixel_color(
         let pix_type = &pix.pixel_type;
         let color = match pix_type {
             PixelType::Sand => {
-                let mut c = Color::RED;
-                c.set_a(0.7);
+                let mut c = Color::ORANGE;
+                c.set_a(1.0);
                 c
             },
             PixelType::Water => {
-                let mut c = Color::YELLOW;
-                c.set_a(0.7);
+                let mut c = Color::BLUE;
+                c.set_a(0.4);
                 c
             },
             _ => Color::YELLOW,

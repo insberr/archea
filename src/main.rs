@@ -182,7 +182,7 @@ fn setup(
         for a in 0..10 {
             for b in 20..30 {
                 for c in 0..10 {
-                    if a % 2 == 0 {
+                    if b % 2 == 0 {
                         let entity = spawn_cube(&mut commands, shape.clone(), &mut materials, a as f32, b as f32, c as f32, PixelType::Sand);
                         commands.entity(entity).insert(PixelSand);
                     } else {
@@ -195,41 +195,41 @@ fn setup(
     }
 
     // Create the light
-    // commands.spawn(PointLightBundle {
-    //     point_light: PointLight {
-    //         shadows_enabled: false,
-    //         intensity: 300_000_000.,
-    //         range: 100.0,
-    //         color: Color::WHITE,
-    //         ..default()
-    //     },
-    //     transform: Transform::from_xyz(0.0, 50.0, 0.0),
-    //     ..default()
-    // });
-
-    // directional 'sun' light
-    commands.spawn(DirectionalLightBundle {
-        directional_light: DirectionalLight {
-            illuminance: light_consts::lux::OVERCAST_DAY,
+    commands.spawn(PointLightBundle {
+        point_light: PointLight {
             shadows_enabled: true,
+            intensity: 90_000_000.,
+            range: 100.0,
+            color: Color::WHITE,
             ..default()
         },
-        transform: Transform {
-            translation: Vec3::new(0.0, 2.0, 0.0),
-            rotation: Quat::from_rotation_x(-PI / 4.),
-            ..default()
-        },
-        // The default cascade config is designed to handle large scenes.
-        // As this example has a much smaller world, we can tighten the shadow
-        // bounds for better visual quality.
-        cascade_shadow_config: CascadeShadowConfigBuilder {
-            first_cascade_far_bound: 4.0,
-            maximum_distance: 10.0,
-            ..default()
-        }
-            .into(),
+        transform: Transform::from_xyz(20.0, 50.0, 0.0).with_rotation(Quat::from_rotation_x((0.5 * PI) / 180.0)),
         ..default()
     });
+
+    // directional 'sun' light
+    // commands.spawn(DirectionalLightBundle {
+    //     directional_light: DirectionalLight {
+    //         illuminance: light_consts::lux::CLEAR_SUNRISE,
+    //         shadows_enabled: true,
+    //         ..default()
+    //     },
+    //     transform: Transform {
+    //         translation: Vec3::new(0.0, 50.0, 0.0),
+    //         rotation: Quat::from_rotation_x(-PI / 4.),
+    //         ..default()
+    //     },
+    //     // The default cascade config is designed to handle large scenes.
+    //     // As this example has a much smaller world, we can tighten the shadow
+    //     // bounds for better visual quality.
+    //     cascade_shadow_config: CascadeShadowConfigBuilder {
+    //         first_cascade_far_bound: 4.0,
+    //         maximum_distance: 10.0,
+    //         ..default()
+    //     }
+    //         .into(),
+    //     ..default()
+    // });
 
     // Create the ground plane
     commands.spawn(PbrBundle {
