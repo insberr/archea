@@ -2,41 +2,78 @@ use std::f32::consts::PI;
 use bevy::pbr::CascadeShadowConfigBuilder;
 // use rand::prelude::*;
 use bevy::prelude::*;
+use bevy_mod_picking::prelude::*;
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 
 // Why
 mod engine;
 use engine::systems::sideways_movement::*;
+use engine::systems::sand_movement::*;
+use engine::systems::water_movement::*;
 use crate::engine::systems::update_pixel_color::update_pixel_color;
+
+
+#[derive(Resource, Default)]
+struct PixelPositions {
+    transforms: Vec<Transform>,
+}
 
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins.set(ImagePlugin::default_nearest()))
         .add_plugins(PanOrbitCameraPlugin)
+        .add_plugins(DefaultPickingPlugins)
+        .insert_resource(DebugPickingMode::Normal)
+
+        .init_resource::<PixelPositions>()
 
         .insert_resource(Time::<Fixed>::from_seconds(0.08))
 
         .add_systems(Startup, setup)
 
+        .add_systems(FixedPostUpdate, update_transforms_list)
         // .add_systems(FixedUpdate, collision_system)
         // .add_systems(FixedUpdate, fix_y)
-        .add_systems(FixedUpdate, sideways_movement)
+        // .add_systems(FixedUpdate, sideways_movement)
+
+        // .add_systems(FixedUpdate, sand_movement)
+        .add_systems(FixedUpdate, water_movement)
 
         .add_systems(FixedPostUpdate, update_pixel_color)
-        .add_systems(Update, check_y)
+        .add_systems(Update, check_destroy)
 
         .run();
 }
 
-fn check_y(
+struct PixelTransform {
+    transform: Transform,
+    entity: Entity,
+}
+fn update_transforms_list(
+    mut pixel_transforms: Local<Vec<PixelTransform>>,
+    pixels: Query<(&Transform, &Pixel)>
+) {
+    pixel_transforms.clear();
+    for (tr, pix) in pixels.iter() {
+        pixel_transforms.push(PixelTransform {
+            transform: tr.clone(),
+            entity: pix.id,
+        });
+    }
+}
+
+fn check_destroy(
     mut commands: Commands,
     parents_query: Query<Entity, With<Pixel>>,
-    mut transform_query: Query<&mut Transform, With<Pixel>>,
+    mut pixel_query: Query<&mut Pixel>,
 ) {
+    // For each entity with the Pixel component
     for parent in &parents_query {
-        if let Ok(mut transform) = transform_query.get_mut(parent) {
+        // Pull out the Pixel component
+        if let Ok(mut pixel) = pixel_query.get_mut(parent) {
             // transform.rotate_z(-PI / 2. * time.delta_seconds());
-            if (transform.translation.y < 0.0) {
+            // if (transform.translation.y < 0.0) {
+            if pixel.destroy {
                 commands.entity(parent).despawn();
             }
         }
@@ -56,16 +93,23 @@ enum PixelType {
 #[derive(Component)]
 struct Pixel {
     dont_move: bool,
+    destroy: bool,
     pixel_type: PixelType,
+    id: Entity,
 }
+impl Pixel {
+    pub fn destroy(&mut self) {
+        self.destroy = false;
+    }
+}
+
 #[derive(Component)]
 struct PixelSand;
 #[derive(Component)]
 struct PixelWater;
 #[derive(Component)]
-struct PixelLava;
-#[derive(Component)]
-struct PixelUnmoveable;
+struct PixelUnmovable;
+
 
 
 // const GRID_SIZE: f32 = 1.0;
@@ -77,10 +121,11 @@ fn spawn_cube(
     x: f32,
     y: f32,
     z: f32,
-) {
+    pixel_type: PixelType,
+) -> Entity {
     // let mut rng = rand::thread_rng();
 
-    commands
+    let entity = commands
         .spawn(PbrBundle {
             mesh: shape,
             material: materials.add(Color::NONE),
@@ -91,11 +136,27 @@ fn spawn_cube(
             ),
             ..default()
         })
-        .insert(Pixel {
-            dont_move: false,
-            pixel_type: PixelType::Water,
-        })
-        .insert(PixelWater);
+        // .insert(Pixel {
+        //     dont_move: false,
+        //     pixel_type: pixel_type,
+        //     destroy: false,
+        // })
+        // .insert(PixelSand)
+        // Despawn an entity when clicked:
+        .insert(On::<Pointer<Click>>::target_commands_mut(|_click, target_commands| {
+            target_commands.despawn();
+        }))
+        // Optional: adds selection, highlighting, and helper components.
+        .insert(PickableBundle::default()).id();
+
+    commands.entity(entity).insert(Pixel {
+        dont_move: false,
+        pixel_type: pixel_type,
+        destroy: false,
+        id: entity,
+    });
+
+    return entity;
 }
 
 fn setup(
@@ -103,6 +164,10 @@ fn setup(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
+    commands.insert_resource(PixelPositions {
+        transforms: Vec::new(),
+    });
+
     let shapes = [
         meshes.add(Cuboid {
             half_size: Vec3 {
@@ -117,7 +182,13 @@ fn setup(
         for a in 0..10 {
             for b in 20..30 {
                 for c in 0..10 {
-                    spawn_cube(&mut commands, shape.clone(), &mut materials, a as f32, b as f32, c as f32);
+                    if a % 2 == 0 {
+                        let entity = spawn_cube(&mut commands, shape.clone(), &mut materials, a as f32, b as f32, c as f32, PixelType::Sand);
+                        commands.entity(entity).insert(PixelSand);
+                    } else {
+                        let entity = spawn_cube(&mut commands, shape.clone(), &mut materials, a as f32, b as f32, c as f32, PixelType::Water);
+                        commands.entity(entity).insert(PixelWater);
+                    }
                 }
             }
         }
@@ -159,7 +230,6 @@ fn setup(
             .into(),
         ..default()
     });
-
 
     // Create the ground plane
     commands.spawn(PbrBundle {

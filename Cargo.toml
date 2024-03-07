@@ -8,5 +8,6 @@ edition = "2021"
 [dependencies]
 
 bevy = "0.13.0"
+bevy_mod_picking = "0.18.1"
 bevy_panorbit_camera = "0.16.0"
 rand = "0.9.0-alpha.0"
