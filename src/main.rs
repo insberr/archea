@@ -27,33 +27,37 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins.set(ImagePlugin::default_nearest()))
         .add_plugins(PanOrbitCameraPlugin)
-        // .add_plugins(RapierPhysicsPlugin::<NoUserData>::default())
-        // .add_plugins(RapierDebugRenderPlugin::default())
+
+        .insert_resource(Time::<Fixed>::from_seconds(0.2)) // runs 60 times a second
+
         .add_systems(Startup, setup)
-        // .add_systems(Update, gravity)
-        .add_systems(Update, time_step)
-        .add_systems(Update, (collision_system, gravity_system, fix_y).chain())
-        .add_systems(Update, sideways_movement)
+
+        .add_systems(FixedUpdate, (collision_system, gravity_system, fix_y).chain())
+        .add_systems(FixedUpdate, sideways_movement)
+
         .run();
 }
 //needa clean up my code
+
+enum PixelType {
+    Unmovable = -2,
+    Invalid = -1,
+    Sand,
+    Water,
+    Lava,
+    Steam,
+    Rock,
+}
 
 /// A marker component for our shapes so we can query them separately from the ground plane
 #[derive(Component)]
 struct Pixel {
     dont_move: bool,
+    pixel_type: PixelType,
 }
 
 const X_EXTENT: f32 = 12.0;
 const GRID_SIZE: f32 = 1.0;
-
-fn test_yes(
-    mut query: Query<(&Pixel, &mut Transform)>
-) {
-    for (mut pix, mut transform) in query.iter_mut() {
-        // transform.translation = pix.transform.translation;
-    }
-}
 
 fn spawn_cube(
     commands: &mut Commands,
