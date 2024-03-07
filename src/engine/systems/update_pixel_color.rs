@@ -1,6 +1,6 @@
 use bevy::asset::Assets;
-use bevy::pbr::{MaterialMeshBundle, PbrBundle, StandardMaterial};
-use bevy::prelude::{Asset, Color, Commands, Entity, Handle, Material, Mesh, ResMut, With};
+use bevy::pbr::{StandardMaterial};
+use bevy::prelude::{Color, Handle, ResMut};
 use bevy::prelude::Query;
 use crate::{Pixel, PixelType};
 
