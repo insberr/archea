@@ -22,22 +22,26 @@ use engine::systems::gravity_system::*;
 use engine::systems::collision_system::*;
 use engine::systems::sideways_movement::*;
 use engine::systems::timestep_system::*;
+use crate::engine::systems::update_pixel_color::update_pixel_color;
+use crate::PixelType::Sand;
 
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins.set(ImagePlugin::default_nearest()))
         .add_plugins(PanOrbitCameraPlugin)
 
-        .insert_resource(Time::<Fixed>::from_seconds(0.2)) // runs 60 times a second
+        .insert_resource(Time::<Fixed>::from_seconds(0.3)) // runs 60 times a second
 
         .add_systems(Startup, setup)
 
-        .add_systems(FixedUpdate, (collision_system, gravity_system, fix_y).chain())
+        // .add_systems(FixedUpdate, collision_system)
+        // .add_systems(FixedUpdate, fix_y)
         .add_systems(FixedUpdate, sideways_movement)
+
+        .add_systems(FixedPostUpdate, update_pixel_color)
 
         .run();
 }
-//needa clean up my code
 
 enum PixelType {
     Unmovable = -2,
@@ -67,7 +71,7 @@ fn spawn_cube(
     y: f32,
     z: f32,
 ) {
-    let mut rng = rand::thread_rng();
+    // let mut rng = rand::thread_rng();
 
     // commands.spawn((
     //     PbrBundle {
@@ -89,30 +93,17 @@ fn spawn_cube(
     commands // .spawn(RigidBody::Fixed)
         .spawn((PbrBundle {
             mesh: shape,
-            material: materials.add(Color::ORANGE),
+            material: materials.add(Color::NONE),
             transform: Transform::from_xyz(
                 x,//rng.gen_range(-50..=50) as f32 * GRID_SIZE, //-X_EXTENT,// / 2. + 0 as f32 / (1 - 1) as f32 * X_EXTENT,
                 y,//10.0,
                 z//rng.gen_range(-50..=50) as f32 * GRID_SIZE,
             ),
             ..default()
-        }, Pixel { dont_move: false }));
-        // .insert(TransformBundle::from();
-        // .insert(Velocity {
-        //     linvel: Vec3::new(0.0, 0.0, 0.0),
-        //     angvel: Vec3::new(0.0, 0.0, 0.0),
-        // })
-        // .insert(GravityScale(9.8))
-        // .insert(Sleeping::default())
-        // .insert(Ccd::disabled())
-        // .insert(Collider::cuboid(0.4, 0.5, 0.4))
-        // .insert(Friction::coefficient(10.0))
-        // .insert(Restitution {
-        //     coefficient: 0.0,
-        //     combine_rule: CoefficientCombineRule::Min
-        // })
-        // .insert(ColliderMassProperties::Mass(1.0))
-        // .insert(LockedAxes::TRANSLATION_LOCKED_X | LockedAxes::TRANSLATION_LOCKED_Z | LockedAxes::ROTATION_LOCKED_Y | LockedAxes::ROTATION_LOCKED_X | LockedAxes::ROTATION_LOCKED_Z);
+        }, Pixel {
+            dont_move: false,
+            pixel_type: PixelType::Water,
+        }));
 }
 
 fn setup(
@@ -129,9 +120,9 @@ fn setup(
     let shapes = [
     meshes.add(Cuboid {
         half_size: Vec3 {
-            x: 0.4,
-            y: 0.4,
-            z: 0.4,
+            x: 0.5,
+            y: 0.5,
+            z: 0.5,
         }
     }),
         // meshes.add(Capsule3d::default()),
@@ -144,9 +135,9 @@ fn setup(
     //let num_shapes = shapes.len();
 
     for (i, shape) in shapes.into_iter().enumerate() {
-        for a in 0..10 {
+        for a in 0..20 {
             for b in 5..10 {
-                for c in 0..5 {
+                for c in 0..20 {
                     spawn_cube(&mut commands, shape.clone(), &mut materials, a as f32, b as f32, c as f32);
                     // println!("IDK: {a} {b} {c}");
                 }
@@ -167,15 +158,11 @@ fn setup(
         ..default()
     });
 
-    // The ground
-    commands
-        .spawn(Collider::cuboid(60.0, 1.0, 60.0))
-        .insert(TransformBundle::from(Transform::from_xyz(0.0, -0.5, 0.0)));
-
     // ground plane
     commands.spawn(PbrBundle {
         mesh: meshes.add(Plane3d::default().mesh().size(100.0, 100.0)),
-        material: materials.add(Color::SILVER),
+        material: materials.add(Color::WHITE),
+        transform: Transform::from_xyz(0.0, -0.5, 0.0),
         ..default()
     });
 
