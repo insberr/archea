@@ -2,6 +2,7 @@ use bevy::prelude::{Fixed, Query, Res, Time, Transform, Vec3};
 use crate::Pixel;
 use rand;
 use rand::Rng;
+use rand::rngs::ThreadRng;
 use crate::engine::check_position::check_pos;
 
 const _DOWN: Vec3 = Vec3::new(0.0, -1.0, 0.0);
@@ -10,23 +11,22 @@ const _RIGHT: Vec3 = Vec3::new(1.0, 0.0, 0.0);
 const _FORWARD: Vec3 = Vec3::new(0.0, 0.0, 1.0);
 const _BACKWARD: Vec3 = Vec3::new(0.0, 0.0, -1.0);
 
-
 pub fn sideways_movement(
     mut pixels: Query<(&mut Pixel, &mut Transform)>,
     _: Res<Time<Fixed>>
 ) {
     let mut transforms: Vec<_> = pixels.iter().map(|(_, transform)| transform.translation.clone()).collect();
-
-    let mut rng = rand::thread_rng();
-    let dir_num = rng.gen_range(0..=1);
-    let dir1 = if dir_num == 0 { _LEFT } else { _RIGHT };
-    let dir2 = if dir_num == 0 { _FORWARD } else { _BACKWARD };
+    let mut rng: ThreadRng = rand::thread_rng();
 
     for (id, (mut pixel, mut transform)) in pixels.iter_mut().enumerate() {
         if pixel.dont_move {
             pixel.dont_move = false;
             continue;
         }
+
+        let dir_num = rng.gen_range(0..=1);
+        let dir1 = if dir_num == 0 { _LEFT } else { _RIGHT };
+        let dir2 = if dir_num == 0 { _FORWARD } else { _BACKWARD };
 
         let position = transform.translation.clone();
         let mut direction = _DOWN;
