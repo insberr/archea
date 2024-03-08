@@ -1,6 +1,6 @@
 use std::iter::Map;
 use bevy::prelude::{Entity, Fixed, Local, Query, Res, ResMut, Time, Transform, Vec3, With, Without};
-use crate::{Pixel, PixelPositions, PixelTransform, PixelWater};
+use crate::{Pixel, PixelPositions};
 use rand;
 use rand::Rng;
 use rand::rngs::ThreadRng;
@@ -13,14 +13,14 @@ const _FORWARD: Vec3 = Vec3::new(0.0, 0.0, 1.0);
 const _BACKWARD: Vec3 = Vec3::new(0.0, 0.0, -1.0);
 
 pub fn water_movement(
-    mut pixels: Query<(&mut Pixel, &mut Transform), With<PixelWater>>,
+    // mut pixels: ResMut<PixelPositions>, // Query<(&mut Pixel, &mut Transform), With<PixelWater>>,
     mut pixel_transforms: ResMut<PixelPositions>,
     _: Res<Time<Fixed>>
 ) {
     // let mut transforms: Vec<Transform> = pixel_transforms.map(|transform| transform.clone()).collect();
     let mut rng: ThreadRng = rand::thread_rng();
 
-    for (id, (mut pixel, mut transform)) in pixels.iter_mut().enumerate() {
+    for (id, (mut pixel, mut transform)) in pixel_transforms.iter_mut().enumerate() {
         if pixel.dont_move {
             pixel.dont_move = false;
             continue;

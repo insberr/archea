@@ -1,6 +1,6 @@
 use std::iter::Map;
 use bevy::prelude::{Entity, Fixed, Local, Query, Res, ResMut, Time, Transform, Vec3, With, Without};
-use crate::{Pixel, PixelPositions, PixelTransform, PixelUnmovable};
+use crate::{Pixel, PixelPositions};
 use crate::engine::check_position::check_pos;
 
 const _DOWN: Vec3 = Vec3::new(0.0, -1.0, 0.0);
@@ -10,11 +10,11 @@ const _FORWARD: Vec3 = Vec3::new(0.0, 0.0, 1.0);
 const _BACKWARD: Vec3 = Vec3::new(0.0, 0.0, -1.0);
 
 pub fn unmovable_movement(
-    mut pixels: Query<(&mut Pixel, &mut Transform), With<PixelUnmovable>>,
+    // mut pixels: Query<(&mut Pixel, &mut Transform), With<PixelUnmovable>>,
     mut pixel_transforms: ResMut<PixelPositions>,
     _: Res<Time<Fixed>>
 ) {
-    for (id, (mut pixel, mut transform)) in pixels.iter_mut().enumerate() {
+    for (position_index, mut pixel) in pixel_transforms.iter_mut() {
         if pixel.dont_move {
             pixel.dont_move = false;
             continue;
