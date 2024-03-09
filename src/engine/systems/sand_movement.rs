@@ -35,7 +35,7 @@ pub fn sand_movement(
             continue;
         }
 
-        let mut position = Vect3::from_index(*position_index);
+        let mut position = *position_index; // Vect3::from_index(*position_index);
 
         let dir_num = rng.gen_range(0..=1);
         let dir1 = if dir_num == 0 { _LEFT } else { _RIGHT };
@@ -74,7 +74,7 @@ pub fn sand_movement(
 
         // pixel.dont_move = true;
         position += direction;
-        pixel_transforms_clone.insert(position.to_index(), pixel.clone());
+        pixel_transforms_clone.insert(position, pixel.clone());
         pixel_transforms_clone.remove(position_index);
     }
     pixel_transforms.map = pixel_transforms_clone;

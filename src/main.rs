@@ -1,4 +1,5 @@
-use std::cmp::Ordering;
+#![forbid(unsafe_code)]
+
 use std::collections::BTreeMap;
 use std::f32::consts::PI;
 use std::ops;
@@ -7,6 +8,7 @@ use bevy::ecs::system::EntityCommands;
 use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
+use ordered_float::OrderedFloat;
 
 // Why
 mod engine;
@@ -14,47 +16,51 @@ use engine::systems::sand_movement::*;
 // use engine::systems::water_movement::*;
 use crate::engine::systems::update_pixel_color::update_pixel_color;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Ord, PartialOrd, Eq, PartialEq)]
 struct Vect3 {
-    x: f32,
-    y: f32,
-    z: f32,
+    x: OrderedFloat<f32>,
+    y: OrderedFloat<f32>,
+    z: OrderedFloat<f32>,
 }
 impl Vect3 {
     pub fn new(x: f32, y: f32, z: f32) -> Vect3 {
-        Vect3 { x: x, y: y, z: z }
+        Vect3 {
+            x: OrderedFloat::from(x),
+            y: OrderedFloat::from(y),
+            z: OrderedFloat::from(z)
+        }
     }
     pub fn from_vec3(vec3: Vec3) -> Vect3 {
         Vect3::new(vec3.x, vec3.y, vec3.z)
     }
 
-    pub fn clone(&self) -> Vect3 {
-        Vect3::new(self.x, self.y, self.z)
-    }
+    // pub fn clone(&self) -> Vect3 {
+    //     Vect3::new(*self.x, *self.y, *self.z)
+    // }
 
     pub fn to_vec3(&self) -> Vec3 {
-        Vec3::new(self.x, self.y, self.z)
+        Vec3::new(*self.x, *self.y, *self.z)
     }
 
-    pub fn to_index(&self) -> u128 {
-        let a = self.x as u128;
-        let b = self.y as u128;
-        let c = self.z as u128;
-        let mut res = 0u128;
-        res = res << 32 | a;
-        res = res << 32 | b;
-        res = res << 32 | c;
-        // let wtf = c << 64 | (b << 32 | a);
-        // println!("RES {res}");
-        return res;
-    }
-
-    pub fn from_index(index: u128) -> Vect3 {
-        let c = index & 0x000000FFu128;
-        let b = (index >> 32) & 0x000000FFu128;
-        let a = index >> 64;
-        return Vect3::new(a as f32, b as f32, c as f32);
-    }
+    // pub fn to_index(&self) -> u128 {
+    //     let a = self.x as u128;
+    //     let b = self.y as u128;
+    //     let c = self.z as u128;
+    //     let mut res = 0u128;
+    //     res = res << 32 | a;
+    //     res = res << 32 | b;
+    //     res = res << 32 | c;
+    //     // let wtf = c << 64 | (b << 32 | a);
+    //     // println!("RES {res}");
+    //     return res;
+    // }
+    //
+    // pub fn from_index(index: u128) -> Vect3 {
+    //     let c = index & 0x000000FFu128;
+    //     let b = (index >> 32) & 0x000000FFu128;
+    //     let a = index >> 64;
+    //     return Vect3::new(a as f32, b as f32, c as f32);
+    // }
 
     // private static ulong Combine(int a, int b) {
     // uint ua = (uint)a;
@@ -72,9 +78,9 @@ impl ops::Add<Vect3> for Vect3 {
 
     fn add(self, _rhs: Vect3) -> Vect3 {
         Vect3::new(
-            self.x + _rhs.x,
-            self.y + _rhs.y,
-            self.z + _rhs.z
+            *self.x + *_rhs.x,
+            *self.y + *_rhs.y,
+            *self.z + *_rhs.z
         )
     }
 }
@@ -84,9 +90,9 @@ impl ops::Add<Vec3> for Vect3 {
 
     fn add(self, _rhs: Vec3) -> Vect3 {
         Vect3::new(
-            self.x + _rhs.x,
-            self.y + _rhs.y,
-            self.z + _rhs.z
+            *self.x + _rhs.x,
+            *self.y + _rhs.y,
+            *self.z + _rhs.z
         )
     }
 }
@@ -121,7 +127,7 @@ struct Pixel {
 #[derive(Resource, Default)]
 struct PixelPositions {
     // positions: Vec<PixelTransform>,
-    map: BTreeMap<u128, Pixel>,
+    map: BTreeMap<Vect3, Pixel>,
 }
 
 fn main() {
@@ -133,7 +139,7 @@ fn main() {
 
         .init_resource::<PixelPositions>()
 
-        .insert_resource(Time::<Fixed>::from_seconds(1.0))
+        .insert_resource(Time::<Fixed>::from_seconds(0.3))
 
         .add_systems(Startup, (setup, create_pixels).chain())
 
@@ -176,8 +182,8 @@ fn update_render_pixels(
     }
 
     for (pos_index, pix) in pixels.map.iter() {
-        let pos = Vect3::from_index(*pos_index);
-        spawn_cube(&mut commands, shapes[0].clone(), &mut materials, pos.x, pos.y, pos.z, pix.pixel_type.clone());
+        let pos = *pos_index; // Vect3::from_index(*pos_index);
+        spawn_cube(&mut commands, shapes[0].clone(), &mut materials, *pos.x, *pos.y, *pos.z, pix.pixel_type.clone());
     }
 }
 
@@ -356,7 +362,7 @@ fn create_pixels(
                 // if b % 2 == 0 {
                 // let entity = spawn_cube(&mut commands, shape.clone(), &mut materials, a as f32, b as f32, c as f32, PixelType::Sand);
                 // commands.entity(entity);
-                pixels.map.insert(Vect3::new(a as f32, b as f32, c as f32).to_index(), Pixel {
+                pixels.map.insert(Vect3::new(a as f32, b as f32, c as f32)/*.to_index()*/, Pixel {
                     pixel_type: PixelType::Sand,
                     dont_move: false,
                     pixel_temperature: 0.0,
