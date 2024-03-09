@@ -1,4 +1,4 @@
 pub mod update_pixel_color;
-pub mod water_movement;
+// pub mod water_movement;
 pub mod sand_movement;
-pub mod unmovable_movement;
+// pub mod unmovable_movement;

@@ -1,6 +1,8 @@
 use std::cmp::Ordering;
 use std::collections::BTreeMap;
 use std::f32::consts::PI;
+use std::ops;
+use bevy::ecs::system::EntityCommands;
 // use rand::prelude::*;
 use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;
@@ -9,9 +11,10 @@ use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 // Why
 mod engine;
 use engine::systems::sand_movement::*;
-use engine::systems::water_movement::*;
+// use engine::systems::water_movement::*;
 use crate::engine::systems::update_pixel_color::update_pixel_color;
 
+#[derive(Clone, Copy)]
 struct Vect3 {
     x: f32,
     y: f32,
@@ -23,6 +26,14 @@ impl Vect3 {
     }
     pub fn from_vec3(vec3: Vec3) -> Vect3 {
         Vect3::new(vec3.x, vec3.y, vec3.z)
+    }
+
+    pub fn clone(&self) -> Vect3 {
+        Vect3::new(self.x, self.y, self.z)
+    }
+
+    pub fn to_vec3(&self) -> Vec3 {
+        Vec3::new(self.x, self.y, self.z)
     }
 
     pub fn to_index(&self) -> u128 {
@@ -56,6 +67,39 @@ impl Vect3 {
     // }
 }
 
+impl ops::Add<Vect3> for Vect3 {
+    type Output = Vect3;
+
+    fn add(self, _rhs: Vect3) -> Vect3 {
+        Vect3::new(
+            self.x + _rhs.x,
+            self.y + _rhs.y,
+            self.z + _rhs.z
+        )
+    }
+}
+
+impl ops::Add<Vec3> for Vect3 {
+    type Output = Vect3;
+
+    fn add(self, _rhs: Vec3) -> Vect3 {
+        Vect3::new(
+            self.x + _rhs.x,
+            self.y + _rhs.y,
+            self.z + _rhs.z
+        )
+    }
+}
+
+impl ops::AddAssign<Vec3> for Vect3 {
+    fn add_assign(&mut self, rhs: Vec3) {
+        self.x += rhs.x;
+        self.y += rhs.y;
+        self.z += rhs.z;
+    }
+}
+
+#[derive(PartialEq, Clone)]
 enum PixelType {
     Unmovable = -2,
     Invalid = -1,
@@ -66,6 +110,7 @@ enum PixelType {
     Rock,
 }
 
+#[derive(Clone)]
 struct Pixel {
     pixel_type: PixelType,
     pixel_temperature: f32,
@@ -88,59 +133,89 @@ fn main() {
 
         .init_resource::<PixelPositions>()
 
-        .insert_resource(Time::<Fixed>::from_seconds(0.08))
+        .insert_resource(Time::<Fixed>::from_seconds(1.0))
 
-        .add_systems(Startup, setup)
+        .add_systems(Startup, (setup, create_pixels).chain())
 
-        .add_systems(FixedPreUpdate, update_transforms_list)
+        // .add_systems(FixedPreUpdate, update_transforms_list)
         // .add_systems(FixedUpdate, collision_system)
         // .add_systems(FixedUpdate, fix_y)
         // .add_systems(FixedUpdate, sideways_movement)
 
         .add_systems(FixedUpdate, sand_movement)
-        .add_systems(FixedUpdate, water_movement)
+        // .add_systems(FixedUpdate, water_movement)
 
-        .add_systems(FixedPostUpdate, update_pixel_color)
+        // .add_systems(FixedPostUpdate, update_pixel_color)
+        .add_systems(FixedPostUpdate, (update_render_pixels, update_pixel_color).chain())
         .add_systems(Update, check_destroy)
 
         .run();
 }
 
-
-fn update_transforms_list(
-    mut pixel_transforms: ResMut<PixelPositions>,
-    pixels: Query<(&Transform, &Pixel)>
+fn update_render_pixels(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    mut pixels: Res<PixelPositions>,
+    parents_query: Query<Entity, With<RenderPixel>>
 ) {
-    // pixel_transforms.positions.clear();
-    pixel_transforms.map.clear();
-    for (tr, pix) in pixels.iter() {
-        pixel_transforms.map.insert(Vect3::from_vec3(tr.translation).to_index(), Pixel {
-            pixel_temperature: 0.0,
-            pixel_type: PixelType::Water,
-        });
-        // pixel_transforms.positions.push(PixelTransform {
-        //     transform: tr.clone(),
-        //     entity: pix.id,
-        // });
+    let shapes = [
+        meshes.add(Cuboid {
+            half_size: Vec3 {
+                x: 0.5,
+                y: 0.5,
+                z: 0.5,
+            }
+        }),
+    ];
+
+    // despawn all
+    for parent in &parents_query {
+        // Pull out the Pixel component
+        commands.entity(parent).despawn();
     }
 
-    // for (k, v) in pixel_transforms.map.iter() {
-    //     // let v_t = &v.pixel_type;
-    //     let v_tr = &v.transform;
-    //     let c = k & 0x000000FFu128;
-    //     let b = (k >> 32) & 0x000000FFu128;
-    //     let a = k >> 64;
-    //     // a = (int)(c & 0xFFFFFFFFUL);
-    //     // b = (int)(c >> 32);
-    //     println!("Map: [{a} {b} {c}] : {v_tr}");
-    // }
-    return;
+    for (pos_index, pix) in pixels.map.iter() {
+        let pos = Vect3::from_index(*pos_index);
+        spawn_cube(&mut commands, shapes[0].clone(), &mut materials, pos.x, pos.y, pos.z, pix.pixel_type.clone());
+    }
 }
+
+// fn update_transforms_list(
+//     mut pixel_transforms: ResMut<PixelPositions>,
+//     pixels: Query<(&Transform, &RenderPixel)>
+// ) {
+//     // pixel_transforms.positions.clear();
+//     pixel_transforms.map.clear();
+//     for (tr, pix) in pixels.iter() {
+//         pixel_transforms.map.insert(Vect3::from_vec3(tr.translation).to_index(), Pixel {
+//             pixel_temperature: 0.0,
+//             dont_move: false,
+//             pixel_type: PixelType::Water,
+//         });
+//         // pixel_transforms.positions.push(PixelTransform {
+//         //     transform: tr.clone(),
+//         //     entity: pix.id,
+//         // });
+//     }
+//
+//     // for (k, v) in pixel_transforms.map.iter() {
+//     //     // let v_t = &v.pixel_type;
+//     //     let v_tr = &v.transform;
+//     //     let c = k & 0x000000FFu128;
+//     //     let b = (k >> 32) & 0x000000FFu128;
+//     //     let a = k >> 64;
+//     //     // a = (int)(c & 0xFFFFFFFFUL);
+//     //     // b = (int)(c >> 32);
+//     //     println!("Map: [{a} {b} {c}] : {v_tr}");
+//     // }
+//     return;
+// }
 
 fn check_destroy(
     mut commands: Commands,
-    parents_query: Query<Entity, With<Pixel>>,
-    mut pixel_query: Query<&mut Pixel>,
+    parents_query: Query<Entity, With<RenderPixel>>,
+    mut pixel_query: Query<&mut RenderPixel>,
 ) {
     // For each entity with the Pixel component
     for parent in &parents_query {
@@ -160,7 +235,6 @@ struct RenderPixel {
     dont_move: bool,
     destroy: bool,
     pixel_type: PixelType,
-    id: Entity,
 }
 impl RenderPixel {
     pub fn destroy(&mut self) {
@@ -176,20 +250,24 @@ fn spawn_cube(
     y: f32,
     z: f32,
     pixel_type: PixelType,
-) -> Entity {
+) {
     // let mut rng = rand::thread_rng();
 
-    let entity = commands
-        .spawn(PbrBundle {
+   commands
+        .spawn((PbrBundle {
             mesh: shape,
-            material: materials.add(Color::NONE),
+            material: materials.add(Color::RED),
             transform: Transform::from_xyz(
                 x,//rng.gen_range(-50..=50) as f32,
                 y,//10.0,
                 z//rng.gen_range(-50..=50) as f32,
             ),
             ..default()
-        })
+        },RenderPixel {
+            dont_move: false,
+            pixel_type: pixel_type,
+            destroy: false
+        }))
         // .insert(Pixel {
         //     dont_move: false,
         //     pixel_type: pixel_type,
@@ -201,16 +279,7 @@ fn spawn_cube(
             target_commands.despawn();
         }))
         // Optional: adds selection, highlighting, and helper components.
-        .insert(PickableBundle::default()).id();
-
-    commands.entity(entity).insert(RenderPixel {
-        dont_move: false,
-        pixel_type: pixel_type,
-        destroy: false,
-        id: entity,
-    });
-
-    return entity;
+        .insert(PickableBundle::default());
 }
 
 fn setup(
@@ -222,40 +291,6 @@ fn setup(
     commands.insert_resource(PixelPositions {
         map: BTreeMap::new(),
     });
-
-    let shapes = [
-        meshes.add(Cuboid {
-            half_size: Vec3 {
-                x: 0.5,
-                y: 0.5,
-                z: 0.5,
-            }
-        }),
-    ];
-
-    for shape in shapes.into_iter() {
-        for a in 0..=10 {
-            for b in 20..=25 {
-                for c in 0..=10 {
-                    if b % 2 == 0 {
-                        // let entity = spawn_cube(&mut commands, shape.clone(), &mut materials, a as f32, b as f32, c as f32, PixelType::Sand);
-                        // commands.entity(entity);
-                        pixels.map.insert(Vect3::new(a as f32, b as f32, c as f32).to_index(), Pixel {
-                            pixel_type: PixelType::Sand,
-                            pixel_temperature: 0.0,
-                        });
-                    } else {
-                        // let entity = spawn_cube(&mut commands, shape.clone(), &mut materials, a as f32, b as f32, c as f32, PixelType::Water);
-                        // commands.entity(entity);
-                        pixels.map.insert(Vect3::new(a as f32, b as f32, c as f32).to_index(), Pixel {
-                            pixel_type: PixelType::Water,
-                            pixel_temperature: 0.0,
-                        });
-                    }
-                }
-            }
-        }
-    }
 
     // Create the light
     commands.spawn(PointLightBundle {
@@ -310,4 +345,34 @@ fn setup(
         },
         PanOrbitCamera::default(),
     ));
+}
+
+fn create_pixels(
+    mut pixels: ResMut<PixelPositions>
+) {
+    for a in 0..=10 {
+        for b in 10..=20 {
+            for c in 0..=10 {
+                // if b % 2 == 0 {
+                // let entity = spawn_cube(&mut commands, shape.clone(), &mut materials, a as f32, b as f32, c as f32, PixelType::Sand);
+                // commands.entity(entity);
+                pixels.map.insert(Vect3::new(a as f32, b as f32, c as f32).to_index(), Pixel {
+                    pixel_type: PixelType::Sand,
+                    dont_move: false,
+                    pixel_temperature: 0.0,
+                });
+                // } else {
+                //     // let entity = spawn_cube(&mut commands, shape.clone(), &mut materials, a as f32, b as f32, c as f32, PixelType::Water);
+                //     // commands.entity(entity);
+                //     pixels.map.insert(Vect3::new(a as f32, b as f32, c as f32).to_index(), Pixel {
+                //         pixel_type: PixelType::Water,
+                //         dont_move: false,
+                //         pixel_temperature: 0.0,
+                //     });
+                // }
+            }
+        }
+    }
+
+    pixels = pixels;
 }
