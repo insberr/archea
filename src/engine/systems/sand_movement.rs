@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
-use bevy::prelude::{Fixed, Local, Query, Res, ResMut, Time, Transform, Vec3, With};
-use crate::{Pixel, PixelPositions, PixelType, Vect3};
+use bevy::prelude::{Fixed, Res, ResMut, Time, Vec3};
+use crate::{PixelPositions, PixelType};
 use rand;
 use rand::Rng;
 use rand::rngs::ThreadRng;
@@ -25,7 +25,7 @@ pub fn sand_movement(
     // }
     pixel_transforms_clone.clone_from(&pixel_transforms.map);
 
-    for (position_index, mut pixel) in pixel_transforms.map.iter_mut() {
+    for (position_index, pixel) in pixel_transforms.map.iter_mut() {
         if pixel.pixel_type != PixelType::Sand {
             continue;
         }
@@ -47,12 +47,12 @@ pub fn sand_movement(
         //     direction = Vec3::new(0.0, 1.0, 0.0);
         //     pixel.dont_move = true;
         // } else
-        if check_pos(&pixel_transforms_clone, position, position.clone() + _DOWN) {
+        if check_pos(&pixel_transforms_clone, position, position + _DOWN) {
             // Already set to down
             // direction = _Down;
-        } else if check_pos(&pixel_transforms_clone, position,position.clone() + _DOWN + dir1) {
+        } else if check_pos(&pixel_transforms_clone, position,position + _DOWN + dir1) {
             direction = _DOWN + dir1;
-        } else if check_pos(&pixel_transforms_clone, position,position.clone() + _DOWN + dir2) {
+        } else if check_pos(&pixel_transforms_clone, position,position + _DOWN + dir2) {
             direction = _DOWN + dir2;
         // } else if check_pos(position + dir1, &pixel_transforms, None) {
         //     direction = dir1;

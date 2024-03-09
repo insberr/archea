@@ -3,7 +3,7 @@
 use std::collections::BTreeMap;
 use std::f32::consts::PI;
 use std::ops;
-use bevy::ecs::system::EntityCommands;
+
 // use rand::prelude::*;
 use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;
@@ -162,7 +162,7 @@ fn update_render_pixels(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    mut pixels: Res<PixelPositions>,
+    pixels: Res<PixelPositions>,
     parents_query: Query<Entity, With<RenderPixel>>
 ) {
     let shapes = [
@@ -226,7 +226,7 @@ fn check_destroy(
     // For each entity with the Pixel component
     for parent in &parents_query {
         // Pull out the Pixel component
-        if let Ok(mut pixel) = pixel_query.get_mut(parent) {
+        if let Ok(pixel) = pixel_query.get_mut(parent) {
             // transform.rotate_z(-PI / 2. * time.delta_seconds());
             // if (transform.translation.y < 0.0) {
             if pixel.destroy {
@@ -271,7 +271,7 @@ fn spawn_cube(
             ..default()
         },RenderPixel {
             dont_move: false,
-            pixel_type: pixel_type,
+            pixel_type,
             destroy: false
         }))
         // .insert(Pixel {
@@ -292,7 +292,7 @@ fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    mut pixels: ResMut<PixelPositions>
+    _pixels: ResMut<PixelPositions>
 ) {
     commands.insert_resource(PixelPositions {
         map: BTreeMap::new(),

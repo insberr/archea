@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
-use bevy::ecs::storage::SparseSetIndex;
-use bevy::math::Vec3;
-use bevy::prelude::Entity;
+
+
+
 use crate::{Pixel, Vect3};
 
 // Return true if the position is free to use.

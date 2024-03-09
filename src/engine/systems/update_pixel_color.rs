@@ -2,7 +2,7 @@ use bevy::asset::Assets;
 use bevy::pbr::{StandardMaterial};
 use bevy::prelude::{Color, Handle, ResMut};
 use bevy::prelude::Query;
-use crate::{Pixel, PixelType, RenderPixel};
+use crate::{PixelType, RenderPixel};
 
 pub fn update_pixel_color(
     mut materials: ResMut<Assets<StandardMaterial>>,
