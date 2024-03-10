@@ -20,7 +20,7 @@ pub fn sand_movement(
     // let mut transforms: Vec<_> = pixels.iter().map(|(transform)| transform.translation.clone()).collect();
     let mut rng: ThreadRng = rand::thread_rng();
     let mut pixel_transforms_clone = BTreeMap::new();
-    let mut isDirty = false;
+    let mut is_dirty = pixel_transforms.is_map_dirty;
     // for (position_index, mut pixel) in pixel_transforms.map.iter() {
     //     pixel_transforms_clone.insert(*position_index, pixel.clone());
     // }
@@ -38,9 +38,10 @@ pub fn sand_movement(
 
         let mut position = *position_index; // Vect3::from_index(*position_index);
 
-        let dir_num = rng.gen_range(0..=1);
-        let dir1 = if dir_num == 0 { _LEFT } else { _RIGHT };
-        let dir2 = if dir_num == 0 { _FORWARD } else { _BACKWARD };
+        let dir_num1 = rng.gen_range(0..=1);
+        let dir_num2 = rng.gen_range(0..=1);
+        let dir1 = if dir_num1 == 0 { _LEFT } else { _RIGHT };
+        let dir2 = if dir_num2 == 0 { _FORWARD } else { _BACKWARD };
 
         let mut direction = _DOWN;
 
@@ -60,7 +61,7 @@ pub fn sand_movement(
         // } else if check_pos(position + dir2, &pixel_transforms, None) {
         //     direction = dir2;
         } else {
-            pixel.dont_move = true;
+            // pixel.dont_move = true;
             continue;
         }
 
@@ -77,9 +78,9 @@ pub fn sand_movement(
         position += direction;
         pixel_transforms_clone.insert(position, pixel.clone());
         pixel_transforms_clone.remove(position_index);
-        isDirty = true;
+        is_dirty = true;
     }
-    pixel_transforms.is_map_dirty = isDirty;
+    pixel_transforms.is_map_dirty = is_dirty;
     pixel_transforms.map = pixel_transforms_clone;
     pixel_transforms = pixel_transforms;
 }

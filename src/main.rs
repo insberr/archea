@@ -18,7 +18,7 @@ use ordered_float::OrderedFloat;
 mod engine;
 use engine::systems::sand_movement::*;
 use crate::engine::plugins::instancing::{CustomMaterialPlugin, InstanceData, InstanceMaterialData};
-// use engine::systems::water_movement::*;
+use engine::systems::water_movement::*;
 use crate::engine::systems::update_pixel_color::update_pixel_color;
 
 #[derive(Clone, Copy, Ord, PartialOrd, Eq, PartialEq)]
@@ -146,7 +146,7 @@ fn main() {
 
         .init_resource::<PixelPositions>()
 
-        .insert_resource(Time::<Fixed>::from_seconds(0.7))
+        .insert_resource(Time::<Fixed>::from_seconds(0.2))
 
         .add_systems(Startup, (setup, create_pixels).chain())
 
@@ -156,10 +156,10 @@ fn main() {
         // .add_systems(FixedUpdate, sideways_movement)
 
         .add_systems(FixedUpdate, sand_movement)
-        // .add_systems(FixedUpdate, water_movement)
+        .add_systems(FixedUpdate, water_movement)
 
         // .add_systems(FixedPostUpdate, update_pixel_color)
-        // .add_systems(PreUpdate, update_render_pixels)
+        .add_systems(FixedPostUpdate, update_render_pixels)
         // .add_systems(Render, my_render)
         // .add_systems(Update, check_destroy)
 
@@ -167,10 +167,11 @@ fn main() {
 }
 
 fn update_render_pixels(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    // mut materials: ResMut<Assets<StandardMaterial>>,
     mut pixels: ResMut<PixelPositions>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-    // render_pixel_query: Query<Entity, With<RenderPixel>>,
-    mut render_transform_query: Query<(&Transform, &Handle<StandardMaterial>), With<RenderPixel>>,
+    sad: Query<Entity, With<InstanceMaterialData>>
 ) {
     if pixels.is_map_dirty == false {
         return;
@@ -197,43 +198,69 @@ fn update_render_pixels(
     //     spawn_cube(&mut commands, shapes[0].clone(), &mut materials, *pos.x, *pos.y, *pos.z, pix.pixel_type.clone());
     // }
 
-    for (transform, material) in render_transform_query.iter() {
-    // render_transform_query
-    //     .par_iter_mut()
-    //     .batching_strategy(BatchingStrategy::fixed(32))
-    //     .for_each(|(transform, material)| {
-            // if let Ok((transform, material)) = render_transform_query.get_mut(entity) {
-            let key = Vect3::from_vec3(transform.translation);
-            let mut color = Color::NONE;
+    // for (transform, material) in render_transform_query.iter() {
+    // // render_transform_query
+    // //     .par_iter_mut()
+    // //     .batching_strategy(BatchingStrategy::fixed(32))
+    // //     .for_each(|(transform, material)| {
+    //         // if let Ok((transform, material)) = render_transform_query.get_mut(entity) {
+    //         let key = Vect3::from_vec3(transform.translation);
+    //         let mut color = Color::NONE;
+    //
+    //         // If there's a pixel at the position
+    //         if let Some(map_value) = pixels.map.get(&key) {
+    //             color = match &map_value.pixel_type {
+    //                 PixelType::Invalid => Color::GREEN, // HOW
+    //                 PixelType::Sand => Color::ORANGE,
+    //                 PixelType::Water => {
+    //                     let mut c = Color::BLUE;
+    //                     c.set_a(0.4);
+    //                     c
+    //                 },
+    //                 _ => Color::NONE,
+    //             };
+    //             // materials.get_mut(material).unwrap().base_color = color;
+    //         }
+    //
+    //         // pix.pixel_type = map_value.clone().pixel_type;
+    //         // No exist, change color to clear
+    //         // pix.pixel_type = PixelType::Invalid;
+    //         materials.get_mut(material).unwrap().base_color = color;
+    //         // pixels.is_colors_dirty = true;
+    //
+    //         // transform.rotate_z(-PI / 2. * time.delta_seconds());
+    //         // if (transform.translation.y < 0.0) {
+    //         // if pixel.destroy {
+    //         //     commands.entity(parent).despawn();
+    //         // }
+    //     // }
+    // }
 
-            // If there's a pixel at the position
-            if let Some(map_value) = pixels.map.get(&key) {
-                color = match &map_value.pixel_type {
-                    PixelType::Invalid => Color::GREEN, // HOW
-                    PixelType::Sand => Color::ORANGE,
-                    PixelType::Water => {
-                        let mut c = Color::BLUE;
-                        c.set_a(0.4);
-                        c
-                    },
-                    _ => Color::NONE,
-                };
-                // materials.get_mut(material).unwrap().base_color = color;
-            }
-
-            // pix.pixel_type = map_value.clone().pixel_type;
-            // No exist, change color to clear
-            // pix.pixel_type = PixelType::Invalid;
-            materials.get_mut(material).unwrap().base_color = color;
-            // pixels.is_colors_dirty = true;
-
-            // transform.rotate_z(-PI / 2. * time.delta_seconds());
-            // if (transform.translation.y < 0.0) {
-            // if pixel.destroy {
-            //     commands.entity(parent).despawn();
-            // }
-        // }
+    for instance in sad.iter(){
+        commands.entity(instance).despawn();
     }
+
+    commands.spawn((
+        meshes.add(Cuboid::new(1.0, 1.0, 1.0)),
+        SpatialBundle::INHERITED_IDENTITY,
+        InstanceMaterialData(
+            pixels.map.iter()
+                .map(|(position, data)| InstanceData {
+                    position: position.to_vec3(),
+                    scale: 1.0,
+                    color: color_for(&data).as_rgba_f32(), //Color::RED.as_rgba_f32(),
+                })
+                .collect(),
+        ),
+        // NOTE: Frustum culling is done based on the Aabb of the Mesh and the GlobalTransform.
+        // As the cube is at the origin, if its Aabb moves outside the view frustum, all the
+        // instanced cubes will be culled.
+        // The InstanceMaterialData contains the 'GlobalTransform' information for this custom
+        // instancing, and that is not taken into account with the built-in frustum culling.
+        // We must disable the built-in frustum culling by adding the `NoFrustumCulling` marker
+        // component to avoid incorrect culling.
+        NoFrustumCulling,
+    ));
 
     pixels.is_map_dirty = false;
     // pixels = pixels;
@@ -443,29 +470,6 @@ fn setup(
     //     ..default()
     // });
 
-    commands.spawn((
-        meshes.add(Cuboid::new(0.5, 0.5, 0.5)),
-        SpatialBundle::INHERITED_IDENTITY,
-        InstanceMaterialData(
-            (1..=10)
-                .flat_map(|x| (1..=10).map(move |y| (x as f32 / 10.0, y as f32 / 10.0)))
-                .map(|(x, y)| InstanceData {
-                    position: Vec3::new(x * 10.0 - 5.0, y * 10.0 - 5.0, 0.0),
-                    scale: 1.0,
-                    color: Color::hsla(x * 360., y, 0.5, 1.0).as_rgba_f32(),
-                })
-                .collect(),
-        ),
-        // NOTE: Frustum culling is done based on the Aabb of the Mesh and the GlobalTransform.
-        // As the cube is at the origin, if its Aabb moves outside the view frustum, all the
-        // instanced cubes will be culled.
-        // The InstanceMaterialData contains the 'GlobalTransform' information for this custom
-        // instancing, and that is not taken into account with the built-in frustum culling.
-        // We must disable the built-in frustum culling by adding the `NoFrustumCulling` marker
-        // component to avoid incorrect culling.
-        NoFrustumCulling,
-    ));
-
     // Create the ground plane
     commands.spawn(PbrBundle {
         mesh: meshes.add(Plane3d::default().mesh().size(100.0, 100.0)),
@@ -485,33 +489,49 @@ fn setup(
 
 }
 
+fn color_for(pixel: &Pixel) -> Color {
+    match pixel.pixel_type {
+        PixelType::Invalid => Color::PURPLE, // HOW
+        PixelType::Sand => Color::ORANGE,
+        PixelType::Water => {
+            let mut c = Color::BLUE;
+            c.set_a(0.4);
+            c
+        },
+        PixelType::Lava => Color::ORANGE_RED,
+        // Really???
+        _ => Color::PURPLE,
+    }
+}
+
 fn create_pixels(
     mut pixels: ResMut<PixelPositions>
 ) {
-    for a in 0..=50 {
-        for b in 0..=50 {
-            for c in 0..=50 {
-                if b % 3 == 0 {
+    for y in 0..=30 {
+        for x in -15..=15 {
+            for z in -15..=15 {
+                if y % 3 == 0 {
                 // let entity = spawn_cube(&mut commands, shape.clone(), &mut materials, a as f32, b as f32, c as f32, PixelType::Sand);
                 // commands.entity(entity);
-                    pixels.map.insert(Vect3::new(a as f32, b as f32, c as f32)/*.to_index()*/, Pixel {
+                    pixels.map.insert(Vect3::new(x as f32, y as f32, z as f32)/*.to_index()*/, Pixel {
                         pixel_type: PixelType::Sand,
                         dont_move: false,
                         pixel_temperature: 0.0,
                     });
-                } else if b % 2 == 0 {
-                    pixels.map.insert(Vect3::new(a as f32, b as f32, c as f32)/*.to_index()*/, Pixel {
+                } else if y % 2 == 0 {
+                    pixels.map.insert(Vect3::new(x as f32, y as f32, z as f32)/*.to_index()*/, Pixel {
                         pixel_type: PixelType::Water,
                         dont_move: false,
                         pixel_temperature: 0.0,
                     });
-                } else {
-                    pixels.map.insert(Vect3::new(a as f32, b as f32, c as f32)/*.to_index()*/, Pixel {
-                        pixel_type: PixelType::Lava,
-                        dont_move: false,
-                        pixel_temperature: 0.0,
-                    });
                 }
+                // } else {
+                //     pixels.map.insert(Vect3::new(a as f32, b as f32, c as f32)/*.to_index()*/, Pixel {
+                //         pixel_type: PixelType::Lava,
+                //         dont_move: false,
+                //         pixel_temperature: 0.0,
+                //     });
+                // }
                 //     // let entity = spawn_cube(&mut commands, shape.clone(), &mut materials, a as f32, b as f32, c as f32, PixelType::Water);
                 //     // commands.entity(entity);
                 //     pixels.map.insert(Vect3::new(a as f32, b as f32, c as f32).to_index(), Pixel {
