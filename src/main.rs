@@ -21,6 +21,7 @@ mod engine;
 use engine::systems::sand_movement::*;
 use crate::engine::plugins::instancing::{CustomMaterialPlugin, InstanceData, InstanceMaterialData};
 use engine::systems::water_movement::*;
+use crate::engine::systems::lava_movement::lava_movement;
 use crate::engine::systems::update_pixel_color::update_pixel_color;
 
 #[derive(Clone, Copy, Ord, PartialOrd, Eq, PartialEq)]
@@ -159,6 +160,7 @@ fn main() {
 
         .add_systems(FixedUpdate, sand_movement)
         .add_systems(FixedUpdate, water_movement)
+        .add_systems(FixedUpdate, lava_movement)
 
         // .add_systems(FixedPostUpdate, update_pixel_color)
         .add_systems(FixedPostUpdate, update_render_pixels)
@@ -381,13 +383,13 @@ fn setup(
         is_colors_dirty: false,
     });
 
-    let shape = meshes.add(Cuboid {
-        half_size: Vec3 {
-            x: 0.5,
-            y: 0.5,
-            z: 0.5,
-        }
-    });
+    // let shape = meshes.add(Cuboid {
+    //     half_size: Vec3 {
+    //         x: 0.5,
+    //         y: 0.5,
+    //         z: 0.5,
+    //     }
+    // });
 
     // Create the light
     commands.spawn(PointLightBundle {
@@ -496,9 +498,9 @@ fn color_for(pixel: &Pixel) -> Color {
         PixelType::Invalid => Color::PURPLE, // HOW
         PixelType::Sand => Color::ORANGE,
         PixelType::Water => {
-            let mut c = Color::BLUE;
-            c.set_a(0.4);
-            c
+            Color::rgba(0.0, 0.2, 0.9, 0.4)
+            // c.set_a(0.4);
+            // c
         },
         PixelType::Lava => Color::ORANGE_RED,
         // Really???
@@ -509,7 +511,7 @@ fn color_for(pixel: &Pixel) -> Color {
 fn create_pixels(
     mut pixels: ResMut<PixelPositions>
 ) {
-    for y in 0..=30 {
+    for y in 10..=40 {
         for x in -15..=15 {
             for z in -15..=15 {
                 if y % 3 == 0 {
