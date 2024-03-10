@@ -3,9 +3,12 @@
 use std::collections::BTreeMap;
 use std::f32::consts::PI;
 use std::ops;
+use bevy::ecs::query::BatchingStrategy;
 
 // use rand::prelude::*;
 use bevy::prelude::*;
+use bevy::render::Render;
+use bevy::render::render_phase::AddRenderCommand;
 use bevy_mod_picking::prelude::*;
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 use ordered_float::OrderedFloat;
@@ -126,8 +129,9 @@ struct Pixel {
 
 #[derive(Resource, Default)]
 struct PixelPositions {
-    // positions: Vec<PixelTransform>,
     map: BTreeMap<Vect3, Pixel>,
+    is_map_dirty: bool,
+    is_colors_dirty: bool,
 }
 
 fn main() {
@@ -139,7 +143,7 @@ fn main() {
 
         .init_resource::<PixelPositions>()
 
-        .insert_resource(Time::<Fixed>::from_seconds(0.3))
+        .insert_resource(Time::<Fixed>::from_seconds(0.7))
 
         .add_systems(Startup, (setup, create_pixels).chain())
 
@@ -152,39 +156,94 @@ fn main() {
         // .add_systems(FixedUpdate, water_movement)
 
         // .add_systems(FixedPostUpdate, update_pixel_color)
-        .add_systems(FixedPostUpdate, (update_render_pixels, update_pixel_color).chain())
-        .add_systems(Update, check_destroy)
+        .add_systems(PreUpdate, update_render_pixels)
+        .add_systems(Render, my_render)
+        // .add_systems(Update, check_destroy)
 
         .run();
 }
 
-fn update_render_pixels(
-    mut commands: Commands,
+fn my_render(
+    data: Res<PixelPositions>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    pixels: Res<PixelPositions>,
-    parents_query: Query<Entity, With<RenderPixel>>
 ) {
-    let shapes = [
-        meshes.add(Cuboid {
-            half_size: Vec3 {
-                x: 0.5,
-                y: 0.5,
-                z: 0.5,
+    for (pos, pix) in data.map.iter() {
+        // do something
+        println!("hello render");
+    }
+}
+fn update_render_pixels(
+    mut pixels: ResMut<PixelPositions>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    // render_pixel_query: Query<Entity, With<RenderPixel>>,
+    mut render_transform_query: Query<(&Transform, &Handle<StandardMaterial>), With<RenderPixel>>,
+) {
+    if pixels.is_map_dirty == false {
+        return;
+    }
+
+    // let shapes = [
+    //     meshes.add(Cuboid {
+    //         half_size: Vec3 {
+    //             x: 0.5,
+    //             y: 0.5,
+    //             z: 0.5,
+    //         }
+    //     }),
+    // ];
+    //
+    // // despawn all
+    // for parent in &parents_query {
+    //     // Pull out the Pixel component
+    //     commands.entity(parent).despawn();
+    // }
+    //
+    // for (pos_index, pix) in pixels.map.iter() {
+    //     let pos = *pos_index; // Vect3::from_index(*pos_index);
+    //     spawn_cube(&mut commands, shapes[0].clone(), &mut materials, *pos.x, *pos.y, *pos.z, pix.pixel_type.clone());
+    // }
+
+    for (transform, material) in render_transform_query.iter() {
+    // render_transform_query
+    //     .par_iter_mut()
+    //     .batching_strategy(BatchingStrategy::fixed(32))
+    //     .for_each(|(transform, material)| {
+            // if let Ok((transform, material)) = render_transform_query.get_mut(entity) {
+            let key = Vect3::from_vec3(transform.translation);
+            let mut color = Color::NONE;
+
+            // If there's a pixel at the position
+            if let Some(map_value) = pixels.map.get(&key) {
+                color = match &map_value.pixel_type {
+                    PixelType::Invalid => Color::GREEN, // HOW
+                    PixelType::Sand => Color::ORANGE,
+                    PixelType::Water => {
+                        let mut c = Color::BLUE;
+                        c.set_a(0.4);
+                        c
+                    },
+                    _ => Color::NONE,
+                };
+                // materials.get_mut(material).unwrap().base_color = color;
             }
-        }),
-    ];
 
-    // despawn all
-    for parent in &parents_query {
-        // Pull out the Pixel component
-        commands.entity(parent).despawn();
+            // pix.pixel_type = map_value.clone().pixel_type;
+            // No exist, change color to clear
+            // pix.pixel_type = PixelType::Invalid;
+            materials.get_mut(material).unwrap().base_color = color;
+            // pixels.is_colors_dirty = true;
+
+            // transform.rotate_z(-PI / 2. * time.delta_seconds());
+            // if (transform.translation.y < 0.0) {
+            // if pixel.destroy {
+            //     commands.entity(parent).despawn();
+            // }
+        // }
     }
 
-    for (pos_index, pix) in pixels.map.iter() {
-        let pos = *pos_index; // Vect3::from_index(*pos_index);
-        spawn_cube(&mut commands, shapes[0].clone(), &mut materials, *pos.x, *pos.y, *pos.z, pix.pixel_type.clone());
-    }
+    pixels.is_map_dirty = false;
+    // pixels = pixels;
 }
 
 // fn update_transforms_list(
@@ -262,7 +321,7 @@ fn spawn_cube(
    commands
         .spawn((PbrBundle {
             mesh: shape,
-            material: materials.add(Color::RED),
+            material: materials.add(Color::NONE),
             transform: Transform::from_xyz(
                 x,//rng.gen_range(-50..=50) as f32,
                 y,//10.0,
@@ -296,6 +355,16 @@ fn setup(
 ) {
     commands.insert_resource(PixelPositions {
         map: BTreeMap::new(),
+        is_map_dirty: false,
+        is_colors_dirty: false,
+    });
+
+    let shape = meshes.add(Cuboid {
+        half_size: Vec3 {
+            x: 0.5,
+            y: 0.5,
+            z: 0.5,
+        }
     });
 
     // Create the light
@@ -310,6 +379,52 @@ fn setup(
         transform: Transform::from_xyz(20.0, 50.0, 0.0).with_rotation(Quat::from_rotation_x((0.5 * PI) / 180.0)),
         ..default()
     });
+
+    let mut trs = vec![];
+    for y in 0..=20 {
+        for x in 0..=20 {
+            for z in 0..=20 {
+                trs.push((PbrBundle {
+                    mesh: shape.clone(),
+                    material: materials.add(Color::NONE),
+                    transform: Transform::from_xyz(
+                        x as f32,
+                        y as f32,
+                        z as f32,
+                    ),
+                    ..default()
+                },RenderPixel {
+                    dont_move: false,
+                    pixel_type: PixelType::Invalid,
+                    destroy: false
+                }));
+            }
+        }
+    }
+
+    commands.spawn_batch(trs);
+        // .insert(On::<Pointer<Click>>::target_commands_mut(|_click, target_commands| {
+        //     target_commands.despawn();
+        // }))
+        // // Optional: adds selection, highlighting, and helper components.
+        // .insert(PickableBundle::default());
+
+    // commands
+    //     .spawn((PbrBundle {
+    //         mesh: shape.clone(),
+    //         material: materials.add(Color::NONE),
+    //         transform: trs[0],
+    //         ..default()
+    //     },RenderPixel {
+    //         dont_move: false,
+    //         pixel_type: PixelType::Invalid,
+    //         destroy: false
+    //     }))
+    //     .insert(On::<Pointer<Click>>::target_commands_mut(|_click, target_commands| {
+    //         target_commands.despawn();
+    //     }))
+    //     // Optional: adds selection, highlighting, and helper components.
+    //     .insert(PickableBundle::default());
 
     // directional 'sun' light
     // commands.spawn(DirectionalLightBundle {
@@ -351,14 +466,15 @@ fn setup(
         },
         PanOrbitCamera::default(),
     ));
+
 }
 
 fn create_pixels(
     mut pixels: ResMut<PixelPositions>
 ) {
-    for a in 0..=10 {
+    for a in 0..=20 {
         for b in 10..=20 {
-            for c in 0..=10 {
+            for c in 0..=20 {
                 // if b % 2 == 0 {
                 // let entity = spawn_cube(&mut commands, shape.clone(), &mut materials, a as f32, b as f32, c as f32, PixelType::Sand);
                 // commands.entity(entity);
