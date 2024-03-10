@@ -9,6 +9,7 @@ use bevy::ecs::query::BatchingStrategy;
 use bevy::prelude::*;
 use bevy::render::Render;
 use bevy::render::render_phase::AddRenderCommand;
+use bevy::render::view::NoFrustumCulling;
 use bevy_mod_picking::prelude::*;
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 use ordered_float::OrderedFloat;
@@ -16,7 +17,7 @@ use ordered_float::OrderedFloat;
 // Why
 mod engine;
 use engine::systems::sand_movement::*;
-use crate::engine::plugins::instancing::CustomMaterialPlugin;
+use crate::engine::plugins::instancing::{CustomMaterialPlugin, InstanceData, InstanceMaterialData};
 // use engine::systems::water_movement::*;
 use crate::engine::systems::update_pixel_color::update_pixel_color;
 
@@ -441,6 +442,29 @@ fn setup(
     //         .into(),
     //     ..default()
     // });
+
+    commands.spawn((
+        meshes.add(Cuboid::new(0.5, 0.5, 0.5)),
+        SpatialBundle::INHERITED_IDENTITY,
+        InstanceMaterialData(
+            (1..=10)
+                .flat_map(|x| (1..=10).map(move |y| (x as f32 / 10.0, y as f32 / 10.0)))
+                .map(|(x, y)| InstanceData {
+                    position: Vec3::new(x * 10.0 - 5.0, y * 10.0 - 5.0, 0.0),
+                    scale: 1.0,
+                    color: Color::hsla(x * 360., y, 0.5, 1.0).as_rgba_f32(),
+                })
+                .collect(),
+        ),
+        // NOTE: Frustum culling is done based on the Aabb of the Mesh and the GlobalTransform.
+        // As the cube is at the origin, if its Aabb moves outside the view frustum, all the
+        // instanced cubes will be culled.
+        // The InstanceMaterialData contains the 'GlobalTransform' information for this custom
+        // instancing, and that is not taken into account with the built-in frustum culling.
+        // We must disable the built-in frustum culling by adding the `NoFrustumCulling` marker
+        // component to avoid incorrect culling.
+        NoFrustumCulling,
+    ));
 
     // Create the ground plane
     commands.spawn(PbrBundle {
