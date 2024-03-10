@@ -226,6 +226,7 @@ dependencies = [
  "bevy-aabb-instancing",
  "bevy_mod_picking",
  "bevy_panorbit_camera",
+ "bytemuck",
  "ordered-float",
  "rand",
  "smooth-bevy-cameras",

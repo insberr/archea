@@ -16,6 +16,7 @@ use ordered_float::OrderedFloat;
 // Why
 mod engine;
 use engine::systems::sand_movement::*;
+use crate::engine::plugins::instancing::CustomMaterialPlugin;
 // use engine::systems::water_movement::*;
 use crate::engine::systems::update_pixel_color::update_pixel_color;
 
@@ -139,6 +140,7 @@ fn main() {
         .add_plugins(DefaultPlugins.set(ImagePlugin::default_nearest()))
         .add_plugins(PanOrbitCameraPlugin)
         .add_plugins(DefaultPickingPlugins)
+        .add_plugins(CustomMaterialPlugin)
         .insert_resource(DebugPickingMode::Normal)
 
         .init_resource::<PixelPositions>()
