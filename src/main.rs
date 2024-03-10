@@ -156,23 +156,13 @@ fn main() {
         // .add_systems(FixedUpdate, water_movement)
 
         // .add_systems(FixedPostUpdate, update_pixel_color)
-        .add_systems(PreUpdate, update_render_pixels)
-        .add_systems(Render, my_render)
+        // .add_systems(PreUpdate, update_render_pixels)
+        // .add_systems(Render, my_render)
         // .add_systems(Update, check_destroy)
 
         .run();
 }
 
-fn my_render(
-    data: Res<PixelPositions>,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-) {
-    for (pos, pix) in data.map.iter() {
-        // do something
-        println!("hello render");
-    }
-}
 fn update_render_pixels(
     mut pixels: ResMut<PixelPositions>,
     mut materials: ResMut<Assets<StandardMaterial>>,
@@ -380,29 +370,29 @@ fn setup(
         ..default()
     });
 
-    let mut trs = vec![];
-    for y in 0..=20 {
-        for x in 0..=20 {
-            for z in 0..=20 {
-                trs.push((PbrBundle {
-                    mesh: shape.clone(),
-                    material: materials.add(Color::NONE),
-                    transform: Transform::from_xyz(
-                        x as f32,
-                        y as f32,
-                        z as f32,
-                    ),
-                    ..default()
-                },RenderPixel {
-                    dont_move: false,
-                    pixel_type: PixelType::Invalid,
-                    destroy: false
-                }));
-            }
-        }
-    }
+    // let mut trs = vec![];
+    // for y in 0..=20 {
+    //     for x in 0..=20 {
+    //         for z in 0..=20 {
+    //             trs.push((PbrBundle {
+    //                 mesh: shape.clone(),
+    //                 material: materials.add(Color::NONE),
+    //                 transform: Transform::from_xyz(
+    //                     x as f32,
+    //                     y as f32,
+    //                     z as f32,
+    //                 ),
+    //                 ..default()
+    //             },RenderPixel {
+    //                 dont_move: false,
+    //                 pixel_type: PixelType::Invalid,
+    //                 destroy: false
+    //             }));
+    //         }
+    //     }
+    // }
 
-    commands.spawn_batch(trs);
+    // commands.spawn_batch(trs);
         // .insert(On::<Pointer<Click>>::target_commands_mut(|_click, target_commands| {
         //     target_commands.despawn();
         // }))
@@ -472,18 +462,30 @@ fn setup(
 fn create_pixels(
     mut pixels: ResMut<PixelPositions>
 ) {
-    for a in 0..=20 {
-        for b in 10..=20 {
-            for c in 0..=20 {
-                // if b % 2 == 0 {
+    for a in 0..=50 {
+        for b in 0..=50 {
+            for c in 0..=50 {
+                if b % 3 == 0 {
                 // let entity = spawn_cube(&mut commands, shape.clone(), &mut materials, a as f32, b as f32, c as f32, PixelType::Sand);
                 // commands.entity(entity);
-                pixels.map.insert(Vect3::new(a as f32, b as f32, c as f32)/*.to_index()*/, Pixel {
-                    pixel_type: PixelType::Sand,
-                    dont_move: false,
-                    pixel_temperature: 0.0,
-                });
-                // } else {
+                    pixels.map.insert(Vect3::new(a as f32, b as f32, c as f32)/*.to_index()*/, Pixel {
+                        pixel_type: PixelType::Sand,
+                        dont_move: false,
+                        pixel_temperature: 0.0,
+                    });
+                } else if b % 2 == 0 {
+                    pixels.map.insert(Vect3::new(a as f32, b as f32, c as f32)/*.to_index()*/, Pixel {
+                        pixel_type: PixelType::Water,
+                        dont_move: false,
+                        pixel_temperature: 0.0,
+                    });
+                } else {
+                    pixels.map.insert(Vect3::new(a as f32, b as f32, c as f32)/*.to_index()*/, Pixel {
+                        pixel_type: PixelType::Lava,
+                        dont_move: false,
+                        pixel_temperature: 0.0,
+                    });
+                }
                 //     // let entity = spawn_cube(&mut commands, shape.clone(), &mut materials, a as f32, b as f32, c as f32, PixelType::Water);
                 //     // commands.entity(entity);
                 //     pixels.map.insert(Vect3::new(a as f32, b as f32, c as f32).to_index(), Pixel {
