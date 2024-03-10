@@ -27,10 +27,16 @@ fn vertex(vertex: Vertex) -> VertexOutput {
         vec4<f32>(position, 1.0)
     );
     out.color = vertex.i_color;
+    if (vertex.position.x < 0.01 && vertex.position.y < 0.01) {
+        out.color = vec4(0.0, 0.0, 0.0, 1.0);
+    }
     return out;
 }
 
 @fragment
 fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
-    return in.color;
+    var out: vec4<f32>;
+    out = in.color;
+
+    return out;
 }
