@@ -30,6 +30,7 @@ fn vertex(vertex: Vertex) -> VertexOutput {
     if (vertex.position.x < 0.01 && vertex.position.y < 0.01) {
         out.color = vec4(0.0, 0.0, 0.0, 1.0);
     }
+    out.color.a = 0.0;
     return out;
 }
 
@@ -37,6 +38,7 @@ fn vertex(vertex: Vertex) -> VertexOutput {
 fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     var out: vec4<f32>;
     out = in.color;
+    out.a = 0.0;
 
     return out;
 }

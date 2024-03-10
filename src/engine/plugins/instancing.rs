@@ -105,6 +105,7 @@ pub struct InstanceData {
     pub position: Vec3,
     pub scale: f32,
     pub color: [f32; 4],
+    // pub alpha: f32,
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -208,6 +209,7 @@ impl SpecializedMeshPipeline for CustomPipeline {
         descriptor.vertex.buffers.push(VertexBufferLayout {
             array_stride: std::mem::size_of::<InstanceData>() as u64,
             step_mode: VertexStepMode::Instance,
+            // Probably look here to pass values to the shader
             attributes: vec![
                 VertexAttribute {
                     format: VertexFormat::Float32x4,

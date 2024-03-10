@@ -3,12 +3,14 @@
 use std::collections::BTreeMap;
 use std::f32::consts::PI;
 use std::ops;
+use bevy::core_pipeline::core_3d::graph::Node3d::MainTransparentPass;
 use bevy::ecs::query::BatchingStrategy;
 
 // use rand::prelude::*;
 use bevy::prelude::*;
 use bevy::render::Render;
 use bevy::render::render_phase::AddRenderCommand;
+use bevy::render::render_resource::BlendOperation;
 use bevy::render::view::NoFrustumCulling;
 use bevy_mod_picking::prelude::*;
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
@@ -524,14 +526,13 @@ fn create_pixels(
                         dont_move: false,
                         pixel_temperature: 0.0,
                     });
+                } else {
+                    pixels.map.insert(Vect3::new(x as f32, y as f32, z as f32)/*.to_index()*/, Pixel {
+                        pixel_type: PixelType::Lava,
+                        dont_move: false,
+                        pixel_temperature: 0.0,
+                    });
                 }
-                // } else {
-                //     pixels.map.insert(Vect3::new(a as f32, b as f32, c as f32)/*.to_index()*/, Pixel {
-                //         pixel_type: PixelType::Lava,
-                //         dont_move: false,
-                //         pixel_temperature: 0.0,
-                //     });
-                // }
                 //     // let entity = spawn_cube(&mut commands, shape.clone(), &mut materials, a as f32, b as f32, c as f32, PixelType::Water);
                 //     // commands.entity(entity);
                 //     pixels.map.insert(Vect3::new(a as f32, b as f32, c as f32).to_index(), Pixel {
