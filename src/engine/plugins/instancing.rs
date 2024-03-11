@@ -22,6 +22,7 @@ use bevy::{
         Render, RenderApp, RenderSet,
     },
 };
+use bevy::utils::nonmax::NonMaxU32;
 use bytemuck::{Pod, Zeroable};
 
 /*

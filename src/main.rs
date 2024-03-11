@@ -173,7 +173,7 @@ fn main() {
 fn update_render_pixels(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
-    // mut materials: ResMut<Assets<StandardMaterial>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
     mut pixels: ResMut<PixelPositions>,
     sad: Query<Entity, With<InstanceMaterialData>>
 ) {
