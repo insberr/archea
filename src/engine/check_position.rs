@@ -1,8 +1,7 @@
 use std::collections::BTreeMap;
 
-
-
-use crate::{Pixel, Vect3};
+use crate::Pixel;
+use crate::engine::stuff::vect3::Vect3;
 
 // Return true if the position is free to use.
 pub fn check_pos(pixels: &BTreeMap<Vect3, Pixel>, current_position: Vect3, new_position: Vect3) -> bool {

@@ -1,117 +1,23 @@
 #![forbid(unsafe_code)]
 
-use std::collections::BTreeMap;
-use std::f32::consts::PI;
-use std::ops;
-use bevy::core_pipeline::core_3d::graph::Node3d::MainTransparentPass;
-use bevy::ecs::query::BatchingStrategy;
-
-// use rand::prelude::*;
 use bevy::prelude::*;
-use bevy::render::Render;
 use bevy::render::render_phase::AddRenderCommand;
-use bevy::render::render_resource::BlendOperation;
 use bevy::render::view::NoFrustumCulling;
+
 use bevy_mod_picking::prelude::*;
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
-use ordered_float::OrderedFloat;
 
-// Why
+use std::collections::BTreeMap;
+use std::f32::consts::PI;
+
+// Sand Code
 mod engine;
+use engine::plugins::instancing::{CustomMaterialPlugin, InstanceData, InstanceMaterialData};
+
+use engine::systems::lava_movement::*;
 use engine::systems::sand_movement::*;
-use crate::engine::plugins::instancing::{CustomMaterialPlugin, InstanceData, InstanceMaterialData};
 use engine::systems::water_movement::*;
-use crate::engine::systems::lava_movement::lava_movement;
-use crate::engine::systems::update_pixel_color::update_pixel_color;
-
-#[derive(Clone, Copy, Ord, PartialOrd, Eq, PartialEq)]
-struct Vect3 {
-    x: OrderedFloat<f32>,
-    y: OrderedFloat<f32>,
-    z: OrderedFloat<f32>,
-}
-impl Vect3 {
-    pub fn new(x: f32, y: f32, z: f32) -> Vect3 {
-        Vect3 {
-            x: OrderedFloat::from(x),
-            y: OrderedFloat::from(y),
-            z: OrderedFloat::from(z)
-        }
-    }
-    pub fn from_vec3(vec3: Vec3) -> Vect3 {
-        Vect3::new(vec3.x, vec3.y, vec3.z)
-    }
-
-    // pub fn clone(&self) -> Vect3 {
-    //     Vect3::new(*self.x, *self.y, *self.z)
-    // }
-
-    pub fn to_vec3(&self) -> Vec3 {
-        Vec3::new(*self.x, *self.y, *self.z)
-    }
-
-    // pub fn to_index(&self) -> u128 {
-    //     let a = self.x as u128;
-    //     let b = self.y as u128;
-    //     let c = self.z as u128;
-    //     let mut res = 0u128;
-    //     res = res << 32 | a;
-    //     res = res << 32 | b;
-    //     res = res << 32 | c;
-    //     // let wtf = c << 64 | (b << 32 | a);
-    //     // println!("RES {res}");
-    //     return res;
-    // }
-    //
-    // pub fn from_index(index: u128) -> Vect3 {
-    //     let c = index & 0x000000FFu128;
-    //     let b = (index >> 32) & 0x000000FFu128;
-    //     let a = index >> 64;
-    //     return Vect3::new(a as f32, b as f32, c as f32);
-    // }
-
-    // private static ulong Combine(int a, int b) {
-    // uint ua = (uint)a;
-    // ulong ub = (uint)b;
-    // return ub <<32 | ua;
-    // }
-    // private static void Decombine(ulong c, out int a, out int b) {
-    // a = (int)(c & 0xFFFFFFFFUL);
-    // b = (int)(c >> 32);
-    // }
-}
-
-impl ops::Add<Vect3> for Vect3 {
-    type Output = Vect3;
-
-    fn add(self, _rhs: Vect3) -> Vect3 {
-        Vect3::new(
-            *self.x + *_rhs.x,
-            *self.y + *_rhs.y,
-            *self.z + *_rhs.z
-        )
-    }
-}
-
-impl ops::Add<Vec3> for Vect3 {
-    type Output = Vect3;
-
-    fn add(self, _rhs: Vec3) -> Vect3 {
-        Vect3::new(
-            *self.x + _rhs.x,
-            *self.y + _rhs.y,
-            *self.z + _rhs.z
-        )
-    }
-}
-
-impl ops::AddAssign<Vec3> for Vect3 {
-    fn add_assign(&mut self, rhs: Vec3) {
-        self.x += rhs.x;
-        self.y += rhs.y;
-        self.z += rhs.z;
-    }
-}
+use crate::engine::stuff::vect3::Vect3;
 
 #[derive(PartialEq, Clone)]
 enum PixelType {
@@ -141,31 +47,24 @@ struct PixelPositions {
 
 fn main() {
     App::new()
-        .add_plugins(DefaultPlugins.set(ImagePlugin::default_nearest()))
+        .add_plugins(DefaultPlugins)
+
+        .add_plugins(CustomMaterialPlugin)
+
         .add_plugins(PanOrbitCameraPlugin)
         .add_plugins(DefaultPickingPlugins)
-        .add_plugins(CustomMaterialPlugin)
         .insert_resource(DebugPickingMode::Normal)
 
         .init_resource::<PixelPositions>()
-
         .insert_resource(Time::<Fixed>::from_seconds(0.2))
 
         .add_systems(Startup, (setup, create_pixels).chain())
-
-        // .add_systems(FixedPreUpdate, update_transforms_list)
-        // .add_systems(FixedUpdate, collision_system)
-        // .add_systems(FixedUpdate, fix_y)
-        // .add_systems(FixedUpdate, sideways_movement)
 
         .add_systems(FixedUpdate, sand_movement)
         .add_systems(FixedUpdate, water_movement)
         .add_systems(FixedUpdate, lava_movement)
 
-        // .add_systems(FixedPostUpdate, update_pixel_color)
         .add_systems(FixedPostUpdate, update_render_pixels)
-        // .add_systems(Render, my_render)
-        // .add_systems(Update, check_destroy)
 
         .run();
 }
@@ -390,6 +289,61 @@ fn setup(
     //         z: 0.5,
     //     }
     // });
+    //
+    // commands
+    //     .spawn((PbrBundle {
+    //         mesh: shape.clone(),
+    //         material: materials.add(Color::RED),
+    //         transform: Transform::from_xyz(
+    //             50.0,//rng.gen_range(-50..=50) as f32,
+    //             0.0,//10.0,
+    //             50.0//rng.gen_range(-50..=50) as f32,
+    //         ),
+    //         ..default()
+    //     },RenderPixel {
+    //         dont_move: false,
+    //         pixel_type: PixelType::Water,
+    //         destroy: false
+    //     }))
+    //     // .insert(Pixel {
+    //     //     dont_move: false,
+    //     //     pixel_type: pixel_type,
+    //     //     destroy: false,
+    //     // })
+    //     // .insert(PixelSand)
+    //     // Despawn an entity when clicked:
+    //     .insert(On::<Pointer<Click>>::target_commands_mut(|_click, target_commands| {
+    //         target_commands.despawn();
+    //     }))
+    //     // Optional: adds selection, highlighting, and helper components.
+    //     .insert(PickableBundle::default());
+    // commands
+    //     .spawn((PbrBundle {
+    //         mesh: shape.clone(),
+    //         material: materials.add(Color::rgba(1.0, 0.0, 0.0, 0.2)),
+    //         transform: Transform::from_xyz(
+    //             50.0,//rng.gen_range(-50..=50) as f32,
+    //             0.0,//10.0,
+    //             -50.0//rng.gen_range(-50..=50) as f32,
+    //         ),
+    //         ..default()
+    //     },RenderPixel {
+    //         dont_move: false,
+    //         pixel_type: PixelType::Water,
+    //         destroy: false
+    //     }))
+    //     // .insert(Pixel {
+    //     //     dont_move: false,
+    //     //     pixel_type: pixel_type,
+    //     //     destroy: false,
+    //     // })
+    //     // .insert(PixelSand)
+    //     // Despawn an entity when clicked:
+    //     .insert(On::<Pointer<Click>>::target_commands_mut(|_click, target_commands| {
+    //         target_commands.despawn();
+    //     }))
+    //     // Optional: adds selection, highlighting, and helper components.
+    //     .insert(PickableBundle::default());
 
     // Create the light
     commands.spawn(PointLightBundle {
@@ -546,6 +500,8 @@ fn create_pixels(
             }
         }
     }
+
+
 
     pixels = pixels;
 }
