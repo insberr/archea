@@ -1,16 +1,11 @@
-use std::collections::BTreeMap;
-use bevy::prelude::{Fixed, Res, ResMut, Time, Vec3};
-use crate::{Pixel, PixelPositions, PixelType};
-use rand;
-use rand::prelude::SliceRandom;
+use rand::prelude::ThreadRng;
 use rand::Rng;
-use rand::rngs::ThreadRng;
-use crate::engine::check_position::check_pos;
 use crate::engine::stuff::vect3::Vect3;
+use crate::{Pixel, PixelPositions, PixelType};
+use crate::engine::check_position::check_pos;
+use crate::engine::systems::movement::{_BACKWARD, _DOWN, _FORWARD, _LEFT, _RIGHT, _UP};
 
-use crate::engine::systems::movement::{_DOWN, _LEFT, _RIGHT, _FORWARD, _BACKWARD};
-
-pub fn water_update(
+pub fn steam_update(
     mut pixel_transforms: &mut PixelPositions,
     mut rng: &mut ThreadRng,
     position: &Vect3,
@@ -29,29 +24,18 @@ pub fn water_update(
     let dir2 = if dir_num2 == 0 { _FORWARD } else { _BACKWARD };
 
     let check_directions = vec![
-        _DOWN,
-        _DOWN + dir1,
-        _DOWN + dir2,
+        _UP,
+        _UP + dir1,
+        _UP + dir2,
         dir1,
-        dir2,
+        dir2
     ];
-
-    let mut new_pixel = pixel.clone();
-    new_pixel.pixel_temperature += 2.0;
-    pixel_transforms.map.insert(*position, new_pixel);
-
-    if pixel.pixel_temperature > 120.0 {
-        let mut new_pixel = pixel.clone();
-        new_pixel.pixel_type = PixelType::Steam;
-        pixel_transforms.map.insert(*position, new_pixel);
-        return;
-    }
 
     for dir in check_directions.iter() {
         // Check if it can move - the position is an air spot
         let can_move = check_pos(&pixel_transforms.map, position, &(position + dir));
 
-        if can_move {
+        if (can_move) {
             let new_position = *position + *dir;
             pixel_transforms.map.insert(new_position, pixel.clone());
             pixel_transforms.map.remove(position);

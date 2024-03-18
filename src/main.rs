@@ -7,9 +7,8 @@ use std::f32::consts::PI;
 use bevy::prelude::*;
 // Using crossbeam_channel instead of std as std `Receiver` is `!Sync`
 use crossbeam_channel::{bounded, Receiver};
-use rand::{rngs::StdRng, Rng, SeedableRng};
+use rand::{Rng, SeedableRng};
 use std::time::{Duration, Instant};
-use bevy::render::render_resource::VertexStepMode::Instance;
 use bevy::render::view::NoFrustumCulling;
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 use rand::prelude::ThreadRng;
@@ -17,9 +16,7 @@ use rand::prelude::ThreadRng;
 mod engine;
 use engine::stuff::vect3::*;
 use crate::engine::plugins::instancing::{CustomMaterialPlugin, InstanceData, InstanceMaterialData};
-use crate::engine::systems::lava_movement::lava_movement;
-use crate::engine::systems::sand_movement::sand_movement;
-use crate::engine::systems::water_movement::water_movement;
+use crate::engine::systems::movement::update_pixel_positions;
 
 fn main() {
     App::new()
@@ -126,24 +123,15 @@ fn setup(
 
         loop {
             pixel_positions.is_map_dirty = false;
-            // Everything here happens in another thread
-            // This is where you could connect to an external data source
-            let start_time = Instant::now();
-            let duration = Duration::from_secs_f32(0.2);
+            // let start_time = Instant::now();
+            let duration = Duration::from_secs_f32(0.01);
             std::thread::sleep(duration);
 
-            // Spinning for 'duration', simulating doing hard work!
-            sand_movement(&mut pixel_positions, &mut rng);
-            water_movement(&mut pixel_positions, &mut rng);
-            lava_movement(&mut pixel_positions, &mut rng);
+            update_pixel_positions(&mut pixel_positions, &mut rng);
 
-            let time_end = Instant::now();
-            let diff = time_end - start_time;
-            let diff_ms = diff.as_millis();
-            println!("Update Pixel Positions {diff_ms}ms");
-
-
-            tx.send(pixel_positions.clone()).unwrap();
+            if pixel_positions.is_map_dirty {
+                tx.send(pixel_positions.clone()).unwrap();
+            }
         }
     });
 
@@ -160,6 +148,8 @@ fn color_for(pixel: &Pixel) -> Color {
             // c
         },
         PixelType::Lava => Color::ORANGE_RED,
+        PixelType::Steam => Color::WHITE,
+        PixelType::Rock => Color::GRAY,
         // Really???
         _ => Color::PURPLE,
     }
@@ -196,14 +186,14 @@ fn spawn_text(
 
 
     for (per_frame, event) in reader.read().enumerate() {
-        println!("Update render");
-        // todo: check if dirty
+        // println!("Update render");
+
         for instance in instance_entities.iter(){
             commands.entity(instance).despawn();
         }
         // todo: There should only be one thing to read in the reader... Check for that later
         commands.spawn((
-            meshes.add(Cuboid::new(1.0, 1.0, 1.0)),
+            meshes.add(Cuboid::new(0.4, 0.4, 0.4)),
             SpatialBundle::INHERITED_IDENTITY,
             InstanceMaterialData(
                 event.0.map.iter()
@@ -243,19 +233,19 @@ fn create_pixels(mut pixels: &mut BTreeMap<Vect3, Pixel>) {
                     pixels.insert(Vect3::new(x as f32, y as f32, z as f32), Pixel {
                         pixel_type: PixelType::Sand,
                         dont_move: false,
-                        pixel_temperature: 0.0,
+                        pixel_temperature: 60.0,
                     });
                 } else if y % 2 == 0 {
                     pixels.insert(Vect3::new(x as f32, y as f32, z as f32), Pixel {
                         pixel_type: PixelType::Water,
                         dont_move: false,
-                        pixel_temperature: 0.0,
+                        pixel_temperature: 60.0,
                     });
                 } else {
                     pixels.insert(Vect3::new(x as f32, y as f32, z as f32), Pixel {
                         pixel_type: PixelType::Lava,
                         dont_move: false,
-                        pixel_temperature: 0.0,
+                        pixel_temperature: 10_000.0,
                     });
                 }
             }

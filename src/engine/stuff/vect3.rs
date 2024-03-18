@@ -83,6 +83,18 @@ impl ops::Add<Vec3> for Vect3 {
     }
 }
 
+impl ops::Add<&Vec3> for &Vect3 {
+    type Output = Vect3;
+
+    fn add(self, _rhs: &Vec3) -> Vect3 {
+        Vect3::new(
+            *self.x + _rhs.x,
+            *self.y + _rhs.y,
+            *self.z + _rhs.z
+        )
+    }
+}
+
 impl ops::AddAssign<Vec3> for Vect3 {
     fn add_assign(&mut self, rhs: Vec3) {
         self.x += rhs.x;
