@@ -22,6 +22,7 @@ use bevy::{
         Render, RenderApp, RenderSet,
     },
 };
+use bevy::core_pipeline::core_3d::Opaque3d;
 use bevy::utils::nonmax::NonMaxU32;
 use bytemuck::{Pod, Zeroable};
 

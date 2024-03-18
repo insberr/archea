@@ -56,7 +56,7 @@ fn main() {
         .insert_resource(DebugPickingMode::Normal)
 
         .init_resource::<PixelPositions>()
-        .insert_resource(Time::<Fixed>::from_seconds(0.2))
+        .insert_resource(Time::<Fixed>::from_seconds(0.1))
 
         .add_systems(Startup, (setup, create_pixels).chain())
 
@@ -76,6 +76,21 @@ fn update_render_pixels(
     mut pixels: ResMut<PixelPositions>,
     sad: Query<Entity, With<InstanceMaterialData>>
 ) {
+    // let mut sand = 0;
+    // let mut water = 0;
+    // for p in pixels.map.iter() {
+    //     match p.1.pixel_type {
+    //         PixelType::Sand => {
+    //             sand += 1;
+    //         },
+    //         PixelType::Water => {
+    //             water += 1;
+    //         },
+    //         _ => {}
+    //     }
+    // }
+    // println!("Sand: {sand} | Water: {water}");
+
     if pixels.is_map_dirty == false {
         return;
     }
