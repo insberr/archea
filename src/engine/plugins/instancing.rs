@@ -107,6 +107,7 @@ pub struct InstanceData {
     pub position: Vec3,
     pub scale: f32,
     pub color: [f32; 4],
+    pub temp: f32,
     // pub alpha: f32,
 }
 
@@ -223,6 +224,12 @@ impl SpecializedMeshPipeline for CustomPipeline {
                     offset: VertexFormat::Float32x4.size(),
                     shader_location: 4,
                 },
+                // Pixel temperature
+                VertexAttribute {
+                    format: VertexFormat::Float32,
+                    offset: VertexFormat::Float32x4.size(),
+                    shader_location: 5,
+                }
             ],
         });
         descriptor.fragment.as_mut().unwrap().shader = self.shader.clone();

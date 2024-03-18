@@ -2,6 +2,7 @@ use bevy::math::Vec3;
 use rand::prelude::ThreadRng;
 use crate::{PixelPositions, PixelType};
 use crate::engine::systems::lava_movement::lava_update;
+use crate::engine::systems::rock::rock_update;
 use crate::engine::systems::sand_movement::sand_update;
 use crate::engine::systems::steam::steam_update;
 use crate::engine::systems::water_movement::water_update;
@@ -24,6 +25,7 @@ pub fn update_pixel_positions(
             PixelType::Water => water_update(&mut pixel_transforms, rng, position_index, pixel),
             PixelType::Lava => lava_update(&mut pixel_transforms, rng, position_index, pixel),
             PixelType::Steam => steam_update(&mut pixel_transforms, rng, position_index, pixel),
+            PixelType::Rock => rock_update(&mut pixel_transforms, rng, position_index, pixel),
             _ => {}
         }
     }

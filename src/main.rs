@@ -193,13 +193,14 @@ fn spawn_text(
         }
         // todo: There should only be one thing to read in the reader... Check for that later
         commands.spawn((
-            meshes.add(Cuboid::new(0.4, 0.4, 0.4)),
+            meshes.add(Cuboid::new(1.0, 1.0, 1.0)),
             SpatialBundle::INHERITED_IDENTITY,
             InstanceMaterialData(
                 event.0.map.iter()
                     .map(|(position, data)| InstanceData {
                         position: position.to_vec3(),
                         scale: 1.0,
+                        temp: data.pixel_temperature,
                         color: color_for(&data).as_rgba_f32(), //Color::RED.as_rgba_f32(),
                     })
                     .collect(),
