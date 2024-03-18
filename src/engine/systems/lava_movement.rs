@@ -22,7 +22,16 @@ pub fn lava_update(
         return;
     }
 
-
+    // todo: This has a flaw where it sets the pixel info, but if this pixel moves this update from
+    //  the code below, then we end up deleting this update ...
+    // Update temp
+    let mut new_pixel = pixel.clone();
+    if new_pixel.pixel_temperature < 2_000.0 {
+        new_pixel.pixel_type = PixelType::Rock;
+    } else {
+        new_pixel.pixel_temperature -= 100.0;
+    }
+    pixel_transforms.map.insert(*position, new_pixel);
 
     let dir_num1 = rng.gen_range(0..=1);
     let dir_num2 = rng.gen_range(0..=1);

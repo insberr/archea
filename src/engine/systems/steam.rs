@@ -1,4 +1,4 @@
-use rand::prelude::ThreadRng;
+use rand::prelude::{SliceRandom, ThreadRng};
 use rand::Rng;
 use crate::engine::stuff::vect3::Vect3;
 use crate::{Pixel, PixelPositions, PixelType};
@@ -23,13 +23,14 @@ pub fn steam_update(
     let dir1 = if dir_num1 == 0 { _LEFT } else { _RIGHT };
     let dir2 = if dir_num2 == 0 { _FORWARD } else { _BACKWARD };
 
-    let check_directions = vec![
+    let mut check_directions = vec![
         _UP,
         _UP + dir1,
         _UP + dir2,
         dir1,
         dir2
     ];
+    check_directions.shuffle(rng);
 
     for dir in check_directions.iter() {
         // Check if it can move - the position is an air spot
