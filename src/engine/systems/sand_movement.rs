@@ -26,17 +26,15 @@ enum Directions {
 }
 
 pub fn sand_movement(
+    mut pixel_transforms: &mut PixelPositions,
     // mut pixels: Query<(&mut Pixel, &mut Transform), With<PixelSand>>,
-    mut pixel_transforms: ResMut<PixelPositions>,
-    _: Res<Time<Fixed>>
+    // mut pixel_transforms: ResMut<PixelPositions>,
+    // _: Res<Time<Fixed>>
+    mut rng: &mut ThreadRng,
 ) {
-    // let mut transforms: Vec<_> = pixels.iter().map(|(transform)| transform.translation.clone()).collect();
-    let mut rng: ThreadRng = rand::thread_rng();
     let mut pixel_transforms_clone = BTreeMap::new();
     let mut is_dirty = pixel_transforms.is_map_dirty;
-    // for (position_index, mut pixel) in pixel_transforms.map.iter() {
-    //     pixel_transforms_clone.insert(*position_index, pixel.clone());
-    // }
+
     pixel_transforms_clone.clone_from(&pixel_transforms.map);
 
     for (position_index, pixel) in pixel_transforms.map.iter_mut() {
@@ -56,7 +54,7 @@ pub fn sand_movement(
         let dir1 = if dir_num1 == 0 { _LEFT } else { _RIGHT };
         let dir2 = if dir_num2 == 0 { _FORWARD } else { _BACKWARD };
 
-        let mut direction = Vec3::new(0.0, 0.0, 0.0);
+        // let mut direction = Vec3::new(0.0, 0.0, 0.0);
 
         let check_directions = vec![
             _DOWN,
@@ -77,51 +75,21 @@ pub fn sand_movement(
                     pixel_transforms_clone.insert(position + *dir, pixel.clone());
                     pixel_transforms_clone.insert(position, temp_pixel);
                     // direction = Vec3::new(0.0, 0.0, 0.0);
+                    is_dirty = true;
                     break;
                 }
             }
 
             if (can_move) {
-                direction = *dir;
+                // direction = *dir;
 
-                position += direction;
+                position += *dir;
                 pixel_transforms_clone.insert(position, pixel.clone());
                 pixel_transforms_clone.remove(position_index);
+                is_dirty = true;
                 break;
             }
         }
-
-        // if !check_pos(&pixel_transforms_clone, position, position) {
-        //     direction = Vec3::new(0.0, 1.0, 0.0);
-        //     pixel.dont_move = true;
-        // } else
-        // if check_pos(&pixel_transforms_clone, position, position + _DOWN) {
-        //     // Already set to down
-        //     // direction = _Down;
-        // } else if check_pos(&pixel_transforms_clone, position,position + _DOWN + dir1) {
-        //     direction = _DOWN + dir1;
-        // } else if check_pos(&pixel_transforms_clone, position,position + _DOWN + dir2) {
-        //     direction = _DOWN + dir2;
-        // // } else if check_pos(position + dir1, &pixel_transforms, None) {
-        // //     direction = dir1;
-        // // } else if check_pos(position + dir2, &pixel_transforms, None) {
-        // //     direction = dir2;
-        // } else {
-        //     // pixel.dont_move = true;
-        //     continue;
-        // }
-
-        // pixel.dont_move = true;
-        // transform.translation += direction;
-        // // pixel_transforms[id] += direction;
-        // // pixel_transforms.iter_mut().find(|val| val.entity == pixel.id).unwrap().transform.translation += direction;
-        // pixel_transforms.positions.iter_mut().find(|val| val.entity == pixel.id).unwrap_or(&mut PixelTransform {
-        //     transform: Transform::from_xyz(0.0, 0.0, 0.0),
-        //     entity: pixel.id
-        // }).transform.translation += direction;
-
-        // pixel.dont_move = true;
-        is_dirty = true;
     }
     pixel_transforms.is_map_dirty = is_dirty;
     pixel_transforms.map = pixel_transforms_clone;
