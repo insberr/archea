@@ -14,11 +14,13 @@ const _BACKWARD: Vec3 = Vec3::new(0.0, 0.0, -1.0);
 
 pub fn lava_movement(
     // mut pixels: Query<(&mut Pixel, &mut Transform), With<PixelSand>>,
-    mut pixel_transforms: ResMut<PixelPositions>,
-    _: Res<Time<Fixed>>
+    // mut pixel_transforms: ResMut<PixelPositions>,
+    // _: Res<Time<Fixed>>
+    mut pixel_transforms: &mut PixelPositions,
+    mut rng: &mut ThreadRng,
 ) {
     // let mut transforms: Vec<_> = pixels.iter().map(|(transform)| transform.translation.clone()).collect();
-    let mut rng: ThreadRng = rand::thread_rng();
+    // let mut rng: ThreadRng = rand::thread_rng();
     let mut pixel_transforms_clone = BTreeMap::new();
     let mut is_dirty = pixel_transforms.is_map_dirty;
     // for (position_index, mut pixel) in pixel_transforms.map.iter() {
@@ -43,27 +45,62 @@ pub fn lava_movement(
         let dir1 = if dir_num1 == 0 { _LEFT } else { _RIGHT };
         let dir2 = if dir_num2 == 0 { _FORWARD } else { _BACKWARD };
 
-        let mut direction = _DOWN;
+        let check_directions = vec![
+            _DOWN,
+            _DOWN + dir1,
+            _DOWN + dir2,
+        ];
 
-        // if !check_pos(&pixel_transforms_clone, position, position) {
-        //     direction = Vec3::new(0.0, 1.0, 0.0);
-        //     pixel.dont_move = true;
-        // } else
-        if check_pos(&pixel_transforms_clone, position, position + _DOWN) {
-            // Already set to down
-            // direction = _Down;
-        } else if check_pos(&pixel_transforms_clone, position,position + _DOWN + dir1) {
-            direction = _DOWN + dir1;
-        } else if check_pos(&pixel_transforms_clone, position,position + _DOWN + dir2) {
-            direction = _DOWN + dir2;
-        // } else if check_pos(position + dir1, &pixel_transforms, None) {
-        //     direction = dir1;
-        // } else if check_pos(position + dir2, &pixel_transforms, None) {
-        //     direction = dir2;
-        } else {
-            // pixel.dont_move = true;
-            continue;
+        for dir in check_directions.iter() {
+            // Check if it can move - the position is an air spot
+            let can_move = check_pos(&pixel_transforms_clone, position, position + *dir);
+
+            // Check swap rules - say, water is in the spot to move to
+            // This should probably be moved...
+            if let Some(pix_at_dir) = pixel_transforms_clone.get(&(position + *dir)) {
+                if pix_at_dir.pixel_type == PixelType::Water {
+                    // swap places
+                    let temp_pixel = pix_at_dir.clone();
+                    pixel_transforms_clone.insert(position + *dir, pixel.clone());
+                    pixel_transforms_clone.insert(position, temp_pixel);
+                    // direction = Vec3::new(0.0, 0.0, 0.0);
+                    is_dirty = true;
+                    break;
+                }
+            }
+
+            if (can_move) {
+                // direction = *dir;
+
+                position += *dir;
+                pixel_transforms_clone.insert(position, pixel.clone());
+                pixel_transforms_clone.remove(position_index);
+                is_dirty = true;
+                break;
+            }
         }
+
+        // let mut direction = _DOWN;
+        //
+        // // if !check_pos(&pixel_transforms_clone, position, position) {
+        // //     direction = Vec3::new(0.0, 1.0, 0.0);
+        // //     pixel.dont_move = true;
+        // // } else
+        // if check_pos(&pixel_transforms_clone, position, position + _DOWN) {
+        //     // Already set to down
+        //     // direction = _Down;
+        // } else if check_pos(&pixel_transforms_clone, position,position + _DOWN + dir1) {
+        //     direction = _DOWN + dir1;
+        // } else if check_pos(&pixel_transforms_clone, position,position + _DOWN + dir2) {
+        //     direction = _DOWN + dir2;
+        // // } else if check_pos(position + dir1, &pixel_transforms, None) {
+        // //     direction = dir1;
+        // // } else if check_pos(position + dir2, &pixel_transforms, None) {
+        // //     direction = dir2;
+        // } else {
+        //     // pixel.dont_move = true;
+        //     continue;
+        // }
 
         // pixel.dont_move = true;
         // transform.translation += direction;
@@ -75,10 +112,10 @@ pub fn lava_movement(
         // }).transform.translation += direction;
 
         // pixel.dont_move = true;
-        position += direction;
-        pixel_transforms_clone.insert(position, pixel.clone());
-        pixel_transforms_clone.remove(position_index);
-        is_dirty = true;
+        // position += direction;
+        // pixel_transforms_clone.insert(position, pixel.clone());
+        // pixel_transforms_clone.remove(position_index);
+        // is_dirty = true;
     }
     pixel_transforms.is_map_dirty = is_dirty;
     pixel_transforms.map = pixel_transforms_clone;

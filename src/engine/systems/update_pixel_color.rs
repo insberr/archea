@@ -6,13 +6,13 @@ use bevy::prelude::Query;
 use crate::{PixelPositions, PixelType, RenderPixel};
 
 pub fn update_pixel_color(
-    mut data: ResMut<PixelPositions>,
+    // mut data: ResMut<PixelPositions>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut pixels: Query<(&RenderPixel, &Handle<StandardMaterial>)>
 ) {
-    if data.is_colors_dirty == false {
-        return;
-    }
+    // if data.is_colors_dirty == false {
+    //     return;
+    // }
 
     for (pix, mat) in pixels.iter_mut() {
         let color = match &pix.pixel_type {
@@ -29,5 +29,5 @@ pub fn update_pixel_color(
         materials.get_mut(mat).unwrap().base_color = color;
     }
 
-    data.is_colors_dirty = false;
+    // data.is_colors_dirty = false;
 }
