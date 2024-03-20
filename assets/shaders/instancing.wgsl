@@ -1,4 +1,8 @@
 #import bevy_pbr::mesh_functions::{get_model_matrix, mesh_position_local_to_clip}
+#import bevy_pbr::{
+    pbr_fragment::pbr_input_from_standard_material,
+    pbr_functions::{apply_pbr_lighting, main_pass_post_lighting_processing},
+}
 
 struct Vertex {
     @location(0) position: vec3<f32>,
@@ -25,13 +29,26 @@ fn vertex(vertex: Vertex) -> VertexOutput {
     // index in the Mesh array. This index could be passed in via another
     // uniform instead but it's unnecessary for the example.
     out.clip_position = mesh_position_local_to_clip(
-        get_model_matrix(0u),
+        get_model_matrix(1u),
         vec4<f32>(position, 1.0)
     );
     out.color = vertex.i_color;
     if (vertex.position.x < 0.01 && vertex.position.y < 0.01) {
         out.color = vec4(0.0, 0.0, 0.0, 1.0);
     }
+
+//    if (vertex.temp < 100.0) {
+//        let purple = vec4(1.0, 0.0, 1.0, 1.0);
+//        let blue = vec4(0.0, 0.0, 1.0, 1.0);
+//        let mixed = mix(purple, blue, vertex.temp / 100.0);
+//        out.color = mixed;
+//    } else if (vertex.temp < 200.0) {
+//        let green = vec4(0.0, 1.0, 0.0, 1.0);
+//        let blue = vec4(0.0, 0.0, 1.0, 1.0);
+//        let mixed = mix(green, blue, vertex.temp / 200.0);
+//        out.color = mixed;
+//    }
+
     return out;
 }
 

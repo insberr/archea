@@ -227,7 +227,7 @@ impl SpecializedMeshPipeline for CustomPipeline {
                 // Pixel temperature
                 VertexAttribute {
                     format: VertexFormat::Float32,
-                    offset: VertexFormat::Float32x4.size(),
+                    offset: VertexFormat::Float32x4.size() * 2,
                     shader_location: 5,
                 }
             ],
