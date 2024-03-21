@@ -1,5 +1,14 @@
-// From https://github.com/DavidHospital/FrostyGrass/blob/main/src/render/instancing.rs
-
+/*
+ * File copied from https://github.com/DavidHospital/FrostyGrass/blob/main/src/render/instancing.rs
+ * Credit to their grass library
+ *
+ * This has been slightly modified by me to work with bevy 0.13., I may send a pr updating
+ *   in the grass library too.
+ * Modifications include:
+ * - Update to bevy 0.13.
+ * - Adding a color value (for my needs)
+ * - Adding comments that explain the code a little better (Soon)
+ */
 
 use std::marker::PhantomData;
 

@@ -19,6 +19,7 @@ pub fn update_pixel_positions(
     mut pixel_transforms: &mut PixelPositions,
     mut rng: &mut ThreadRng,
 ) {
+    // Update every pixel's position and temperature
     for (position_index, pixel) in pixel_transforms.map.clone().iter_mut() {
         match pixel.pixel_type {
             PixelType::Sand => sand_update(&mut pixel_transforms, rng, position_index, pixel),

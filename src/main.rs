@@ -38,12 +38,17 @@ impl InstancedMaterial for CubePixel {
 
 fn main() {
     App::new()
+        // Stream used to send the pixels data from the tread to the game
         .add_event::<StreamEvent>()
+
         .add_plugins(DefaultPlugins)
         .add_plugins(InstancingPlugin::<CubePixel>::default())
+
+        // Camera Plugin
         .add_plugins(PanOrbitCameraPlugin)
+
         .add_systems(Startup, setup)
-        .add_systems(Update, (read_stream, spawn_text))
+        .add_systems(Update, (read_stream, update_instancing))
         .run();
 }
 
@@ -73,25 +78,14 @@ struct PixelPositions {
     is_colors_dirty: bool,
 }
 
-// RenderPixel only exists because I am too lazy to remove it
-#[derive(Component)]
-struct RenderPixel {
-    dont_move: bool,
-    destroy: bool,
-    pixel_type: PixelType,
-}
-impl RenderPixel {
-    pub fn destroy(&mut self) {
-        self.destroy = false;
-    }
-}
-
+/* Stream Structs */
 #[derive(Resource, Deref)]
 struct StreamReceiver(Receiver<PixelPositions>);
 
 #[derive(Event)]
 struct StreamEvent(PixelPositions);
 
+// Setup
 fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -102,7 +96,7 @@ fn setup(
         point_light: PointLight {
             shadows_enabled: true,
             intensity: 90_000_000.,
-            range: 100.0,
+            range: 1000.0,
             color: Color::WHITE,
             ..default()
         },
@@ -158,18 +152,13 @@ fn setup(
 
 fn color_for(pixel: &Pixel) -> Color {
     match pixel.pixel_type {
-        PixelType::Invalid => Color::PURPLE, // HOW
         PixelType::Sand => Color::ORANGE,
-        PixelType::Water => {
-            Color::rgba(0.0, 0.2, 0.9, 0.4)
-            // c.set_a(0.4);
-            // c
-        },
+        PixelType::Water => Color::rgba(0.0, 0.2, 0.9, 0.4),
         PixelType::Lava => Color::ORANGE_RED,
         PixelType::Steam => Color::WHITE,
         PixelType::Rock => Color::GRAY,
-        // Really???
-        _ => Color::PURPLE,
+
+        PixelType::Invalid | _ => Color::PURPLE,
     }
 }
 
@@ -180,34 +169,14 @@ fn read_stream(receiver: Res<StreamReceiver>, mut events: EventWriter<StreamEven
     }
 }
 
-fn spawn_text(
+fn update_instancing(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    mut images: ResMut<Assets<Image>>,
     mut reader: EventReader<StreamEvent>,
     instance_entities: Query<Entity, With<InstanceData<CubePixel>>>
 ) {
-    // let text_style = TextStyle {
-    //     font_size: 20.0,
-    //     ..default()
-    // };
-    //
-    // for (per_frame, event) in reader.read().enumerate() {
-    //     commands.spawn(Text2dBundle {
-    //         text: Text::from_section(event.0.to_string(), text_style.clone())
-    //             .with_justify(JustifyText::Center),
-    //         transform: Transform::from_xyz(per_frame as f32 * 100.0, 300.0, 0.0),
-    //         ..default()
-    //     });
-    // }
-
-
-
-
     for (per_frame, event) in reader.read().enumerate() {
-        // println!("Update render");
-
         for instance in instance_entities.iter(){
             commands.entity(instance).despawn();
         }
@@ -231,22 +200,19 @@ fn spawn_text(
         //         data: vec![CubePixel { position: Vec3::new(0.0, 0.0, 0.0), scale: 1.0 }],
         //     }
         // );
+
         let mesh = meshes.add(Cuboid::new(1.0, 1.0, 1.0));
-        // let image = images.add();
         let material = materials.add(StandardMaterial {
             base_color: Color::WHITE,
-            alpha_mode: AlphaMode::Blend,
+            alpha_mode: AlphaMode::Blend, // This does absolutely nothing ...
             ..default()
         });
+
         commands.spawn((
-            mesh.clone(), // grassable.grass_mesh.clone(),
-            material.clone(),// grassable.grass_material.clone(),
+            mesh.clone(),
+            material.clone(),
             SpatialBundle {
-                // TODO: setting the grass entity position to f32::MIN is a hack. Currently,
-                // this entity is rendered as a single grass blade due to its mesh, material,
-                // transform, and visibility components. I couldn't come up with a clean solution
-                // for this problem, as removing any of these components prevents the instanced
-                // grass from rendering as well.
+                // This is needed otherwise nothing renders I think
                 transform: Transform::from_xyz(0., f32::MIN, 0.),
                 ..SpatialBundle::INHERITED_IDENTITY
             },
@@ -256,35 +222,20 @@ fn spawn_text(
                     .map(|(pos, pix)| CubePixel {
                         position: pos.to_vec3(),
                         scale: 1.0,
+                        // temp
                         color: color_for(&pix).as_rgba_f32(),
                     })
                     .collect(),
-                // data: vec![CubePixel { position: Vec3::new(0.0, 0.0, 0.0), scale: 1.0 }],
-                mesh: mesh.clone(), // grassable.grass_mesh.clone(),
+                mesh: mesh.clone(),
             },
             NoFrustumCulling,
         ));
     }
-
-    // todo: Mark no longer dirty
 }
 
-// fn move_text(
-//     mut commands: Commands,
-//     mut texts: Query<(Entity, &mut Transform), With<Text>>,
-//     time: Res<Time>,
-// ) {
-//     for (entity, mut position) in &mut texts {
-//         position.translation -= Vec3::new(0.0, 100.0 * time.delta_seconds(), 0.0);
-//         if position.translation.y < -300.0 {
-//             commands.entity(entity).despawn();
-//         }
-//     }
-// }
-
+// Create the pixels on startup
 fn create_pixels(mut pixels: &mut BTreeMap<Vect3, Pixel>) {
-    println!("Create my pixels!");
-    for y in 10..=40 {
+    for y in 10..=30 {
         for x in -15..=15 {
             for z in -15..=15 {
                 if y % 3 == 0 {
