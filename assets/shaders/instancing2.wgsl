@@ -96,7 +96,7 @@ var standard_in: VertexOutput;
 //        pbr_input.material.base_color = textureSample(mat_array_texture, mat_array_texture_sampler, in.uv, 0u);
         pbr_input.material.base_color = pbr_input.material.base_color * in.color;
 
-        pbr_input.material.base_color = alpha_discard(pbr_input.material, pbr_input.material.base_color);
+//        pbr_input.material.base_color = alpha_discard(pbr_input.material, pbr_input.material.base_color);
 #ifdef PREPASS_PIPELINE
     let out = deferred_output(in, pbr_input);
 #else

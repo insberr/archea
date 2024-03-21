@@ -234,7 +234,7 @@ fn spawn_text(
         let mesh = meshes.add(Cuboid::new(1.0, 1.0, 1.0));
         // let image = images.add();
         let material = materials.add(StandardMaterial {
-            base_color: Color::rgba(0.1, 0.0, 0.0, 0.4),
+            base_color: Color::WHITE,
             alpha_mode: AlphaMode::Blend,
             ..default()
         });
