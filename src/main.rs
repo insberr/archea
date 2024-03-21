@@ -9,23 +9,41 @@ use bevy::prelude::*;
 use crossbeam_channel::{bounded, Receiver};
 use rand::{Rng, SeedableRng};
 use std::time::{Duration, Instant};
+use bevy::pbr::OpaqueRendererMethod;
 use bevy::render::view::NoFrustumCulling;
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
+use bytemuck::{Pod, Zeroable};
 use rand::prelude::ThreadRng;
 
 mod engine;
 use engine::stuff::vect3::*;
-use crate::engine::plugins::instancing::{CustomMaterialPlugin, InstanceData, InstanceMaterialData};
+use crate::engine::plugins::instancing::{InstancingPlugin, InstanceData, InstancedMaterial};
 use crate::engine::systems::movement::update_pixel_positions;
+
+#[derive(Component, Copy, Clone, Pod, Zeroable)]
+#[repr(C)]
+pub struct CubePixel {
+    position: Vec3,
+    scale: f32,
+    color: [f32; 4],
+}
+
+impl InstancedMaterial for CubePixel {
+    type M = StandardMaterial;
+
+    fn shader_path() -> &'static str {
+        "shaders/instancing2.wgsl"
+    }
+}
 
 fn main() {
     App::new()
         .add_event::<StreamEvent>()
         .add_plugins(DefaultPlugins)
-        .add_plugins(CustomMaterialPlugin)
+        .add_plugins(InstancingPlugin::<CubePixel>::default())
         .add_plugins(PanOrbitCameraPlugin)
         .add_systems(Startup, setup)
-        .add_systems(Update, (read_stream, spawn_text, move_text))
+        .add_systems(Update, (read_stream, spawn_text))
         .run();
 }
 
@@ -165,8 +183,10 @@ fn read_stream(receiver: Res<StreamReceiver>, mut events: EventWriter<StreamEven
 fn spawn_text(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    mut images: ResMut<Assets<Image>>,
     mut reader: EventReader<StreamEvent>,
-    instance_entities: Query<Entity, With<InstanceMaterialData>>
+    instance_entities: Query<Entity, With<InstanceData<CubePixel>>>
 ) {
     // let text_style = TextStyle {
     //     font_size: 20.0,
@@ -192,19 +212,56 @@ fn spawn_text(
             commands.entity(instance).despawn();
         }
         // todo: There should only be one thing to read in the reader... Check for that later
+        // commands.spawn(
+        //     // meshes.add(Cuboid::new(1.0, 1.0, 1.0)),
+        //     // SpatialBundle::INHERITED_IDENTITY,
+        //     // InstancedMaterial(
+        //     //     event.0.map.iter()
+        //     //         .map(|(position, data)| InstanceData {
+        //     //             position: position.to_vec3(),
+        //     //             scale: 1.0,
+        //     //             temp: data.pixel_temperature,
+        //     //             color: color_for(&data).as_rgba_f32(), //Color::RED.as_rgba_f32(),
+        //     //         })
+        //     //         .collect(),
+        //     // ),
+        //     // NoFrustumCulling,
+        //     InstanceData::<CubePixel> {
+        //         mesh: meshes.add(Cuboid::new(1.0, 1.0, 1.0)),
+        //         data: vec![CubePixel { position: Vec3::new(0.0, 0.0, 0.0), scale: 1.0 }],
+        //     }
+        // );
+        let mesh = meshes.add(Cuboid::new(1.0, 1.0, 1.0));
+        // let image = images.add();
+        let material = materials.add(StandardMaterial {
+            base_color: Color::rgba(0.1, 0.0, 0.0, 0.4),
+            alpha_mode: AlphaMode::Blend,
+            ..default()
+        });
         commands.spawn((
-            meshes.add(Cuboid::new(1.0, 1.0, 1.0)),
-            SpatialBundle::INHERITED_IDENTITY,
-            InstanceMaterialData(
-                event.0.map.iter()
-                    .map(|(position, data)| InstanceData {
-                        position: position.to_vec3(),
+            mesh.clone(), // grassable.grass_mesh.clone(),
+            material.clone(),// grassable.grass_material.clone(),
+            SpatialBundle {
+                // TODO: setting the grass entity position to f32::MIN is a hack. Currently,
+                // this entity is rendered as a single grass blade due to its mesh, material,
+                // transform, and visibility components. I couldn't come up with a clean solution
+                // for this problem, as removing any of these components prevents the instanced
+                // grass from rendering as well.
+                transform: Transform::from_xyz(0., f32::MIN, 0.),
+                ..SpatialBundle::INHERITED_IDENTITY
+            },
+            InstanceData::<CubePixel> {
+                data: event.0.map
+                    .iter()
+                    .map(|(pos, pix)| CubePixel {
+                        position: pos.to_vec3(),
                         scale: 1.0,
-                        temp: data.pixel_temperature,
-                        color: color_for(&data).as_rgba_f32(), //Color::RED.as_rgba_f32(),
+                        color: color_for(&pix).as_rgba_f32(),
                     })
                     .collect(),
-            ),
+                // data: vec![CubePixel { position: Vec3::new(0.0, 0.0, 0.0), scale: 1.0 }],
+                mesh: mesh.clone(), // grassable.grass_mesh.clone(),
+            },
             NoFrustumCulling,
         ));
     }
@@ -212,18 +269,18 @@ fn spawn_text(
     // todo: Mark no longer dirty
 }
 
-fn move_text(
-    mut commands: Commands,
-    mut texts: Query<(Entity, &mut Transform), With<Text>>,
-    time: Res<Time>,
-) {
-    for (entity, mut position) in &mut texts {
-        position.translation -= Vec3::new(0.0, 100.0 * time.delta_seconds(), 0.0);
-        if position.translation.y < -300.0 {
-            commands.entity(entity).despawn();
-        }
-    }
-}
+// fn move_text(
+//     mut commands: Commands,
+//     mut texts: Query<(Entity, &mut Transform), With<Text>>,
+//     time: Res<Time>,
+// ) {
+//     for (entity, mut position) in &mut texts {
+//         position.translation -= Vec3::new(0.0, 100.0 * time.delta_seconds(), 0.0);
+//         if position.translation.y < -300.0 {
+//             commands.entity(entity).despawn();
+//         }
+//     }
+// }
 
 fn create_pixels(mut pixels: &mut BTreeMap<Vect3, Pixel>) {
     println!("Create my pixels!");
