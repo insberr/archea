@@ -4,13 +4,20 @@
 
 use std::collections::BTreeMap;
 use std::f32::consts::PI;
+use std::sync::Arc;
 use bevy::prelude::*;
 // Using crossbeam_channel instead of std as std `Receiver` is `!Sync`
 use crossbeam_channel::{bounded, Receiver};
 use rand::{Rng, SeedableRng};
 use std::time::{Duration, Instant};
+use bevy::pbr::{ExtendedMaterial, MaterialExtension, MaterialPipeline, MaterialPipelineKey};
+use bevy::reflect::Tuple;
+use bevy::render::mesh::MeshVertexBufferLayout;
+use bevy::render::render_resource::{AsBindGroup, RenderPipelineDescriptor, ShaderRef, SpecializedMeshPipelineError};
 use bevy::render::view::NoFrustumCulling;
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
+use bevy_voxel_world::prelude::{VoxelLookupDelegate, VoxelLookupFn, VoxelWorld, VoxelWorldCamera, VoxelWorldConfig, VoxelWorldPlugin, WorldVoxel};
+use bevy_voxel_world::rendering::{vertex_layout, VOXEL_TEXTURE_SHADER_HANDLE};
 use rand::prelude::ThreadRng;
 
 mod engine;
@@ -22,14 +29,106 @@ fn main() {
     App::new()
         .add_event::<StreamEvent>()
         .add_plugins(DefaultPlugins)
-        .add_plugins(CustomMaterialPlugin)
+        // .add_plugins(CustomMaterialPlugin)
         .add_plugins(PanOrbitCameraPlugin)
+        .add_plugins(MaterialPlugin::<CustomVoxelMaterial>::default())
+        .add_plugins(
+            VoxelWorldPlugin::with_config(OpaqueWorld)
+                .with_material(CustomVoxelMaterial { // Extend your custom material
+                        // voxels_texture: Handle::<Image>::default(),
+                        _unused: 0,
+                        voxel_color: Color::NONE,
+                    }
+                ),
+        )
+        .add_plugins(
+            VoxelWorldPlugin::with_config(AlphaWorld)
+                .with_material(CustomVoxelMaterial { // Extend your custom material
+                    // voxels_texture: Handle::<Image>::default(),
+                    _unused: 0,
+                    voxel_color: Color::NONE,
+                }
+            ),
+        )
         .add_systems(Startup, setup)
         .add_systems(Update, (read_stream, spawn_text, move_text))
         .run();
 }
 
+// This is the main world configuration. In this example, the main world is the procedural terrain.
+#[derive(Resource, Clone, Default)]
+struct OpaqueWorld;
 
+impl VoxelWorldConfig for OpaqueWorld {
+    fn spawning_distance(&self) -> u32 {
+        10
+    }
+
+    fn texture_index_mapper(&self) -> Arc<dyn Fn(u8) -> [u32; 3] + Send + Sync> {
+        Arc::new(|vox_mat: u8| match vox_mat {
+            1 => [1, 1, 1], // Sand
+            2 => [2, 2, 2], // Water
+            3 => [3, 3, 3],
+            4 => [4, 4, 4],
+            5 => [5, 5, 5],
+            0 | _ => [0, 0, 0],
+        })
+    }
+}
+
+#[derive(Resource, Clone, Default)]
+struct AlphaWorld;
+
+impl VoxelWorldConfig for AlphaWorld {
+    fn spawning_distance(&self) -> u32 {
+        10
+    }
+
+    fn texture_index_mapper(&self) -> Arc<dyn Fn(u8) -> [u32; 3] + Send + Sync> {
+        Arc::new(|vox_mat: u8| match vox_mat {
+            1 => [1, 1, 1], // Sand
+            2 => [2, 2, 2], // Water
+            3 => [3, 3, 3],
+            4 => [4, 4, 4],
+            5 => [5, 5, 5],
+            0 | _ => [0, 0, 0],
+        })
+    }
+}
+
+// This is the custom material. You can set this up like any other material in Bevy.
+#[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
+struct CustomVoxelMaterial {
+    // We're not using any uniforms in this example
+    _unused: u32,
+    voxel_color: Color,
+}
+
+impl Material for CustomVoxelMaterial {
+    fn vertex_shader() -> ShaderRef {
+        // You can use the default shader from bevy_voxel_world for the vertex shader for simplicity
+        VOXEL_TEXTURE_SHADER_HANDLE.into()
+    }
+
+    fn fragment_shader() -> ShaderRef {
+        "custom_material.wgsl".into()
+    }
+
+    fn alpha_mode(&self) -> AlphaMode {
+        AlphaMode::Blend
+    }
+    fn specialize(
+        _pipeline: &MaterialPipeline<Self>,
+        descriptor: &mut RenderPipelineDescriptor,
+        layout: &MeshVertexBufferLayout,
+        _key: MaterialPipelineKey<Self>,
+    ) -> Result<(), SpecializedMeshPipelineError> {
+        // Use `vertex_layout()` from `bevy_voxel_world` to get the correct vertex layout
+        let vertex_layout = layout.get_layout(&vertex_layout())?;
+        descriptor.vertex.buffers = vec![vertex_layout];
+        Ok(())
+    }
+}
 #[derive(PartialEq, Clone)]
 enum PixelType {
     Invalid = -1,
@@ -107,6 +206,7 @@ fn setup(
             ..default()
         },
         PanOrbitCamera::default(),
+        VoxelWorldCamera,
     ));
 
     let (tx, rx) = bounded::<PixelPositions>(1);
@@ -124,7 +224,7 @@ fn setup(
         loop {
             pixel_positions.is_map_dirty = false;
             // let start_time = Instant::now();
-            let duration = Duration::from_secs_f32(0.01);
+            let duration = Duration::from_secs_f32(0.02);
             std::thread::sleep(duration);
 
             update_pixel_positions(&mut pixel_positions, &mut rng);
@@ -155,6 +255,19 @@ fn color_for(pixel: &Pixel) -> Color {
     }
 }
 
+fn voxel_type_for(pixel: &Pixel) -> u8 {
+    match pixel.pixel_type {
+        PixelType::Invalid => 0, // HOW
+        PixelType::Sand => 1,
+        PixelType::Water => 2,
+        PixelType::Lava => 3,
+        PixelType::Steam => 4,
+        PixelType::Rock => 5,
+        // Really???
+        _ => 0,
+    }
+}
+
 // This system reads from the receiver and sends events to Bevy
 fn read_stream(receiver: Res<StreamReceiver>, mut events: EventWriter<StreamEvent>) {
     for from_stream in receiver.try_iter() {
@@ -166,7 +279,9 @@ fn spawn_text(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut reader: EventReader<StreamEvent>,
-    instance_entities: Query<Entity, With<InstanceMaterialData>>
+    // instance_entities: Query<Entity, With<InstanceMaterialData>>
+    mut voxel_o_world: VoxelWorld<OpaqueWorld>,
+    mut voxel_a_world: VoxelWorld<AlphaWorld>
 ) {
     // let text_style = TextStyle {
     //     font_size: 20.0,
@@ -188,28 +303,46 @@ fn spawn_text(
     for (per_frame, event) in reader.read().enumerate() {
         // println!("Update render");
 
-        for instance in instance_entities.iter(){
-            commands.entity(instance).despawn();
+        // for instance in instance_entities.iter(){
+        //     commands.entity(instance).despawn();
+        // }
+        for (pos, pix) in event.0.map.iter() {
+            let voxel_type = voxel_type_for(&pix);
+            // let voxel_world_type = voxel_world_type_for(voxel_type);
+            // match voxel_world_type {
+            //     // if opaque
+            //     0 => voxel_o_world.set_voxel(IVec3::new(*pos.x as i32, *pos.y as i32, *pos.z as i32), WorldVoxel::Solid(voxel_type)),
+                // if alpha
+                // 1 | _ => voxel_a_world.set_voxel(IVec3::new(*pos.x as i32, *pos.y as i32, *pos.z as i32), WorldVoxel::Solid(voxel_type)),
+                voxel_a_world.set_voxel(IVec3::new(*pos.x as i32, *pos.y as i32, *pos.z as i32), WorldVoxel::Solid(voxel_type));
+            // }
         }
         // todo: There should only be one thing to read in the reader... Check for that later
-        commands.spawn((
-            meshes.add(Cuboid::new(1.0, 1.0, 1.0)),
-            SpatialBundle::INHERITED_IDENTITY,
-            InstanceMaterialData(
-                event.0.map.iter()
-                    .map(|(position, data)| InstanceData {
-                        position: position.to_vec3(),
-                        scale: 1.0,
-                        temp: data.pixel_temperature,
-                        color: color_for(&data).as_rgba_f32(), //Color::RED.as_rgba_f32(),
-                    })
-                    .collect(),
-            ),
-            NoFrustumCulling,
-        ));
+        // commands.spawn((
+        //     meshes.add(Cuboid::new(1.0, 1.0, 1.0)),
+        //     SpatialBundle::INHERITED_IDENTITY,
+        //     InstanceMaterialData(
+        //         event.0.map.iter()
+        //             .map(|(position, data)| InstanceData {
+        //                 position: position.to_vec3(),
+        //                 scale: 1.0,
+        //                 temp: data.pixel_temperature,
+        //                 color: color_for(&data).as_rgba_f32(), //Color::RED.as_rgba_f32(),
+        //             })
+        //             .collect(),
+        //     ),
+        //     NoFrustumCulling,
+        // ));
     }
 
     // todo: Mark no longer dirty
+}
+
+fn voxel_world_type_for(p0: u8) -> u8 {
+    match p0 {
+        2 | 4 => 1,
+        _ => 0
+    }
 }
 
 fn move_text(
