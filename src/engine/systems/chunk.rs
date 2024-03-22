@@ -130,7 +130,7 @@ impl Chunk {
     }
 }
 
-#[derive(PartialEq, Clone)]
+#[derive(PartialEq, Clone, Ord, PartialOrd, Eq, Hash)]
 pub enum PixelType {
     Invalid = -1,
     Unmovable = 0,

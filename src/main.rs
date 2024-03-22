@@ -16,6 +16,7 @@ use bevy::pbr::{CascadeShadowConfigBuilder, OpaqueRendererMethod};
 use bevy::render::camera::{Exposure, PhysicalCameraParameters};
 use bevy::render::render_resource::Face;
 use bevy::render::view::NoFrustumCulling;
+use bevy::utils::HashMap;
 use bevy_flycam::{FlyCam, NoCameraPlayerPlugin, PlayerPlugin};
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 use bytemuck::{Pod, Zeroable};
@@ -54,9 +55,10 @@ fn main() {
             shutter_speed_s: 1.0 / 125.0,
             sensitivity_iso: 100.0,
         }))
+        .init_resource::<PixelMaterialHandles>()
 
         .add_plugins(DefaultPlugins)
-        .add_plugins(InstancingPlugin::<CubePixel>::default())
+        // .add_plugins(InstancingPlugin::<CubePixel>::default())
 
         // Camera Plugin
         // .add_plugins(PanOrbitCameraPlugin)
@@ -79,6 +81,11 @@ struct PixelPositions {
     map: BTreeMap<Vect3, Pixel>,
     is_map_dirty: bool,
     is_colors_dirty: bool,
+}
+
+#[derive(Resource, Default)]
+struct PixelMaterialHandles {
+    map: HashMap<PixelType, Handle<StandardMaterial>>,
 }
 
 /* Stream Structs */
@@ -184,6 +191,27 @@ fn setup(
 
     commands.insert_resource(StreamReceiverPixelPositions(rx));
     commands.insert_resource(StreamReceiverChunks(receiver_chunks));
+
+    let mut pixel_materials_map = HashMap::new();
+    let mut standard_material_base = StandardMaterial {
+        base_color: Color::RED.with_a(0.5),
+        // double_sided: true,
+        alpha_mode: AlphaMode::Blend, // This does absolutely nothing ...
+        ..default()
+    };
+
+    standard_material_base.base_color = Color::PURPLE;
+    pixel_materials_map.insert(PixelType::Invalid, materials.add(standard_material_base.clone()));
+
+    standard_material_base.base_color = Color::ORANGE;
+    pixel_materials_map.insert(PixelType::Sand, materials.add(standard_material_base.clone()));
+
+    standard_material_base.base_color = Color::rgba(0.0, 0.2, 0.9, 0.4);
+    pixel_materials_map.insert(PixelType::Water, materials.add(standard_material_base.clone()));
+
+    commands.insert_resource(PixelMaterialHandles {
+        map: pixel_materials_map,
+    })
 }
 
 fn color_for(pixel: &Pixel) -> Color {
@@ -217,65 +245,93 @@ fn read_stream(
 #[derive(Component)]
 struct ChunkDebugRender;
 
+#[derive(Component)]
+struct PixelRender;
+
 fn update_instancing(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    mut reader: EventReader<StreamEventPixelPositions>,
+    // mut reader: EventReader<StreamEventPixelPositions>,
     mut reader_chunks: EventReader<StreamEventChunks>,
-    instance_entities: Query<Entity, With<InstanceData<CubePixel>>>,
-    chunk_debug_entities: Query<Entity, With<ChunkDebugRender>>
+    mut pixel_materials: ResMut<PixelMaterialHandles>,
+    // instance_entities: Query<Entity, With<InstanceData<CubePixel>>>,
+    chunk_debug_entities: Query<Entity, With<ChunkDebugRender>>,
+    pixel_entities: Query<Entity, With<PixelRender>>
 ) {
     let material = materials.add(StandardMaterial {
-        base_color: Color::WHITE,
-        double_sided: true,
+        base_color: Color::PURPLE,
+        // double_sided: true,
         alpha_mode: AlphaMode::Blend, // This does absolutely nothing ...
         ..default()
     });
+    let mesh = meshes.add(Cuboid::new(1.0, 1.0, 1.0));
 
     for (per_frame, chunks) in reader_chunks.read().enumerate() {
-        for chunk_ent in chunk_debug_entities.iter() {
-            commands.entity(chunk_ent).despawn();
-        }
-        for instance in instance_entities.iter(){
-            commands.entity(instance).despawn();
-        }
-        for (index, (chunk_pos, chunk)) in chunks.0.chunks.iter().enumerate() {
-            let chunk_world_pos = *chunk_pos * chunk.bounds;
-            commands.spawn((
-                PbrBundle {
-                    mesh: meshes.add(Cuboid::new(chunk.bounds.x as f32,chunk.bounds.y as f32,chunk.bounds.z as f32)),
-                    material: materials.add(*Color::WHITE.set_a(0.2)),
-                    transform: Transform::from_xyz(chunk_world_pos.x as f32, chunk_world_pos.y as f32, chunk_world_pos.z as f32),
-                    ..default()
-                },
-                ChunkDebugRender
-            ));
+        let mut batch_ent = vec![];
 
-            let mesh = meshes.add(Cuboid::new(1.0, 1.0, 1.0));
-            commands.spawn((
-                mesh.clone(),
-                material.clone(),
-                SpatialBundle {
-                    // This is needed otherwise nothing renders I think
-                    transform: Transform::from_xyz(chunk_world_pos.x as f32, f32::MIN, chunk_world_pos.y as f32),
-                    ..SpatialBundle::INHERITED_IDENTITY
-                },
-                InstanceData::<CubePixel> {
-                    data: chunk.pixels
-                        .iter()
-                        .map(|(pos, pix)| CubePixel {
-                            position: pos.to_vec3(),
-                            scale: 1.0,
-                            // temporary
-                            color: color_for(pix).as_rgba_f32(),
-                        })
-                        .collect(),
-                    mesh: mesh.clone()
-                },
-                NoFrustumCulling,
-            ));
+        for pixel_ent in pixel_entities.iter() {
+            commands.entity(pixel_ent).despawn_recursive();
         }
+        // for instance in instance_entities.iter(){
+        //     commands.entity(instance).despawn();
+        // }
+
+        for (index, (chunk_pos, chunk)) in chunks.0.chunks.iter().enumerate() {
+            if (chunks.0.chunks.len() != chunk_debug_entities.iter().len()) {
+                for chunk_ent in chunk_debug_entities.iter() {
+                    commands.entity(chunk_ent).despawn();
+                }
+                let chunk_world_pos = *chunk_pos * chunk.bounds;
+                commands.spawn((
+                    PbrBundle {
+                        mesh: meshes.add(Cuboid::new(chunk.bounds.x as f32, chunk.bounds.y as f32, chunk.bounds.z as f32)),
+                        material: materials.add(*Color::WHITE.set_a(0.2)),
+                        transform: Transform::from_xyz(chunk_world_pos.x as f32, chunk_world_pos.y as f32, chunk_world_pos.z as f32),
+                        ..default()
+                    },
+                    ChunkDebugRender
+                ));
+            }
+
+            // Bruh
+            for (pixel_pos, pixel) in chunk.pixels.iter() {
+                batch_ent.push((
+                   PbrBundle {
+                       mesh: mesh.clone(),
+                       material: pixel_materials.map.get(&pixel.pixel_type.clone()).unwrap_or(&material.clone()).clone() ,// material.clone(),
+                       transform: Transform::from_translation(pixel_pos.to_vec3()),
+                       ..default()
+                   },
+                   PixelRender
+                ));
+            }
+
+            // let mesh = meshes.add(Cuboid::new(1.0, 1.0, 1.0));
+            // commands.spawn((
+            //     mesh.clone(),
+            //     material.clone(),
+            //     SpatialBundle {
+            //         // This is needed otherwise nothing renders I think
+            //         transform: Transform::from_xyz(chunk_world_pos.x as f32, f32::MIN, chunk_world_pos.y as f32),
+            //         ..SpatialBundle::INHERITED_IDENTITY
+            //     },
+            //     InstanceData::<CubePixel> {
+            //         data: chunk.pixels
+            //             .iter()
+            //             .map(|(pos, pix)| CubePixel {
+            //                 position: pos.to_vec3(),
+            //                 scale: 1.0,
+            //                 // temporary
+            //                 color: color_for(pix).as_rgba_f32(),
+            //             })
+            //             .collect(),
+            //         mesh: mesh.clone()
+            //     },
+            //     NoFrustumCulling,
+            // ));
+        }
+        commands.spawn_batch(batch_ent);
     }
     // for (per_frame, event) in reader.read().enumerate() {
     //     for instance in instance_entities.iter(){
