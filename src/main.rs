@@ -394,8 +394,8 @@ fn update_instancing(
 // Create the pixels on startup
 fn create_pixels(mut pixels: &mut BTreeMap<Vect3, Pixel>) {
     for y in 10..=30 {
-        for x in -25..=25 {
-            for z in -25..=25 {
+        for x in -50..=50 {
+            for z in -50..=50 {
                 // pixels.insert(Vect3::new(x as f32, y as f32, z as f32), Pixel {
                 //     pixel_type: PixelType::Lava,
                 //     dont_move: false,
