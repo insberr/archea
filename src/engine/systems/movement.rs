@@ -1,6 +1,7 @@
 use bevy::math::Vec3;
 use rand::prelude::ThreadRng;
-use crate::{PixelPositions, PixelType};
+use crate::{PixelPositions};
+use crate::engine::systems::chunk::PixelType;
 use crate::engine::systems::pixels::{
     lava::lava_update_position,
     rock::rock_update_position,

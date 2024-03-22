@@ -1,6 +1,7 @@
+use crate::engine::systems::chunk::PixelType;
 use std::collections::BTreeMap;
 use bevy::prelude::{Fixed, Res, ResMut, Time, Vec3};
-use crate::{Pixel, PixelPositions, PixelType};
+use crate::{Pixel, PixelPositions};
 use rand;
 use rand::Rng;
 use rand::rngs::ThreadRng;
@@ -71,18 +72,18 @@ pub fn lava_update_temp(
     pixel: &Pixel,
 ) {
     let mut new_pixel = pixel.clone();
-    let temp = new_pixel.pixel_temperature;
+    let temp = new_pixel.temperature;
 
     let rand_variation = rng.gen_range(-0.09..=0.09);
 
     if temp > 2_000.0 {
         // todo get average of surrounding and set all to the average.
-        new_pixel.pixel_temperature -= 100.0 + (temp * rand_variation); // some rate, to do later
+        new_pixel.temperature -= 100.0 + (temp * rand_variation); // some rate, to do later
     } else if (temp > 1_000.0) {
-        new_pixel.pixel_temperature -= 50.0 + (temp * rand_variation); // some rate, to do later
+        new_pixel.temperature -= 50.0 + (temp * rand_variation); // some rate, to do later
     } else {
         // Convert to rock, the rest will be handled later I suppose
-        new_pixel.pixel_temperature = 60.0; //  TEMPORARY
+        new_pixel.temperature = 60.0; //  TEMPORARY
         new_pixel.pixel_type = PixelType::Rock;
     }
 

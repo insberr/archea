@@ -1,13 +1,14 @@
 use std::collections::BTreeMap;
 use bevy::prelude::{Fixed, Res, ResMut, Time, Vec3};
 use bytemuck::cast_vec;
-use crate::{Pixel, PixelPositions, PixelType};
+use crate::{Pixel, PixelPositions};
 use rand;
 use rand::prelude::SliceRandom;
 use rand::Rng;
 use rand::rngs::ThreadRng;
 use crate::engine::check_position::check_pos;
 use crate::engine::stuff::vect3::Vect3;
+use crate::engine::systems::chunk::PixelType;
 use crate::engine::systems::movement::{_DOWN, _LEFT, _RIGHT, _FORWARD, _BACKWARD};
 
 

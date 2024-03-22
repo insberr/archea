@@ -1,7 +1,8 @@
+use crate::engine::systems::chunk::PixelType;
 use std::collections::BTreeMap;
 use bevy::prelude::{Fixed, Res, ResMut, Time, Vec3};
 use bytemuck::cast_vec;
-use crate::{Pixel, PixelPositions, PixelType};
+use crate::{Pixel, PixelPositions};
 use rand;
 use rand::prelude::SliceRandom;
 use rand::Rng;
@@ -28,8 +29,8 @@ pub fn rock_update_position(
     //  the code below, then we end up deleting this update ...
     // Update temp
     let mut new_pixel = pixel.clone();
-    if new_pixel.pixel_temperature > 50.0 {
-        new_pixel.pixel_temperature -= 10.0;
+    if new_pixel.temperature > 50.0 {
+        new_pixel.temperature -= 10.0;
     }
     pixel_transforms.map.insert(*position, new_pixel);
 

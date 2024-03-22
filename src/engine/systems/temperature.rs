@@ -1,5 +1,6 @@
 use rand::prelude::ThreadRng;
-use crate::{PixelPositions, PixelType};
+use crate::{PixelPositions};
+use crate::engine::systems::chunk::PixelType;
 use crate::engine::systems::pixels::{
     lava::lava_update_temp,
     water::water_update_temp,

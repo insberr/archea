@@ -1,12 +1,13 @@
 use std::collections::BTreeMap;
 use bevy::prelude::{Fixed, Res, ResMut, Time, Vec3};
-use crate::{Pixel, PixelPositions, PixelType};
+use crate::{Pixel, PixelPositions};
 use rand;
 use rand::prelude::SliceRandom;
 use rand::Rng;
 use rand::rngs::ThreadRng;
 use crate::engine::check_position::{average_temp, check_pos};
 use crate::engine::stuff::vect3::Vect3;
+use crate::engine::systems::chunk::PixelType;
 
 use crate::engine::systems::movement::{_DOWN, _LEFT, _RIGHT, _FORWARD, _BACKWARD};
 
@@ -61,16 +62,18 @@ pub fn water_update_temp(
     let mut new_pixel = pixel.clone();
 
     // This is way too fast, need to figure out to slowly up the temp based on the average surrounding temp
-    new_pixel.pixel_temperature = average_temp(pixel_transforms,rng,position,pixel,1, 10.0);
+    // new_pixel.pixel_temperature = average_temp(pixel_transforms,rng,position,pixel,1, 1.0);
 
-    let temp = new_pixel.pixel_temperature;
+    let temp = new_pixel.temperature;
 
     if (temp > 120.0) {
         new_pixel.pixel_type = PixelType::Steam;
         dirty = true;
     } else if (temp > 60.0) {
-        new_pixel.pixel_temperature -= 2.0;
+        new_pixel.temperature -= 2.0;
         dirty = true;
+    } else if temp > 32.0 {
+        new_pixel.temperature += 2.0;
     } else if (temp < 32.0) {
         dirty = true;
         new_pixel.pixel_type = PixelType::Invalid; // Ice (to do)

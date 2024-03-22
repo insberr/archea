@@ -1,7 +1,8 @@
+use crate::engine::systems::chunk::PixelType;
 use rand::prelude::{SliceRandom, ThreadRng};
 use rand::Rng;
 use crate::engine::stuff::vect3::Vect3;
-use crate::{Pixel, PixelPositions, PixelType};
+use crate::{Pixel, PixelPositions};
 use crate::engine::check_position::check_pos;
 use crate::engine::systems::movement::{_BACKWARD, _DOWN, _FORWARD, _LEFT, _RIGHT, _UP};
 
@@ -55,10 +56,10 @@ pub fn steam_update_temp(
     let mut dirty = pixel_transforms.is_map_dirty;
 
     let mut new_pixel = pixel.clone();
-    let temp = new_pixel.pixel_temperature;
+    let temp = new_pixel.temperature;
 
-    new_pixel.pixel_temperature -= 0.5;
-    if (new_pixel.pixel_temperature < 60.0) {
+    new_pixel.temperature -= 0.5;
+    if (new_pixel.temperature < 60.0) {
         new_pixel.pixel_type = PixelType::Water;
     }
 
