@@ -1,6 +1,51 @@
+use std::fmt::Formatter;
 use std::ops;
+use std::ops::Mul;
 use bevy::math::Vec3;
 use ordered_float::OrderedFloat;
+
+#[derive(Clone, Copy, Ord, PartialOrd, Eq, PartialEq)]
+pub struct Vect3i {
+    pub x: i32,
+    pub y: i32,
+    pub z: i32,
+}
+
+impl Vect3i {
+    pub fn new(x: i32, y: i32, z: i32) -> Vect3i {
+        Vect3i { x, y, z }
+    }
+}
+
+impl ops::Add<Vect3i> for Vect3i {
+    type Output = Vect3i;
+
+    fn add(self, _rhs: Vect3i) -> Vect3i {
+        Vect3i::new(
+            self.x + _rhs.x,
+            self.y + _rhs.y,
+            self.z + _rhs.z
+        )
+    }
+}
+
+impl Mul for Vect3i {
+    type Output = Vect3i;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        Vect3i::new(
+            self.x * rhs.x,
+            self.y * rhs.y,
+            self.z * rhs.z
+        )
+    }
+}
+
+impl std::fmt::Display for Vect3i {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "({}, {}, {})", self.x, self.y, self.z)
+    }
+}
 
 #[derive(Clone, Copy, Ord, PartialOrd, Eq, PartialEq)]
 pub struct Vect3 {
@@ -27,36 +72,12 @@ impl Vect3 {
     pub fn to_vec3(&self) -> Vec3 {
         Vec3::new(*self.x, *self.y, *self.z)
     }
+}
 
-    // pub fn to_index(&self) -> u128 {
-    //     let a = self.x as u128;
-    //     let b = self.y as u128;
-    //     let c = self.z as u128;
-    //     let mut res = 0u128;
-    //     res = res << 32 | a;
-    //     res = res << 32 | b;
-    //     res = res << 32 | c;
-    //     // let wtf = c << 64 | (b << 32 | a);
-    //     // println!("RES {res}");
-    //     return res;
-    // }
-    //
-    // pub fn from_index(index: u128) -> Vect3 {
-    //     let c = index & 0x000000FFu128;
-    //     let b = (index >> 32) & 0x000000FFu128;
-    //     let a = index >> 64;
-    //     return Vect3::new(a as f32, b as f32, c as f32);
-    // }
-
-    // private static ulong Combine(int a, int b) {
-    // uint ua = (uint)a;
-    // ulong ub = (uint)b;
-    // return ub <<32 | ua;
-    // }
-    // private static void Decombine(ulong c, out int a, out int b) {
-    // a = (int)(c & 0xFFFFFFFFUL);
-    // b = (int)(c >> 32);
-    // }
+impl std::fmt::Display for Vect3 {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "({}, {}, {})f", self.x, self.y, self.z)
+    }
 }
 
 impl ops::Add<Vect3> for Vect3 {
