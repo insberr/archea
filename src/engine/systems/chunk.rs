@@ -1,7 +1,14 @@
 use std::collections::BTreeMap;
 use std::fmt::Formatter;
+use std::future::Future;
+use std::time::Duration;
+use crossbeam_channel::bounded;
 use ordered_float::FloatCore;
+use rand::prelude::ThreadRng;
 use crate::engine::stuff::vect3::{Vect3, Vect3i};
+use crate::{create_pixels, PixelPositions};
+use crate::engine::systems::movement::update_pixel_positions;
+use crate::engine::systems::temperature::update_pixel_temperatures;
 
 #[derive(Clone)]
 pub struct Chunks {
@@ -71,6 +78,20 @@ impl Chunks {
 
     pub fn update_chunks(&mut self) {
         // Figure out how to do this ...
+
+        // // for (chunk_pos, chunk_clone) in self.chunks.iter_mut() {
+        // let mut chunk_clone = self.chunks.get_mut(&Vect3i::new(0, 0, 0)).unwrap().clone();
+        // let res = async move {
+        //     chunk_clone.update_pixels();
+        //     chunk_clone
+        // };
+        //
+        // self.chunks.insert(Vect3i::new(0, 0, 0), res.await.clone());
+        // // }
+
+        for (chunk_pos, chunk) in self.chunks.iter_mut() {
+            chunk.update_pixels();
+        }
     }
 }
 
@@ -96,7 +117,16 @@ impl Chunk {
     }
 
     pub fn update_pixels(&mut self) {
-        //
+        let mut rng: ThreadRng = rand::thread_rng();
+        let mut pixelpositions = PixelPositions {
+            is_map_dirty: false,
+            is_colors_dirty: false,
+            map: self.pixels.clone(),
+        };
+
+        update_pixel_positions(&mut pixelpositions, &mut rng);
+
+        self.pixels = pixelpositions.map;
     }
 }
 

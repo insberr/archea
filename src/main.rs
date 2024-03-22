@@ -157,27 +157,28 @@ fn setup(
             chunks.create_pixel(*pos, pix.clone().pixel_type);
         }
 
-        chunks.print_chunks();
-        // chunks.update()
-        // if chunks is dirty, also somehow only rerender the dirty ones
-        sender_chunks.send(chunks.clone()).unwrap();
+        // chunks.print_chunks();
 
         loop {
             pixel_positions.is_map_dirty = false;
             // let start_time = Instant::now();
-            let duration = Duration::from_secs_f32(0.01);
+            let duration = Duration::from_secs_f32(0.2);
             std::thread::sleep(duration);
 
-            update_pixel_positions(&mut pixel_positions, &mut rng);
+            // update_pixel_positions(&mut pixel_positions, &mut rng);
             // if pixel_positions.is_map_dirty {
             //     tx.send(pixel_positions.clone()).unwrap();
             // }
 
-            update_pixel_temperatures(&mut pixel_positions, &mut rng);
-            if pixel_positions.is_map_dirty {
-                tx.send(pixel_positions.clone()).unwrap();
-            }
+            // update_pixel_temperatures(&mut pixel_positions, &mut rng);
+            // if pixel_positions.is_map_dirty {
+            //     tx.send(pixel_positions.clone()).unwrap();
+            // }
 
+            chunks.update_chunks();
+            // chunks.update()
+            // if chunks is dirty, also somehow only rerender the dirty ones
+            sender_chunks.send(chunks.clone()).unwrap();
         }
     });
 
@@ -235,6 +236,9 @@ fn update_instancing(
     for (per_frame, chunks) in reader_chunks.read().enumerate() {
         for chunk_ent in chunk_debug_entities.iter() {
             commands.entity(chunk_ent).despawn();
+        }
+        for instance in instance_entities.iter(){
+            commands.entity(instance).despawn();
         }
         for (index, (chunk_pos, chunk)) in chunks.0.chunks.iter().enumerate() {
             let chunk_world_pos = *chunk_pos * chunk.bounds;
