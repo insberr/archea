@@ -10,6 +10,7 @@ use crossbeam_channel::{bounded, Receiver};
 use rand::{Rng, SeedableRng};
 use std::time::{Duration, Instant};
 use bevy::pbr::OpaqueRendererMethod;
+use bevy::render::render_resource::Face;
 use bevy::render::view::NoFrustumCulling;
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 use bytemuck::{Pod, Zeroable};
@@ -211,6 +212,7 @@ fn update_instancing(
         let mesh = meshes.add(Cuboid::new(1.0, 1.0, 1.0));
         let material = materials.add(StandardMaterial {
             base_color: Color::WHITE,
+            double_sided: true,
             alpha_mode: AlphaMode::Blend, // This does absolutely nothing ...
             ..default()
         });
@@ -229,7 +231,7 @@ fn update_instancing(
                     .map(|(pos, pix)| CubePixel {
                         position: pos.to_vec3(),
                         scale: 1.0,
-                        // temp
+                        // temporary
                         color: color_for(&pix).as_rgba_f32(),
                     })
                     .collect(),
