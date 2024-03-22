@@ -11,7 +11,7 @@ use crate::engine::stuff::vect3::Vect3;
 use crate::engine::systems::movement::{_DOWN, _LEFT, _RIGHT, _FORWARD, _BACKWARD};
 
 
-pub fn sand_update(
+pub fn rock_update_position(
     mut pixel_transforms: &mut PixelPositions,
     mut rng: &mut ThreadRng,
     position: &Vect3,
@@ -23,6 +23,15 @@ pub fn sand_update(
         pixel_transforms.map.insert(*position, new_pixel);
         return;
     }
+
+    // todo: This has a flaw where it sets the pixel info, but if this pixel moves this update from
+    //  the code below, then we end up deleting this update ...
+    // Update temp
+    let mut new_pixel = pixel.clone();
+    if new_pixel.pixel_temperature > 50.0 {
+        new_pixel.pixel_temperature -= 10.0;
+    }
+    pixel_transforms.map.insert(*position, new_pixel);
 
     let dir_num1 = rng.gen_range(0..=1);
     let dir_num2 = rng.gen_range(0..=1);

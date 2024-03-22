@@ -9,7 +9,7 @@ use crate::engine::stuff::vect3::Vect3;
 
 use crate::engine::systems::movement::{_DOWN, _LEFT, _RIGHT, _FORWARD, _BACKWARD};
 
-pub fn lava_update(
+pub fn lava_update_position(
     mut pixel_transforms: &mut PixelPositions,
     mut rng: &mut ThreadRng,
     position: &Vect3,
@@ -21,17 +21,6 @@ pub fn lava_update(
         pixel_transforms.map.insert(*position, new_pixel);
         return;
     }
-
-    // todo: This has a flaw where it sets the pixel info, but if this pixel moves this update from
-    //  the code below, then we end up deleting this update ...
-    // Update temp
-    let mut new_pixel = pixel.clone();
-    if new_pixel.pixel_temperature < 2_000.0 {
-        new_pixel.pixel_type = PixelType::Rock;
-    } else {
-        new_pixel.pixel_temperature -= 100.0;
-    }
-    pixel_transforms.map.insert(*position, new_pixel);
 
     let dir_num1 = rng.gen_range(0..=1);
     let dir_num2 = rng.gen_range(0..=1);
@@ -73,4 +62,32 @@ pub fn lava_update(
             break;
         }
     }
+}
+
+pub fn lava_update_temp(
+    mut pixel_transforms: &mut PixelPositions,
+    mut rng: &mut ThreadRng,
+    position: &Vect3,
+    pixel: &Pixel,
+) {
+    let mut new_pixel = pixel.clone();
+    let temp = new_pixel.pixel_temperature;
+
+    let rand_variation = rng.gen_range(-0.09..=0.09);
+
+    if temp > 2_000.0 {
+        // todo get average of surrounding and set all to the average.
+        new_pixel.pixel_temperature -= 100.0 + (temp * rand_variation); // some rate, to do later
+    } else if (temp > 1_000.0) {
+        new_pixel.pixel_temperature -= 50.0 + (temp * rand_variation); // some rate, to do later
+    } else {
+        // Convert to rock, the rest will be handled later I suppose
+        new_pixel.pixel_temperature = 60.0; //  TEMPORARY
+        new_pixel.pixel_type = PixelType::Rock;
+    }
+
+    // Set the updated pixel
+    pixel_transforms.map.insert(*position, new_pixel);
+    // We can assume that lava is always going to be changing temperature
+    pixel_transforms.is_map_dirty = true;
 }

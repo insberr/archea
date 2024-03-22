@@ -65,7 +65,7 @@ fn fragment(
     out.color = apply_pbr_lighting(pbr_input);
     out.color = main_pass_post_lighting_processing(pbr_input, out.color);
     } else {
-    out.color = vec4(0.0,0.0,0.0,0.0);
+        out.color = vec4(0.0,0.0,0.0,0.0);
     }
 
     return out;

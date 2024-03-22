@@ -1,16 +1,11 @@
-use std::collections::BTreeMap;
-use bevy::prelude::{Fixed, Res, ResMut, Time, Vec3};
-use crate::{Pixel, PixelPositions, PixelType};
-use rand;
-use rand::prelude::SliceRandom;
+use rand::prelude::{SliceRandom, ThreadRng};
 use rand::Rng;
-use rand::rngs::ThreadRng;
-use crate::engine::check_position::check_pos;
 use crate::engine::stuff::vect3::Vect3;
+use crate::{Pixel, PixelPositions, PixelType};
+use crate::engine::check_position::check_pos;
+use crate::engine::systems::movement::{_BACKWARD, _DOWN, _FORWARD, _LEFT, _RIGHT, _UP};
 
-use crate::engine::systems::movement::{_DOWN, _LEFT, _RIGHT, _FORWARD, _BACKWARD};
-
-pub fn water_update(
+pub fn steam_update_position(
     mut pixel_transforms: &mut PixelPositions,
     mut rng: &mut ThreadRng,
     position: &Vect3,
@@ -28,30 +23,20 @@ pub fn water_update(
     let dir1 = if dir_num1 == 0 { _LEFT } else { _RIGHT };
     let dir2 = if dir_num2 == 0 { _FORWARD } else { _BACKWARD };
 
-    let check_directions = vec![
-        _DOWN,
-        _DOWN + dir1,
-        _DOWN + dir2,
+    let mut check_directions = vec![
+        _UP,
+        _UP + dir1,
+        _UP + dir2,
         dir1,
-        dir2,
+        dir2
     ];
-
-    let mut new_pixel = pixel.clone();
-    new_pixel.pixel_temperature += 2.0;
-    pixel_transforms.map.insert(*position, new_pixel);
-
-    if pixel.pixel_temperature > 120.0 {
-        let mut new_pixel = pixel.clone();
-        new_pixel.pixel_type = PixelType::Steam;
-        pixel_transforms.map.insert(*position, new_pixel);
-        return;
-    }
+    check_directions.shuffle(rng);
 
     for dir in check_directions.iter() {
         // Check if it can move - the position is an air spot
         let can_move = check_pos(&pixel_transforms.map, position, &(position + dir));
 
-        if can_move {
+        if (can_move) {
             let new_position = *position + *dir;
             pixel_transforms.map.insert(new_position, pixel.clone());
             pixel_transforms.map.remove(position);
@@ -59,4 +44,24 @@ pub fn water_update(
             break;
         }
     }
+}
+
+pub fn steam_update_temp(
+    mut pixel_transforms: &mut PixelPositions,
+    mut rng: &mut ThreadRng,
+    position: &Vect3,
+    pixel: &Pixel,
+) {
+    let mut dirty = pixel_transforms.is_map_dirty;
+
+    let mut new_pixel = pixel.clone();
+    let temp = new_pixel.pixel_temperature;
+
+    new_pixel.pixel_temperature -= 0.5;
+    if (new_pixel.pixel_temperature < 60.0) {
+        new_pixel.pixel_type = PixelType::Water;
+    }
+
+    pixel_transforms.map.insert(*position, new_pixel);
+    pixel_transforms.is_map_dirty = dirty;
 }

@@ -19,6 +19,7 @@ mod engine;
 use engine::stuff::vect3::*;
 use crate::engine::plugins::instancing::{InstancingPlugin, InstanceData, InstancedMaterial};
 use crate::engine::systems::movement::update_pixel_positions;
+use crate::engine::systems::temperature::update_pixel_temperatures;
 
 #[derive(Component, Copy, Clone, Pod, Zeroable)]
 #[repr(C)]
@@ -144,6 +145,12 @@ fn setup(
             if pixel_positions.is_map_dirty {
                 tx.send(pixel_positions.clone()).unwrap();
             }
+
+            update_pixel_temperatures(&mut pixel_positions, &mut rng);
+
+            if pixel_positions.is_map_dirty {
+                tx.send(pixel_positions.clone()).unwrap();
+            }
         }
     });
 
@@ -254,7 +261,7 @@ fn create_pixels(mut pixels: &mut BTreeMap<Vect3, Pixel>) {
                     pixels.insert(Vect3::new(x as f32, y as f32, z as f32), Pixel {
                         pixel_type: PixelType::Lava,
                         dont_move: false,
-                        pixel_temperature: 10_000.0,
+                        pixel_temperature: 5_000.0,
                     });
                 }
             }

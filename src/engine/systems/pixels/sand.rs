@@ -1,11 +1,17 @@
-use rand::prelude::{SliceRandom, ThreadRng};
-use rand::Rng;
-use crate::engine::stuff::vect3::Vect3;
+use std::collections::BTreeMap;
+use bevy::prelude::{Fixed, Res, ResMut, Time, Vec3};
+use bytemuck::cast_vec;
 use crate::{Pixel, PixelPositions, PixelType};
+use rand;
+use rand::prelude::SliceRandom;
+use rand::Rng;
+use rand::rngs::ThreadRng;
 use crate::engine::check_position::check_pos;
-use crate::engine::systems::movement::{_BACKWARD, _DOWN, _FORWARD, _LEFT, _RIGHT, _UP};
+use crate::engine::stuff::vect3::Vect3;
+use crate::engine::systems::movement::{_DOWN, _LEFT, _RIGHT, _FORWARD, _BACKWARD};
 
-pub fn steam_update(
+
+pub fn sand_update_position(
     mut pixel_transforms: &mut PixelPositions,
     mut rng: &mut ThreadRng,
     position: &Vect3,
@@ -24,17 +30,32 @@ pub fn steam_update(
     let dir2 = if dir_num2 == 0 { _FORWARD } else { _BACKWARD };
 
     let mut check_directions = vec![
-        _UP,
-        _UP + dir1,
-        _UP + dir2,
-        dir1,
-        dir2
+        _DOWN,
+        _DOWN + dir1,
+        _DOWN + dir2,
     ];
     check_directions.shuffle(rng);
 
     for dir in check_directions.iter() {
         // Check if it can move - the position is an air spot
         let can_move = check_pos(&pixel_transforms.map, position, &(position + dir));
+
+        // Check swap rules - say, water is in the spot to move to
+        // This should probably be moved...
+        if let Some(pix_at_dir) = pixel_transforms.map.get(&(*position + *dir)) {
+            match pix_at_dir.pixel_type {
+                PixelType::Water => {
+                    // swap places
+                    let temp_pixel = pix_at_dir.clone();
+                    pixel_transforms.map.insert(*position + *dir, pixel.clone());
+                    pixel_transforms.map.insert(*position, temp_pixel);
+                    // direction = Vec3::new(0.0, 0.0, 0.0);
+                    pixel_transforms.is_map_dirty = true;
+                    break;
+                },
+                _ => {}
+            }
+        }
 
         if (can_move) {
             let new_position = *position + *dir;
