@@ -10,6 +10,7 @@
  * - Adding comments that explain the code a little better (Soon)
  */
 
+use bevy::utils::nonmax::NonMaxU32;
 use std::marker::PhantomData;
 
 use bevy::core_pipeline::core_3d::Transparent3d;
@@ -226,7 +227,7 @@ fn queue_custom<D: 'static>(
     mut pipelines: ResMut<SpecializedMeshPipelines<InstancingPipeline<D>>>,
     pipeline_cache: Res<PipelineCache>,
     meshes: Res<RenderAssets<Mesh>>,
-    // render_mesh_instances: Res<RenderMeshInstances>,
+    render_mesh_instances: Res<RenderMeshInstances>,
     material_meshes: Query<(Entity, &InstanceData<D>)>,
     mut views: Query<(&ExtractedView, &mut RenderPhase<Transparent3d>)>,
 ) where
@@ -240,11 +241,11 @@ fn queue_custom<D: 'static>(
 
     for (view, mut transparent_phase) in &mut views {
         let view_key = msaa_key | MeshPipelineKey::from_hdr(view.hdr);
-        // let rangefinder = view.rangefinder3d();
+        let rangefinder = view.rangefinder3d();
         for (entity, instance_data) in &material_meshes {
-            // let Some(mesh_instance) = render_mesh_instances.get(&entity) else {
-            //     continue;
-            // };
+            let Some(mesh_instance) = render_mesh_instances.get(&entity) else {
+                continue;
+            };
             let Some(mesh) = meshes.get(instance_data.mesh.id()) else {
                 continue;
             };
@@ -256,9 +257,9 @@ fn queue_custom<D: 'static>(
                 entity,
                 pipeline,
                 draw_function: draw_custom,
-                // distance: rangefinder
-                //     .distance_translation(&mesh_instance.transforms.transform.translation),
-                distance: 0.,
+                distance: rangefinder
+                    .distance_translation(&mesh_instance.transforms.transform.translation),
+                // distance: 0.,
                 batch_range: 0..1,
                 dynamic_offset: None,
             });
@@ -279,9 +280,9 @@ fn prepare_instance_buffers<D: 'static>(
 ) where
     D: InstancedMaterial,
 {
-    for (entity, instance_data) in &query {
+    for (index, (entity, instance_data)) in query.iter().enumerate() {
         let buffer = render_device.create_buffer_with_data(&BufferInitDescriptor {
-            label: Some("instance data buffer"),
+            label: Some(&*("instance data buffer".to_owned() + &*index.to_string())),
             contents: bytemuck::cast_slice(instance_data.data.as_slice()),
             usage: BufferUsages::VERTEX | BufferUsages::COPY_DST,
         });
