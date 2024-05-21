@@ -4,6 +4,10 @@
 
 #include "../System.h"
 
+// OpenGL
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
+
 class triangl_render : public System {
 public:
     triangl_render();
@@ -13,4 +17,7 @@ public:
     void Update(float dt) override;
     void Render() override;
     void Exit() override;
+private:
+    GLuint shaderProgram { 0 };
+    GLuint VBO, VAO;
 };
