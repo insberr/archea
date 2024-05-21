@@ -15,7 +15,7 @@ public:
 
     void Init() override;
     void Update(float dt) override;
-    void Render() override;
+    void Render(GLFWwindow* window) override;
     void Exit() override;
 private:
     GLuint shaderProgram { 0 };

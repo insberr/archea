@@ -48,7 +48,7 @@ int App::Run() {
 
         // Do drawing here
         for (auto & system : systems) {
-            system->Render();
+            system->Render(window);
         }
 
         // Swap the buffers

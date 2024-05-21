@@ -96,13 +96,17 @@ void triangl_render::Update(float dt) {
 
 }
 
-void triangl_render::Render() {
+void triangl_render::Render(GLFWwindow* window) {
     // Set the shader program
     glUseProgram(shaderProgram);
 
+    int width, height;
+    glfwGetFramebufferSize(window, &width, &height);
+    glUniform2f(glGetUniformLocation(shaderProgram, "Resolution"), width, height);
+    glUniform1f(glGetUniformLocation(shaderProgram, "Time"), glfwGetTime());
+
     // Bind the vertex data
     glBindVertexArray(VAO);
-
     // Call draw
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 }
