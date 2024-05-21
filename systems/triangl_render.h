@@ -19,5 +19,5 @@ public:
     void Exit() override;
 private:
     GLuint shaderProgram { 0 };
-    GLuint VBO, VAO;
+    GLuint VBO, VAO, EBO;
 };
