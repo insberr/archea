@@ -3,8 +3,8 @@
 out vec4 FragColor;
 in vec3 color;
 
-in vec2 Resolution;
-in float Time;
+uniform vec2 Resolution;
+uniform float Time;
 
 void main() {
     FragColor = vec4(color, 1.0);
