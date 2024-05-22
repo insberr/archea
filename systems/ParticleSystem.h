@@ -2,16 +2,14 @@
 // Created by insberr on 5/21/24.
 //
 
+#pragma once
+
 #include "../System.h"
 
-// OpenGL
-#include <GL/glew.h>
-#include <GLFW/glfw3.h>
-
-class triangl_render : public System {
+class ParticleSystem : public System {
 public:
-    triangl_render();
-    ~triangl_render();
+    ParticleSystem() = default;
+    ~ParticleSystem() = default;
 
     void Init() override;
     void Update(float dt) override;
@@ -21,3 +19,4 @@ private:
     GLuint shaderProgram { 0 };
     GLuint VBO, VAO, EBO;
 };
+

@@ -31,8 +31,8 @@ add_executable(archea
         main.cpp
         App.cpp App.h
         System.cpp System.h
-        systems/triangl_render.cpp systems/triangl_render.h
         shaders.cpp shaders.h
+        systems/ParticleSystem.cpp systems/ParticleSystem.h
 )
 # Run the copy_shaders commands
 add_dependencies(archea copy_shaders)

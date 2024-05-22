@@ -4,14 +4,14 @@
 
 #include <iostream>
 #include "App.h"
-#include "systems/triangl_render.h"
+#include "systems/ParticleSystem.h"
 
 int main() {
     auto app = App{};
 
     // Test triangle system
-    auto triangle_sys = triangl_render();
-    app.AddSystem(&triangle_sys);
+    auto particleSystem = ParticleSystem{};
+    app.AddSystem(&particleSystem);
 
     return app.Run();
 }

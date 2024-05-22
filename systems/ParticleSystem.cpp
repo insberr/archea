@@ -2,32 +2,25 @@
 // Created by insberr on 5/21/24.
 //
 
-#include <iostream>
 #include <algorithm>
 
-#include "triangl_render.h"
+#include "ParticleSystem.h"
+
 #include "../shaders.h"
 
-triangl_render::triangl_render() {
-
-}
-
-triangl_render::~triangl_render() {
-
-}
-
-void triangl_render::Init() {
+void ParticleSystem::Init() {
+    // Load the contents of the shaders
     std::string vertexShaderSource = readShaderFile("shaders/vertex.glsl");
     std::string fragmentShaderSource = readShaderFile("shaders/fragment.glsl");
 
-//    if (vertexShaderSource.empty() || fragmentShaderSource.empty()) {
-//        return -1;
-//    }
+    // Make sure they arent empty
+    if (vertexShaderSource.empty() || fragmentShaderSource.empty()) {
+        return;
+    }
 
+    // Create the shader program
     shaderProgram = createShaderProgram(vertexShaderSource, fragmentShaderSource);
-//    if (shaderProgram == 0) {
-//        return -1;
-//    }
+    if (shaderProgram == 0) return;
 
     // Set up vertex data and buffers and configure vertex attributes
     float quadVertices[] = {
@@ -61,11 +54,11 @@ void triangl_render::Init() {
     glBindVertexArray(0);
 }
 
-void triangl_render::Update(float dt) {
-
+void ParticleSystem::Update(float dt) {
+    if (dt == 0.0f) return;
 }
 
-void triangl_render::Render(GLFWwindow* window) {
+void ParticleSystem::Render(GLFWwindow *window) {
     // Set the shader program
     glUseProgram(shaderProgram);
 
@@ -77,8 +70,8 @@ void triangl_render::Render(GLFWwindow* window) {
     // Get the mouse position
     double xpos, ypos;
     glfwGetCursorPos(window, &xpos, &ypos);
-    xpos = std::ranges::clamp(xpos, 0.0, static_cast<double>(width));
-    ypos = std::ranges::clamp(ypos, 0.0, static_cast<double>(height));
+//    xpos = std::ranges::clamp(xpos, 0.0, static_cast<double>(width));
+//    ypos = std::ranges::clamp(ypos, 0.0, static_cast<double>(height));
     glUniform2f(glGetUniformLocation(shaderProgram, "Mouse"), static_cast<float>(xpos), static_cast<float>(ypos));
 
     // Bind the vertex data
@@ -87,6 +80,6 @@ void triangl_render::Render(GLFWwindow* window) {
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 }
 
-void triangl_render::Exit() {
+void ParticleSystem::Exit() {
 
 }
