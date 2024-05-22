@@ -22,26 +22,49 @@ std::string readShaderFile(const std::string& filePath) {
     return buffer.str();
 }
 
-GLuint compileShaders() {
-    // Read Shdaer files
-    std::string vertexShaderSource = readShaderFile("shaders/vertex.glsl");
-    std::string fragmentShaderSource = readShaderFile("shaders/fragment.glsl");
+// Compile the shader and error check it
+GLuint compileShader(const std::string& shaderSource, GLenum shaderType) {
+    GLuint shader = glCreateShader(shaderType);
+    const char* sourceCStr = shaderSource.c_str();
+    glShaderSource(shader, 1, &sourceCStr, nullptr);
+    glCompileShader(shader);
 
-    // Build and compile shaders
-    GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
-    const char* vertexSourceCStr = vertexShaderSource.c_str();
-    glShaderSource(vertexShader, 1, &vertexSourceCStr, NULL);
-    glCompileShader(vertexShader);
+    GLint success;
+    glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+    if (!success) {
+        GLchar infoLog[512];
+        glGetShaderInfoLog(shader, 512, nullptr, infoLog);
+        std::cerr << "Error compiling shader: " << infoLog << std::endl;
+        glDeleteShader(shader);
+        return 0;
+    }
 
-    GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    const char* fragmentSourceCStr = fragmentShaderSource.c_str();
-    glShaderSource(fragmentShader, 1, &fragmentSourceCStr, NULL);
-    glCompileShader(fragmentShader);
+    return shader;
+}
+
+// Create the shader program
+GLuint createShaderProgram(const std::string& vertexShaderSource, const std::string& fragmentShaderSource) {
+    GLuint vertexShader = compileShader(vertexShaderSource, GL_VERTEX_SHADER);
+    GLuint fragmentShader = compileShader(fragmentShaderSource, GL_FRAGMENT_SHADER);
+
+    if (vertexShader == 0 || fragmentShader == 0) {
+        return 0;
+    }
 
     GLuint shaderProgram = glCreateProgram();
     glAttachShader(shaderProgram, vertexShader);
     glAttachShader(shaderProgram, fragmentShader);
     glLinkProgram(shaderProgram);
+
+    GLint success;
+    glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
+    if (!success) {
+        GLchar infoLog[512];
+        glGetProgramInfoLog(shaderProgram, 512, nullptr, infoLog);
+        std::cerr << "Error linking shader program: " << infoLog << std::endl;
+        glDeleteProgram(shaderProgram);
+        return 0;
+    }
 
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
@@ -58,8 +81,17 @@ triangl_render::~triangl_render() {
 }
 
 void triangl_render::Init() {
-    // Create the shader program
-    shaderProgram = compileShaders();
+    std::string vertexShaderSource = readShaderFile("shaders/vertex.glsl");
+    std::string fragmentShaderSource = readShaderFile("shaders/fragment.glsl");
+
+//    if (vertexShaderSource.empty() || fragmentShaderSource.empty()) {
+//        return -1;
+//    }
+
+    shaderProgram = createShaderProgram(vertexShaderSource, fragmentShaderSource);
+//    if (shaderProgram == 0) {
+//        return -1;
+//    }
 
     // Set up vertex data and buffers and configure vertex attributes
     float quadVertices[] = {
