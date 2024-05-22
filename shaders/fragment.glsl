@@ -172,6 +172,8 @@ void main() {
 
         // We hit something
         if (tempColor.r != -1.0) {
+            // Help with the alpha blending given by:
+            //   https://github.com/Bowserinator/TPTBox
             float forwardAlphaInv = 1.0 - color.a; // data.color.a ???
             color.rgb += tempColor.rgb *  (tempColor.a * forwardAlphaInv);
             color.a = 1.0 - forwardAlphaInv * (1.0 - tempColor.a);
