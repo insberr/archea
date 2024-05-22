@@ -28,12 +28,11 @@ add_custom_target(copy_shaders ALL DEPENDS ${DEST_DIR})
 
 # Create EXE
 add_executable(archea
-    main.cpp
-    App.h App.cpp
-        System.cpp
-        System.h
-        systems/triangl_render.cpp
-        systems/triangl_render.h
+        main.cpp
+        App.cpp App.h
+        System.cpp System.h
+        systems/triangl_render.cpp systems/triangl_render.h
+        shaders.cpp shaders.h
 )
 # Run the copy_shaders commands
 add_dependencies(archea copy_shaders)
