@@ -82,9 +82,9 @@ vec4 getParticle(ivec3 c) {
     // Ground
     // if (c.y == -1.0) return vec4(1.0);
     // X axis
-    if (c.y == -1.0 && c.z == -1.0) return vec4(1.0, 0.0, 0.0, 1.0); // x axis
-    if (c.x == -1.0 && c.z == -1.0) return vec4(0.0, 1.0, 0.0, 1.0); // y axis
-    if (c.x == -1.0 && c.y == -1.0) return vec4(0.0, 0.0, 1.0, 1.0); // z axis
+    if (c.y == -1.0 && c.z == -1.0) return vec4(1.0, 0.0, 0.0, 0.4); // x axis
+    if (c.x == -1.0 && c.z == -1.0) return vec4(0.0, 1.0, 0.0, 0.4); // y axis
+    if (c.x == -1.0 && c.y == -1.0) return vec4(0.0, 0.0, 1.0, 0.4); // z axis
 
     // Array index range checks
     if (c.x > 3) return NoParticle;
@@ -171,6 +171,7 @@ void main() {
     vec4 color = vec4(0.0);
 
     int iterations = 0;
+
     for (int i = 0; i < MAX_RAY_STEPS; i++) {
         ++iterations;
         // Basically we hit something, so stop the loop, and because of the masking
