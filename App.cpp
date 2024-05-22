@@ -6,6 +6,10 @@
 
 #include <iostream>
 
+#include "imgui.h"
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_opengl3.h"
+
 // Some constants
 const unsigned WindowWidth = 800;
 const unsigned WindowHeight = 600;
@@ -24,9 +28,26 @@ App::App() {
     if (code) {
         errorCode = code;
     }
+
+    // Setup Dear ImGui context
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO();
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+
+    // Setup Platform/Renderer backends
+    ImGui_ImplGlfw_InitForOpenGL(window, true);          // Second param install_callback=true will install GLFW callbacks and chain to existing ones.
+    ImGui_ImplOpenGL3_Init();
 }
 
 App::~App() {
+    // Shutdown Imgui
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
+
+    // Shutdown GLFW
     glfwDestroyWindow(window);
     glfwTerminate();
 }
@@ -39,6 +60,9 @@ int App::Run() {
     }
 
     while (!glfwWindowShouldClose(window)) {
+        // Poll for events
+        glfwPollEvents();
+
         for (auto & system : systems) {
             system->Update(0.0f);
         }
@@ -46,16 +70,26 @@ int App::Run() {
         // CLear the window
         glClear(GL_COLOR_BUFFER_BIT);
 
+        // Start the Dear ImGui frame
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+        ImGui::ShowDemoWindow(); // Show demo window! :)
+        if (ImGui::Begin("Stats")) {
+            ImGui::Text("FPS %.2f", ImGui::GetIO().Framerate);
+        }
+        ImGui::End();
         // Do drawing here
         for (auto & system : systems) {
             system->Render(window);
         }
 
+        // Rendering Imgui
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
         // Swap the buffers
         glfwSwapBuffers(window);
-
-        // Poll for events
-        glfwPollEvents();
     }
 
     for (auto & system : systems) {

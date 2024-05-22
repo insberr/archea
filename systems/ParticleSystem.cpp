@@ -74,6 +74,8 @@ void ParticleSystem::Render(GLFWwindow *window) {
 //    ypos = std::ranges::clamp(ypos, 0.0, static_cast<double>(height));
     glUniform2f(glGetUniformLocation(shaderProgram, "Mouse"), static_cast<float>(xpos), static_cast<float>(ypos));
 
+    glUniform3f(glGetUniformLocation(shaderProgram, "CameraPosition"), 0.0f, 0.0f, 0.0f);
+
     // Bind the vertex data
     glBindVertexArray(VAO);
     // Call draw
