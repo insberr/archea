@@ -14,7 +14,7 @@ uniform vec2 Mouse;
 // todo Make these uniform arrays passed from the cpu
 const vec4 colors[2] = vec4[2](
     vec4(0.5, 0.3, 0.2, 1.0),
-    vec4(0.2, 0.3, 0.7, 0.5)
+    vec4(0.2, 0.3, 0.7, 0.7)
 );
 const int data[64] = int[64](
     0, 0, 0, 0,
@@ -136,13 +136,20 @@ vec4 rayMarch(vec3 ro, vec3 rd) {
 }
 
 void main() {
-    vec2 screenPos = (gl_FragCoord.xy / Resolution.xy) * 2.0 - 1.0;
+    // vec2 screenPos = (gl_FragCoord.xy / Resolution.xy) * 2.0 - 1.0;
+    // vec3 cameraDir = vec3(0.0, 0.0, FOV);
+    // vec3 cameraPlaneU = vec3(1.0, 0.0, 0.0);
+    // vec3 cameraPlaneV = vec3(0.0, 1.0, 0.0) * Resolution.y / Resolution.x;
+    vec2 uv = (gl_FragCoord.xy * 2. - Resolution.xy) / Resolution.y; // new
+
+    // Mouse pos
     vec2 m = (Mouse.xy / Resolution.xy) * 2.0 - 1.0;
     m *= MOUSE_SENSITIVITY;
-    vec3 cameraDir = vec3(0.0, 0.0, 0.8);
-    vec3 cameraPlaneU = vec3(1.0, 0.0, 0.0);
-    vec3 cameraPlaneV = vec3(0.0, 1.0, 0.0) * Resolution.y / Resolution.x;
-    vec3 rayDir = cameraDir + screenPos.x * cameraPlaneU + screenPos.y * cameraPlaneV;
+    // m = vec2(0.0);
+
+    /* Ray Direction And Origin */
+    // vec3 rayDir = cameraDir + screenPos.x * cameraPlaneU + screenPos.y * cameraPlaneV;
+    vec3 rayDir = normalize(vec3(uv * FOV, 1.0));
     vec3 rayPos = vec3(2.0, 2.0, -8.0);
 
     rayPos.yz = rotate2d(rayPos.yz, -m.y);
