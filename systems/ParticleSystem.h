@@ -18,5 +18,7 @@ public:
 private:
     GLuint shaderProgram { 0 };
     GLuint VBO, VAO, EBO;
+
+    float posX {0.0f}, posY{0.0f}, posZ{0.0f};
 };
 

@@ -59,6 +59,26 @@ void ParticleSystem::Update(float dt) {
 }
 
 void ParticleSystem::Render(GLFWwindow *window) {
+    if (glfwGetKey(window, GLFW_KEY_W)) {
+        posZ += 0.2f;
+    }
+    if (glfwGetKey(window, GLFW_KEY_S)) {
+        posZ -= 0.2f;
+    }
+    if (glfwGetKey(window, GLFW_KEY_A)) {
+        posX -= 0.2f;
+    }
+    if (glfwGetKey(window, GLFW_KEY_D)) {
+        posX += 0.2f;
+    }
+    if (glfwGetKey(window, GLFW_KEY_SPACE)) {
+        posY += 0.2f;
+    }if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT)) {
+        posY -= 0.2f;
+    }
+
+
+
     // Set the shader program
     glUseProgram(shaderProgram);
 
@@ -74,7 +94,7 @@ void ParticleSystem::Render(GLFWwindow *window) {
 //    ypos = std::ranges::clamp(ypos, 0.0, static_cast<double>(height));
     glUniform2f(glGetUniformLocation(shaderProgram, "Mouse"), static_cast<float>(xpos), static_cast<float>(ypos));
 
-    glUniform3f(glGetUniformLocation(shaderProgram, "CameraPosition"), 0.0f, 0.0f, 0.0f);
+    glUniform3f(glGetUniformLocation(shaderProgram, "CameraPosition"), posX, posY, posZ);
 
     // Bind the vertex data
     glBindVertexArray(VAO);

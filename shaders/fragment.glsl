@@ -10,6 +10,7 @@ in vec3 fragCoord;
 uniform vec2 Resolution;
 uniform float Time;
 uniform vec2 Mouse;
+uniform vec3 CameraPosition;
 
 // todo Make these uniform arrays passed from the cpu
 const vec4 colors[2] = vec4[2](
@@ -150,12 +151,12 @@ void main() {
     /* Ray Direction And Origin */
     // vec3 rayDir = cameraDir + screenPos.x * cameraPlaneU + screenPos.y * cameraPlaneV;
     vec3 rayDir = normalize(vec3(uv * FOV, 1.0));
-    vec3 rayPos = vec3(2.0, 2.0, -8.0);
+    vec3 rayPos = CameraPosition; // vec3(2.0, 2.0, -8.0);
 
-    rayPos.yz = rotate2d(rayPos.yz, -m.y);
-    rayDir.yz = rotate2d(rayDir.yz, -m.y);
+    // rayPos.yz = rotate2d(rayPos.yz, m.y);
+    rayDir.yz = rotate2d(rayDir.yz, m.y);
 
-    rayPos.xz = rotate2d(rayPos.xz, -m.x);
+    // rayPos.xz = rotate2d(rayPos.xz, -m.x);
     rayDir.xz = rotate2d(rayDir.xz, -m.x);
 
     ivec3 mapPos = ivec3(floor(rayPos + 0.));
