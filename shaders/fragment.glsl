@@ -161,7 +161,7 @@ void main() {
 
     bvec3 mask;
 
-    vec3 color = vec3(0.0);
+    vec4 color = vec4(0.0);
 
     int iterations = 0;
     for (int i = 0; i < MAX_RAY_STEPS; i++) {
@@ -169,9 +169,14 @@ void main() {
         // Basically we hit something, so stop the loop, and because of the masking
         //   code below, a voxel will be rendered at the last position.
         vec4 tempColor = getParticle(mapPos);
+
+        // We hit something
         if (tempColor.r != -1.0) {
-            color = tempColor.rgb;
-            break;
+            float forwardAlphaInv = 1.0 - color.a; // data.color.a ???
+            color.rgb += tempColor.rgb *  (tempColor.a * forwardAlphaInv);
+            color.a = 1.0 - forwardAlphaInv * (1.0 - tempColor.a);
+
+            if (tempColor.a == 1.0) break;
         }
 
         // Thanks kzy for the suggestion!
@@ -183,20 +188,22 @@ void main() {
         mapPos += ivec3(vec3(mask)) * rayStep;
     }
 
-    // vec3 color = vec3(1.0, 0.0, 0.0);
-    if (mask.x) {
-        color *= vec3(0.5);
-    }
-    if (mask.y) {
-        color *= vec3(1.0);
-    }
-    if (mask.z) {
-        color *= vec3(0.75);
+    if (iterations < MAX_RAY_STEPS) {
+        // vec3 color = vec3(1.0, 0.0, 0.0);
+        if (mask.x) {
+            color.rgb *= vec3(0.5);
+        }
+        if (mask.y) {
+            color.rgb *= vec3(1.0);
+        }
+        if (mask.z) {
+            color.rgb *= vec3(0.75);
+        }
     }
 
     // If the max distance was reached, we need this.
     // Otherwise we get a voxel rendered at the max distance.
-    if (iterations == MAX_RAY_STEPS) color = vec3(0);
+    // if (iterations == MAX_RAY_STEPS) color = vec4(0.0);
 
-    FragColor = vec4(color, 1.0);
+    FragColor = color;
 }
