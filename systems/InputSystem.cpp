@@ -6,18 +6,32 @@
 #include "../App.h"
 
 // Initialize the static variables
+// Keyboard
 std::unordered_map<int, bool> InputSystem::keysLastFrame;
 std::unordered_map<int, bool> InputSystem::keysThisFrame;
+// Mouse Buttons
+std::unordered_map<int, bool> InputSystem::mouseButtonThisFrame;
+// Mouse Position
+std::pair<double, double> InputSystem::mousePositionLastFrame;
+std::pair<double, double> InputSystem::mousePositionThisFrame;
 
 InputSystem::~InputSystem() = default;
 
 void InputSystem::Init() {
     auto window = app->GetWindow();
     glfwSetKeyCallback(window, keyboardInputCallback);
+    glfwSetMouseButtonCallback(window, mouseButtonCallback);
+    glfwSetCursorPosCallback(window, mousePositionCallback);
+
+    // If raw mouse motion is supported, then enable it
+    if (glfwRawMouseMotionSupported()) {
+        glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
+    }
 }
 
 void InputSystem::Update(float dt) {
     keysLastFrame = keysThisFrame;
+    mousePositionLastFrame = mousePositionThisFrame;
 }
 
 void InputSystem::Render() {}
@@ -48,6 +62,16 @@ bool InputSystem::IsKeyReleased(int key) {
     return !current && last;
 }
 
+std::pair<double, double> InputSystem::MousePosition() {
+    return mousePositionThisFrame;
+}
+
+std::pair<double, double> InputSystem::MousePositionDelta() {
+    return {
+        mousePositionThisFrame.first - mousePositionLastFrame.first,
+        mousePositionThisFrame.second - mousePositionLastFrame.second
+    };
+}
 
 void InputSystem::keyboardInputCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
@@ -58,4 +82,12 @@ void InputSystem::keyboardInputCallback(GLFWwindow* window, int key, int scancod
         keysThisFrame[key] = true;
     }
 
+}
+
+void InputSystem::mouseButtonCallback(GLFWwindow *window, int button, int action, int mods) {
+
+}
+
+void InputSystem::mousePositionCallback(GLFWwindow *window, double xPosition, double yPosition) {
+    mousePositionThisFrame = std::pair(xPosition, yPosition);
 }
