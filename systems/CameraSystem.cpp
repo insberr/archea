@@ -6,6 +6,7 @@
 #include "../App.h"
 #include "CameraSystem.h"
 #include "InputSystem.h"
+#include "ImGuiSystem.h"
 
 const glm::vec3 UpVector(0.0f, 1.0f, 0.0f);
 
@@ -73,7 +74,20 @@ void CameraSystem::Update(float dt) {
     target = rotationMatrix * glm::vec4(forwardBaseVector, 0.0f);
 }
 
-void CameraSystem::Render() {}
+void CameraSystem::Render() {
+    if (ImGui::Begin("Camera")) {
+        ImGui::Text("Position %.2f %.2f %.2f", position.x, position.y, position.z);
+        ImGui::Text("Look Direction %.2f %.2f %.2f", target.x, target.y, target.z);
+        ImGui::Text("Pitch Yaw %.2f %.2f", pitch, yaw);
+        ImGui::SliderFloat("Field Of View", &fieldOfView, 0.0f, 5.0f, "%.4f");
+        ImGui::SliderFloat("Movement Speed", &travelSpeed, 0.0f, 5.0f, "%.4f");
+
+        if (ImGui::Button("Reset")) {
+            Reset();
+        }
+    }
+    ImGui::End();
+}
 
 void CameraSystem::Exit() {}
 
@@ -86,11 +100,11 @@ glm::vec3 CameraSystem::GetTarget() {
 }
 
 void CameraSystem::Reset() {
-    position = glm::vec3(0.0f);
-    target = glm::vec3(0.0f, 1.0f, 1.0f);
+    position = glm::vec3(4.0f, 4.0f, -10.0f);
+    target = glm::vec3(0.2f, -0.11f, 0.97f);
     fieldOfView = 1.0f;
-    yaw = -90.0f;
-    pitch = 0.0f;
+    yaw = 11.40f;
+    pitch = 6.30f;
     sensitivity = 0.3f;
     travelSpeed = 5.0f;
 }

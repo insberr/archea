@@ -65,15 +65,6 @@ int App::Run() {
         }
         ImGui::End();
 
-        auto camera = GetSystem<CameraSystem>();
-        if (ImGui::Begin("Camera")) {
-            auto camPos = camera->GetPosition();
-            ImGui::Text("Position %.2f %.2f %.2f", camPos.x, camPos.y, camPos.z);
-            auto camDir = camera->GetTarget();
-            ImGui::Text("Look Direction %.2f %.2f %.2f", camDir.x, camDir.y, camDir.z);
-        }
-        ImGui::End();
-
         // Do drawing here
         for (auto & [systemTypeId, system] : systems) {
             system->Render();
