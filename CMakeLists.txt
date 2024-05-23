@@ -56,6 +56,8 @@ add_executable(archea
         systems/ParticleSystem.cpp systems/ParticleSystem.h
         systems/InputSystem.cpp
         systems/InputSystem.h
+        EngineTimer.cpp
+        EngineTimer.h
 )
 # Run the copy_shaders commands
 add_dependencies(archea copy_shaders)
