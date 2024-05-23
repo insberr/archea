@@ -13,7 +13,7 @@ protected:
     static App* app;
 public:
     explicit System(std::string  systemName) : name(std::move(systemName)) {};
-    ~System() = default;
+    virtual ~System() = default;
 
     virtual void Init() = 0;
     virtual void Update(float dt) = 0;

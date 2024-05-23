@@ -57,8 +57,6 @@ void ParticleSystem::Init() {
 void ParticleSystem::Update(float dt) {
     auto window = app->GetWindow();
 
-    // InputSystem* inputSystem = app->GetSystem<InputSystem>();
-
     // if (dt == 0.0f) return;
 
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_RELEASE) {

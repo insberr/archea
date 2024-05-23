@@ -21,8 +21,6 @@ public:
     App();
     ~App();
 
-
-
     int Run();
 
     GLFWwindow *GetWindow();

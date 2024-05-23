@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "../System.h"
+#include "System.h"
 // OpenGL
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
