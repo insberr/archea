@@ -88,7 +88,7 @@ const int arraySize = 50;
 // test if a voxel exists here
 vec4 getParticle(ivec3 c) {
     // Ground
-    // if (c.y == -1.0) return vec4(1.0);
+    if (c.y == -2.0) return vec4(0.7);
     // X axis
     if (c.y == -1.0 && c.z == -1.0) return vec4(1.0, 0.0, 0.0, 0.4); // x axis
     if (c.x == -1.0 && c.z == -1.0) return vec4(0.0, 1.0, 0.0, 0.4); // y axis

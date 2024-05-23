@@ -88,7 +88,31 @@ void ParticleSystem::Update(float dt) {
     if (dt == 0.0f) return;
 
     if (InputSystem::IsKeyHeld(GLFW_KEY_Q)) {
-        particles.push_back(3);
+        particles[3 * (50 * 50) + 5 * (50) + 3] = 1;
+    }
+
+    static float step = 0.0f;
+    if (step < 1.0f) {
+        step += dt;
+    }
+    if (step >= 1.0f) {
+        for (unsigned x = 0; x < 50; ++x) {
+            for (unsigned y = 0; y < 50; ++y) {
+                for (unsigned z = 0; z < 50; ++z) {
+                    // z * (ysize * xsize) + y * (xsize) + x
+                    int particle = particles[z * (50 * 50) + y * (50) + x];
+                    if (particle == 0) continue;
+
+                    unsigned newY = std::clamp<unsigned>(y - 1, 0, 49);
+                    int atNewY = particles[z * (50 * 50) + newY * (50) + x];
+                    if (atNewY != 0) continue;
+                    particles[z * (50 * 50) + newY * (50) + x] = particle;
+                    // remove
+                    particles[z * (50 * 50) + y * (50) + x] = 0;
+                }
+            }
+        }
+        step = 0.0f;
     }
     glNamedBufferSubData(particlesBuffer, 0, sizeof(int) * (50 * 50 * 50), (const void*)particles.data());
 }
