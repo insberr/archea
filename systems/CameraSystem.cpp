@@ -47,6 +47,9 @@ void CameraSystem::Update(float dt) {
     if (InputSystem::IsKeyHeld(GLFW_KEY_LEFT_SHIFT)) {
         Translate(glm::vec3(0.0f, -dt, 0.0f));
     }
+    if (InputSystem::IsKeyHeld(GLFW_KEY_LEFT_CONTROL)) {
+        travelSpeed = 10.0f;
+    }
 
     // Dont update look position
     if (!cursorLocked) return;
@@ -80,7 +83,7 @@ void CameraSystem::Render() {
         ImGui::Text("Look Direction %.2f %.2f %.2f", target.x, target.y, target.z);
         ImGui::Text("Pitch Yaw %.2f %.2f", pitch, yaw);
         ImGui::SliderFloat("Field Of View", &fieldOfView, 0.0f, 5.0f, "%.4f");
-        ImGui::SliderFloat("Movement Speed", &travelSpeed, 0.0f, 5.0f, "%.4f");
+        ImGui::SliderFloat("Movement Speed", &travelSpeed, 0.0f, 20.0f, "%.4f");
 
         if (ImGui::Button("Reset")) {
             Reset();
