@@ -1,7 +1,7 @@
 # Archea
 Archea is a 3D Falling Sand Simulation I am developing because I am bored and love falling sand simulations.
 I also needed an excuse to learn graphics programming and to make a custom game engine.
-This project has been a bit of a challenge so far and has been through multiple rewrites. See [Journey Of Archea](##Journey Of Archea)
+This project has been a bit of a challenge so far and has been through multiple rewrites. See [Journey Of Archea](#journey-of-archea)
 
 You can watch my streams of making this project on [YouTube here](https://www.youtube.com/playlist?list=PLegENDHYPkX28wjNpFBd16ikRTgV8ekCf).  
 If uou don't feel like watching the streams (I don't blame you, they are long), you can watch my [dev log videos instead](https://www.youtube.com/playlist?list=PLegENDHYPkX0YnBPZnPjTTeSgQtDirN8P)
