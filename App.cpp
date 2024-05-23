@@ -12,8 +12,8 @@
 #include "systems/CameraSystem.h"
 
 // Some constants
-const unsigned WindowWidth = 800;
-const unsigned WindowHeight = 600;
+const unsigned WindowWidth = 1280;
+const unsigned WindowHeight = 720;
 
 // Callback function for errors
 void errorCallback(int error, const char* description) {
