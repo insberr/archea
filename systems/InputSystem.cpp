@@ -54,7 +54,7 @@ void InputSystem::keyboardInputCallback(GLFWwindow* window, int key, int scancod
     if (action == GLFW_RELEASE) {
         keysThisFrame[key] = false;
     }
-    if (action == GLFW_PRESS){
+    if (action == GLFW_PRESS) {
         keysThisFrame[key] = true;
     }
 
