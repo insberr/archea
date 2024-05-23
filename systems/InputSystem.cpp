@@ -6,8 +6,8 @@
 #include "../App.h"
 
 // Initialize the static variables
-std::unordered_map<int, int> InputSystem::keysLastFrame;
-std::unordered_map<int, int> InputSystem::keysThisFrame;
+std::unordered_map<int, bool> InputSystem::keysLastFrame;
+std::unordered_map<int, bool> InputSystem::keysThisFrame;
 
 InputSystem::~InputSystem() = default;
 
@@ -27,8 +27,8 @@ bool InputSystem::IsKeyTriggered(int key) {
     auto stateLast = keysLastFrame.find(key);
     auto stateCurrent = keysThisFrame.find(key);
 
-    bool last = stateLast != keysLastFrame.end() && stateLast->second;
-    bool current = stateLast != keysThisFrame.end() && stateCurrent->second;
+    bool last = stateLast != keysLastFrame.end() && !stateLast->second;
+    bool current = stateLast != keysThisFrame.end() && !stateCurrent->second;
 
     return current && !last;
 }
@@ -51,5 +51,11 @@ bool InputSystem::IsKeyReleased(int key) {
 
 void InputSystem::keyboardInputCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-    keysThisFrame[key] = action;
+    if (action == GLFW_RELEASE) {
+        keysThisFrame[key] = false;
+    }
+    if (action == GLFW_PRESS){
+        keysThisFrame[key] = true;
+    }
+
 }

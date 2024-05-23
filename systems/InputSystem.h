@@ -24,8 +24,8 @@ public:
     static bool IsKeyReleased(int key) ;
 
 private:
-    static std::unordered_map<int, int> keysLastFrame;
-    static std::unordered_map<int, int> keysThisFrame;
+    static std::unordered_map<int, bool> keysLastFrame;
+    static std::unordered_map<int, bool> keysThisFrame;
 
     static void keyboardInputCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 };
