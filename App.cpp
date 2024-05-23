@@ -5,11 +5,8 @@
 #include "App.h"
 
 #include <iostream>
-#include "systems/System.h"
-#include "imgui.h"
-#include "imgui_impl_glfw.h"
-#include "imgui_impl_opengl3.h"
 #include "systems/CameraSystem.h"
+#include "systems/ImGuiSystem.h"
 
 // Some constants
 const unsigned WindowWidth = 1280;
@@ -29,25 +26,9 @@ App::App() : window(nullptr) {
     if (code) {
         errorCode = code;
     }
-
-    // Setup Dear ImGui context
-    IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO();
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
-
-    // Setup Platform/Renderer backends
-    ImGui_ImplGlfw_InitForOpenGL(window, true);          // Second param install_callback=true will install GLFW callbacks and chain to existing ones.
-    ImGui_ImplOpenGL3_Init();
 }
 
 App::~App() {
-    // Shutdown Imgui
-    ImGui_ImplOpenGL3_Shutdown();
-    ImGui_ImplGlfw_Shutdown();
-    ImGui::DestroyContext();
-
     // Shutdown GLFW
     glfwDestroyWindow(window);
     glfwTerminate();
@@ -74,10 +55,9 @@ int App::Run() {
         // CLear the window
         glClear(GL_COLOR_BUFFER_BIT);
 
-        // Start the Dear ImGui frame
-        ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplGlfw_NewFrame();
-        ImGui::NewFrame();
+        // Start Imgui Frame
+        GetSystem<ImGuiSystem>()->StartFrame();
+
         ImGui::ShowDemoWindow(); // Show demo window! :)
         if (ImGui::Begin("Stats")) {
             ImGui::Text("FPS %.2f", ImGui::GetIO().Framerate);
@@ -100,8 +80,7 @@ int App::Run() {
         }
 
         // Rendering Imgui
-        ImGui::Render();
-        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+        GetSystem<ImGuiSystem>()->EndFrame();
 
         // Swap the buffers
         glfwSwapBuffers(window);
