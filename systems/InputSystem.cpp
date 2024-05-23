@@ -73,6 +73,10 @@ std::pair<double, double> InputSystem::MousePositionDelta() {
     };
 }
 
+std::pair<double, double> InputSystem::MousePositionLast() {
+    return mousePositionLastFrame;
+}
+
 void InputSystem::keyboardInputCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
     if (action == GLFW_RELEASE) {

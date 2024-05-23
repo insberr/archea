@@ -8,6 +8,7 @@
 #include "../App.h"
 #include "../shaders.h"
 #include "InputSystem.h"
+#include "CameraSystem.h"
 
 void ParticleSystem::Init() {
     // Load the contents of the shaders
@@ -70,26 +71,6 @@ void ParticleSystem::Update(float dt) {
             glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
         }
     }
-
-    // auto input = app->GetSystem<InputSystem>();
-
-    if (InputSystem::IsKeyHeld(GLFW_KEY_W)) {
-        posZ += dt;
-    }
-    if (InputSystem::IsKeyHeld(GLFW_KEY_S)) {
-        posZ -= dt;
-    }
-    if (InputSystem::IsKeyHeld(GLFW_KEY_A)) {
-        posX -= dt;
-    }
-    if (InputSystem::IsKeyHeld(GLFW_KEY_D)) {
-        posX += dt;
-    }
-    if (InputSystem::IsKeyHeld(GLFW_KEY_SPACE)) {
-        posY += dt;
-    }if (InputSystem::IsKeyHeld(GLFW_KEY_LEFT_SHIFT)) {
-        posY -= dt;
-    }
     
 }
 
@@ -108,7 +89,11 @@ void ParticleSystem::Render() {
     auto [xPos, yPos] = InputSystem::MousePosition();
     glUniform2f(glGetUniformLocation(shaderProgram, "Mouse"), static_cast<float>(xPos), static_cast<float>(yPos));
 
-    glUniform3f(glGetUniformLocation(shaderProgram, "CameraPosition"), posX, posY, posZ);
+    auto camera = app->GetSystem<CameraSystem>();
+    auto cameraPos = camera->GetPosition();
+    auto cameraMatrix = camera->CameraMatrix();
+    glUniform3f(glGetUniformLocation(shaderProgram, "CameraPosition"), cameraPos.x, cameraPos.y, cameraPos.z);
+    glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "CameraView"), 1, GL_FALSE, glm::value_ptr(cameraMatrix));
 
     // Bind the vertex data
     glBindVertexArray(VAO);

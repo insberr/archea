@@ -8,6 +8,7 @@
 // OpenGL
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
+#include <glm/gtc/type_ptr.hpp>
 
 class ParticleSystem : public System {
 public:

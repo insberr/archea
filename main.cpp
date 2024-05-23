@@ -3,8 +3,11 @@
 //
 
 #include "App.h"
-#include "systems/ParticleSystem.h"
+
+/* Systems */
 #include "systems/InputSystem.h"
+#include "systems/CameraSystem.h"
+#include "systems/ParticleSystem.h"
 
 int main() {
     auto app = App{};
@@ -14,6 +17,9 @@ int main() {
 
     // Add the input system
     app.AddSystem(std::make_unique<InputSystem>());
+
+    // Camera System
+    app.AddSystem(std::make_unique<CameraSystem>());
 
     // Particle Simulation
     app.AddSystem(std::make_unique<ParticleSystem>());

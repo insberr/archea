@@ -25,6 +25,7 @@ public:
 
     static std::pair<double, double> MousePosition();
     static std::pair<double, double> MousePositionDelta();
+    static std::pair<double, double> MousePositionLast();
 
 private:
     // Keyboard

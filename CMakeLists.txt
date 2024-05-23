@@ -58,6 +58,8 @@ add_executable(archea
         systems/InputSystem.h
         EngineTimer.cpp
         EngineTimer.h
+        systems/CameraSystem.cpp
+        systems/CameraSystem.h
 )
 # Run the copy_shaders commands
 add_dependencies(archea copy_shaders)

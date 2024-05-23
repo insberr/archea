@@ -13,6 +13,7 @@
 #include <typeindex>
 #include <memory>
 #include "EngineTimer.h"
+
 // Forward reference
 class System;
 
