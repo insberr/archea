@@ -4,6 +4,9 @@
 
 #pragma once
 #include "System.h"
+#include <unordered_map>
+
+typedef struct GLFWwindow GLFWwindow;
 
 class InputSystem : public System {
 public:
@@ -16,9 +19,13 @@ public:
     void Exit() override;
 
 
-    bool IsKeyTriggered();
-    bool IsKeyDown();
-    bool IsKeyReleased();
+    static bool IsKeyTriggered(int key) ;
+    static bool IsKeyHeld(int key) ;
+    static bool IsKeyReleased(int key) ;
 
 private:
+    static std::unordered_map<int, int> keysLastFrame;
+    static std::unordered_map<int, int> keysThisFrame;
+
+    static void keyboardInputCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 };

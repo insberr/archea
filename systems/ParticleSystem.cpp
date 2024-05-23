@@ -7,6 +7,7 @@
 #include "ParticleSystem.h"
 #include "../App.h"
 #include "../shaders.h"
+#include "InputSystem.h"
 
 void ParticleSystem::Init() {
     // Load the contents of the shaders
@@ -59,19 +60,20 @@ void ParticleSystem::Update(float dt) {
 
     if (dt == 0.0f) return;
 
-//    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_RELEASE) {
-//        cursorLocked = !cursorLocked;
-//        if (cursorLocked) {
-//            // Lock the cursor and hide it
-//            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-//        } else {
-//            // Lock the cursor and hide it
-//            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-//        }
-//    }
+    if (InputSystem::IsKeyTriggered(GLFW_KEY_ESCAPE)) {
+        cursorLocked = !cursorLocked;
+        if (cursorLocked) {
+            // Lock the cursor and hide it
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        } else {
+            // Lock the cursor and hide it
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        }
+    }
 
+    // auto input = app->GetSystem<InputSystem>();
 
-    if (glfwGetKey(window, GLFW_KEY_W)) {
+    if (InputSystem::IsKeyHeld(GLFW_KEY_W)) {
         posZ += dt;
     }
     if (glfwGetKey(window, GLFW_KEY_S)) {
