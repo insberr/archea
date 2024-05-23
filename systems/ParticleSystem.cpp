@@ -117,6 +117,25 @@ void ParticleSystem::Update(float dt) {
     glNamedBufferSubData(particlesBuffer, 0, sizeof(int) * (50 * 50 * 50), (const void*)particles.data());
 }
 
+//struct Particel {
+//    Type t;
+//    glm::vec4 color;
+//    float temperature;
+//};
+//class Particles {
+//    Particel GetParticle(glm::vec3 pos) {
+//        return {
+//            particles[pos.z * (50 * 50) + pos.y * (50) + pos.x],
+//            color,
+//            10.0f
+//        };
+//    }
+//private:
+//
+//    std::vector<glm::vec4> particles;
+//
+//};
+
 void ParticleSystem::Render() {
     auto window = app->GetWindow();
 
