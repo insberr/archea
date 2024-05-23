@@ -56,14 +56,27 @@ void ParticleSystem::Init() {
     glBindVertexArray(0);
 
     glCreateBuffers(1, &particlesBuffer);
-    particles.reserve(4 * 4 * 4);
+    particles.reserve(50 * 50 * 50);
     for (auto& part : particles) {
         part = 0;
     }
     glNamedBufferStorage(
         particlesBuffer,
-        sizeof(int) * (4 * 4 * 4),
+        sizeof(int) * (50 * 50 * 50),
         (const void*)particles.data(),
+        GL_DYNAMIC_STORAGE_BIT
+    );
+
+    glCreateBuffers(1, &particlesColrosBuffer);
+    std::vector<glm::vec4> particleColors;
+    // add colors
+    particleColors.push_back(glm::vec4(200, 150, 10, 255) / 255.0f);
+    particleColors.push_back(glm::vec4(13, 136, 188, 100) / 255.0f);
+    particleColors.push_back(glm::vec4(239, 103, 23, 255) / 255.0f);
+    glNamedBufferStorage(
+        particlesColrosBuffer,
+        sizeof(glm::vec4) * particleColors.size(),
+        (const void*)particleColors.data(),
         GL_DYNAMIC_STORAGE_BIT
     );
 }
@@ -73,10 +86,10 @@ void ParticleSystem::Update(float dt) {
 
     if (dt == 0.0f) return;
 
-    if (InputSystem::IsKeyTriggered(GLFW_KEY_Q)) {
-        particles.push_back(2);
+    if (InputSystem::IsKeyHeld(GLFW_KEY_Q)) {
+        particles.push_back(3);
     }
-    glNamedBufferSubData(particlesBuffer, 0, sizeof(int) * (4 * 4 * 4), (const void*)particles.data());
+    glNamedBufferSubData(particlesBuffer, 0, sizeof(int) * (50 * 50 * 50), (const void*)particles.data());
 }
 
 void ParticleSystem::Render() {
@@ -84,6 +97,9 @@ void ParticleSystem::Render() {
 
     // Bind the particles data
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, particlesBuffer);
+    // Bind the particles color data
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, particlesColrosBuffer);
+
     // Set the shader program
     glUseProgram(shaderProgram);
 

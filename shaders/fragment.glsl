@@ -7,8 +7,11 @@
 out vec4 FragColor;
 in vec3 fragCoord;
 
-layout (binding = 0, std430) readonly buffer ssbo1 {
+layout (binding = 0, std430) readonly buffer Particles {
     int particles[];
+};
+layout (binding = 1, std430) readonly buffer Colors {
+    vec4 colors[];
 };
 
 uniform vec2 Resolution;
@@ -20,10 +23,10 @@ uniform vec3 CameraPosition;
 uniform mat4 CameraView;
 
 // todo Make these uniform arrays passed from the cpu
-const vec4 colors[2] = vec4[2](
-    vec4(0.5, 0.3, 0.2, 1.0),
-    vec4(0.2, 0.3, 0.7, 0.7)
-);
+//const vec4 colors[2] = vec4[2](
+//    vec4(0.5, 0.3, 0.2, 1.0),
+//    vec4(0.2, 0.3, 0.7, 0.7)
+//);
 //const int data[64] = int[64](
 //    0, 0, 0, 0,
 //    0, 1, 0, 0,
@@ -81,7 +84,7 @@ float cubeSDF(vec3 point, vec3 size) {
 
 const vec4 NoParticle = vec4(-1.0);
 const vec4 AXIS_PARTICLE = vec4(1.0, 0.0, 0.0, 1.0);
-const int arraySize = 3;
+const int arraySize = 50;
 // test if a voxel exists here
 vec4 getParticle(ivec3 c) {
     // Ground
@@ -92,16 +95,16 @@ vec4 getParticle(ivec3 c) {
     if (c.x == -1.0 && c.y == -1.0) return vec4(0.0, 0.0, 1.0, 0.4); // z axis
 
     // Array index range checks
-    if (c.x > arraySize) return NoParticle;
-    if (c.y > arraySize) return NoParticle;
-    if (c.z > arraySize) return NoParticle;
+    if (c.x > arraySize - 1) return NoParticle;
+    if (c.y > arraySize - 1) return NoParticle;
+    if (c.z > arraySize - 1) return NoParticle;
     if (c.x < 0) return NoParticle;
     if (c.y < 0) return NoParticle;
     if (c.z < 0) return NoParticle;
 
     // Get the value in the array
     // z * (ysize * xsize) + y * (xsize) + x
-    int val = particles[c.z * (4 * 4) + c.y * (4) + c.x];
+    int val = particles[c.z * (arraySize * arraySize) + c.y * (arraySize) + c.x];
 
     if (val == 0) return NoParticle;
 
