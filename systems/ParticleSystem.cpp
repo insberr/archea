@@ -5,7 +5,7 @@
 #include <algorithm>
 
 #include "ParticleSystem.h"
-
+#include "../App.h"
 #include "../shaders.h"
 
 void ParticleSystem::Init() {
@@ -55,10 +55,24 @@ void ParticleSystem::Init() {
 }
 
 void ParticleSystem::Update(float dt) {
-    if (dt == 0.0f) return;
-}
+    auto window = app->GetWindow();
 
-void ParticleSystem::Render(GLFWwindow *window) {
+    // InputSystem* inputSystem = app->GetSystem<InputSystem>();
+
+    // if (dt == 0.0f) return;
+
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_RELEASE) {
+        cursorLocked = !cursorLocked;
+        if (cursorLocked) {
+            // Lock the cursor and hide it
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        } else {
+            // Lock the cursor and hide it
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        }
+    }
+
+
     if (glfwGetKey(window, GLFW_KEY_W)) {
         posZ += 0.2f;
     }
@@ -76,8 +90,11 @@ void ParticleSystem::Render(GLFWwindow *window) {
     }if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT)) {
         posY -= 0.2f;
     }
+    
+}
 
-
+void ParticleSystem::Render() {
+    auto window = app->GetWindow();
 
     // Set the shader program
     glUseProgram(shaderProgram);

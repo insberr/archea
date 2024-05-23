@@ -3,3 +3,9 @@
 //
 
 #include "System.h"
+
+App* System::app = nullptr; // Definition of the static member
+
+void System::SetApp(App* a) {
+    app = a;
+}

@@ -5,20 +5,25 @@
 #pragma once
 
 #include "../System.h"
+// OpenGL
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
 
 class ParticleSystem : public System {
 public:
-    ParticleSystem() = default;
+    ParticleSystem() : System("Particle") {};
     ~ParticleSystem() = default;
 
     void Init() override;
     void Update(float dt) override;
-    void Render(GLFWwindow* window) override;
+    void Render() override;
     void Exit() override;
 private:
     GLuint shaderProgram { 0 };
-    GLuint VBO, VAO, EBO;
+    GLuint VBO {0}, VAO {0}, EBO {0};
 
     float posX {0.0f}, posY{0.0f}, posZ{0.0f};
+
+    bool cursorLocked { false };
 };
 

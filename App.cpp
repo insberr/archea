@@ -5,7 +5,7 @@
 #include "App.h"
 
 #include <iostream>
-
+#include "System.h"
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
@@ -23,7 +23,7 @@ void framebufferSizeCallback(GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
 }
 
-App::App() {
+App::App() : window(nullptr) {
     int code = Init();
     if (code) {
         errorCode = code;
@@ -55,7 +55,7 @@ App::~App() {
 int App::Run() {
     if (errorCode) return errorCode;
 
-    for (auto & system : systems) {
+    for (auto & [systemTypeId, system] : systems) {
         system->Init();
     }
 
@@ -63,7 +63,7 @@ int App::Run() {
         // Poll for events
         glfwPollEvents();
 
-        for (auto & system : systems) {
+        for (auto & [systemTypeId, system] : systems) {
             system->Update(0.0f);
         }
 
@@ -80,8 +80,8 @@ int App::Run() {
         }
         ImGui::End();
         // Do drawing here
-        for (auto & system : systems) {
-            system->Render(window);
+        for (auto & [systemTypeId, system] : systems) {
+            system->Render();
         }
 
         // Rendering Imgui
@@ -92,7 +92,7 @@ int App::Run() {
         glfwSwapBuffers(window);
     }
 
-    for (auto & system : systems) {
+    for (auto & [systemTypeId, system] : systems) {
         system->Exit();
     }
 
@@ -138,6 +138,14 @@ int App::Init() {
     return 0;
 }
 
-void App::AddSystem(System *system) {
-    systems.push_back(system);
+//void App::AddSystem(System* system) {
+//    systems.push_back(system);
+//}
+
+GLFWwindow* App::GetWindow() {
+    return window;
 }
+
+//System* App::GetSystem(std::string &systemName) {
+//    return systems[0];
+//}
