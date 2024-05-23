@@ -4,6 +4,7 @@
 
 #include "InputSystem.h"
 #include "../App.h"
+#include "ImGuiSystem.h"
 
 // Initialize the static variables
 // Keyboard
@@ -79,6 +80,8 @@ std::pair<double, double> InputSystem::MousePositionLast() {
 
 void InputSystem::keyboardInputCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
+    ImGui_ImplGlfw_KeyCallback(window, key, scancode, action, mods);
+
     if (action == GLFW_RELEASE) {
         keysThisFrame[key] = false;
     }
@@ -89,9 +92,13 @@ void InputSystem::keyboardInputCallback(GLFWwindow* window, int key, int scancod
 }
 
 void InputSystem::mouseButtonCallback(GLFWwindow *window, int button, int action, int mods) {
-
+    ImGui_ImplGlfw_MouseButtonCallback(window, button, action, mods);
+    if (ImGui::GetIO().WantCaptureMouse) return;
 }
 
 void InputSystem::mousePositionCallback(GLFWwindow *window, double xPosition, double yPosition) {
+    ImGui_ImplGlfw_CursorPosCallback(window, xPosition, yPosition);
+    if (ImGui::GetIO().WantCaptureMouse) return;
+
     mousePositionThisFrame = std::pair(xPosition, yPosition);
 }
