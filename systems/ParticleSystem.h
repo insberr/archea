@@ -29,8 +29,7 @@ private:
 
     GLuint VBO {0}, VAO {0}, EBO {0};
 
-    float posX {0.0f}, posY{0.0f}, posZ{0.0f};
-
-
+    // Settings
+    int maxRaySteps { 200 };
 };
 

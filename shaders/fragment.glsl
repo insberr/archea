@@ -51,7 +51,7 @@ uniform mat4 CameraView;
 
 // Constants
 // The number of ray steps to make
-const int MAX_RAY_STEPS = 100;
+uniform int MAX_RAY_STEPS; // = 100;
 
 // Not sure if this is needed
 const float MAX_DISTANCE = 100.0;

@@ -9,6 +9,7 @@
 #include "../shaders.h"
 #include "InputSystem.h"
 #include "CameraSystem.h"
+#include "ImGuiSystem.h"
 
 void ParticleSystem::Init() {
     // Load the contents of the shaders
@@ -108,10 +109,6 @@ void ParticleSystem::Render() {
     glUniform2f(glGetUniformLocation(shaderProgram, "Resolution"), width, height);
     glUniform1f(glGetUniformLocation(shaderProgram, "Time"), glfwGetTime());
 
-    // Get the mouse position
-    auto [xPos, yPos] = InputSystem::MousePosition();
-    glUniform2f(glGetUniformLocation(shaderProgram, "Mouse"), static_cast<float>(xPos), static_cast<float>(yPos));
-
     auto camera = app->GetSystem<CameraSystem>();
     auto cameraFieldOfView = camera->GetFOV();
     auto cameraPos = camera->GetPosition();
@@ -120,12 +117,18 @@ void ParticleSystem::Render() {
     glUniform3f(glGetUniformLocation(shaderProgram, "CameraPosition"), cameraPos.x, cameraPos.y, cameraPos.z);
     glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "CameraView"), 1, GL_FALSE, glm::value_ptr(cameraMatrix));
 
+    glUniform1i(glGetUniformLocation(shaderProgram, "MAX_RAY_STEPS"), maxRaySteps);
     // Bind the vertex data
     glBindVertexArray(VAO);
     // Call draw
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
     // glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, 0);
+
+    if (ImGui::Begin("Simulation Controls")) {
+        ImGui::SliderInt("Max Ray Steps", &maxRaySteps, 0, 1000);
+    }
+    ImGui::End();
 }
 
 void ParticleSystem::Exit() {
