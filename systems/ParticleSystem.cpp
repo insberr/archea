@@ -76,18 +76,18 @@ void ParticleSystem::Update(float dt) {
     if (InputSystem::IsKeyHeld(GLFW_KEY_W)) {
         posZ += dt;
     }
-    if (glfwGetKey(window, GLFW_KEY_S)) {
+    if (InputSystem::IsKeyHeld(GLFW_KEY_S)) {
         posZ -= dt;
     }
-    if (glfwGetKey(window, GLFW_KEY_A)) {
+    if (InputSystem::IsKeyHeld(GLFW_KEY_A)) {
         posX -= dt;
     }
-    if (glfwGetKey(window, GLFW_KEY_D)) {
+    if (InputSystem::IsKeyHeld(GLFW_KEY_D)) {
         posX += dt;
     }
-    if (glfwGetKey(window, GLFW_KEY_SPACE)) {
+    if (InputSystem::IsKeyHeld(GLFW_KEY_SPACE)) {
         posY += dt;
-    }if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT)) {
+    }if (InputSystem::IsKeyHeld(GLFW_KEY_LEFT_SHIFT)) {
         posY -= dt;
     }
     
