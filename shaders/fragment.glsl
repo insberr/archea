@@ -1,4 +1,4 @@
-#version 330 core
+#version 460 core
 
 // Code copied and modified from https://www.shadertoy.com/view/4dX3zl
 // -- The raycasting code is somewhat based around a 2D raycasting toutorial found here:
@@ -6,6 +6,10 @@
 
 out vec4 FragColor;
 in vec3 fragCoord;
+
+layout (binding = 0, std430) readonly buffer ssbo1 {
+    int particles[];
+};
 
 uniform vec2 Resolution;
 uniform float Time;
@@ -20,27 +24,27 @@ const vec4 colors[2] = vec4[2](
     vec4(0.5, 0.3, 0.2, 1.0),
     vec4(0.2, 0.3, 0.7, 0.7)
 );
-const int data[64] = int[64](
-    0, 0, 0, 0,
-    0, 1, 0, 0,
-    0, 0, 0, 0,
-    0, 0, 0, 0,
-
-    2, 0, 2, 0,
-    0, 0, 0, 0,
-    1, 0, 1, 0,
-    0, 0, 0, 0,
-
-    0, 0, 0, 0,
-    1, 0, 1, 0,
-    0, 0, 0, 0,
-    0, 0, 0, 0,
-
-    0, 0, 0, 0,
-    1, 0, 1, 0,
-    0, 0, 0, 0,
-    0, 0, 0, 0
-);
+//const int data[64] = int[64](
+//    0, 0, 0, 0,
+//    0, 1, 0, 0,
+//    0, 0, 0, 0,
+//    0, 0, 0, 0,
+//
+//    2, 0, 2, 0,
+//    0, 0, 0, 0,
+//    1, 0, 1, 0,
+//    0, 0, 0, 0,
+//
+//    0, 0, 0, 0,
+//    1, 0, 1, 0,
+//    0, 0, 0, 0,
+//    0, 0, 0, 0,
+//
+//    0, 0, 0, 0,
+//    1, 0, 1, 0,
+//    0, 0, 0, 0,
+//    0, 0, 0, 0
+//);
 
 // Constants
 // The number of ray steps to make
@@ -77,6 +81,7 @@ float cubeSDF(vec3 point, vec3 size) {
 
 const vec4 NoParticle = vec4(-1.0);
 const vec4 AXIS_PARTICLE = vec4(1.0, 0.0, 0.0, 1.0);
+const int arraySize = 3;
 // test if a voxel exists here
 vec4 getParticle(ivec3 c) {
     // Ground
@@ -87,16 +92,16 @@ vec4 getParticle(ivec3 c) {
     if (c.x == -1.0 && c.y == -1.0) return vec4(0.0, 0.0, 1.0, 0.4); // z axis
 
     // Array index range checks
-    if (c.x > 3) return NoParticle;
-    if (c.y > 3) return NoParticle;
-    if (c.z > 3) return NoParticle;
+    if (c.x > arraySize) return NoParticle;
+    if (c.y > arraySize) return NoParticle;
+    if (c.z > arraySize) return NoParticle;
     if (c.x < 0) return NoParticle;
     if (c.y < 0) return NoParticle;
     if (c.z < 0) return NoParticle;
 
     // Get the value in the array
     // z * (ysize * xsize) + y * (xsize) + x
-    int val = data[c.z * (3 * 3) + c.y * (3) + c.x];
+    int val = particles[c.z * (4 * 4) + c.y * (4) + c.x];
 
     if (val == 0) return NoParticle;
 

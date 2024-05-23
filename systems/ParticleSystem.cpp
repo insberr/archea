@@ -54,17 +54,36 @@ void ParticleSystem::Init() {
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
+
+    glCreateBuffers(1, &particlesBuffer);
+    particles.reserve(4 * 4 * 4);
+    for (auto& part : particles) {
+        part = 0;
+    }
+    glNamedBufferStorage(
+        particlesBuffer,
+        sizeof(int) * (4 * 4 * 4),
+        (const void*)particles.data(),
+        GL_DYNAMIC_STORAGE_BIT
+    );
 }
 
 void ParticleSystem::Update(float dt) {
     auto window = app->GetWindow();
 
     if (dt == 0.0f) return;
+
+    if (InputSystem::IsKeyTriggered(GLFW_KEY_Q)) {
+        particles.push_back(2);
+    }
+    glNamedBufferSubData(particlesBuffer, 0, sizeof(int) * (4 * 4 * 4), (const void*)particles.data());
 }
 
 void ParticleSystem::Render() {
     auto window = app->GetWindow();
 
+    // Bind the particles data
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, particlesBuffer);
     // Set the shader program
     glUseProgram(shaderProgram);
 
@@ -89,6 +108,8 @@ void ParticleSystem::Render() {
     glBindVertexArray(VAO);
     // Call draw
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+    // glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, 0);
 }
 
 void ParticleSystem::Exit() {
