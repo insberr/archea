@@ -12,7 +12,7 @@
 #include <GLFW/glfw3.h>
 #include <typeindex>
 #include <memory>
-
+#include "EngineTimer.h"
 // Forward reference
 class System;
 
@@ -40,6 +40,8 @@ public:
     }
 
 private:
+    EngineTimer timer;
+
     int Init();
     int errorCode { 0 };
     GLFWwindow* window;

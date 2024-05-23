@@ -57,36 +57,36 @@ void ParticleSystem::Init() {
 void ParticleSystem::Update(float dt) {
     auto window = app->GetWindow();
 
-    // if (dt == 0.0f) return;
+    if (dt == 0.0f) return;
 
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_RELEASE) {
-        cursorLocked = !cursorLocked;
-        if (cursorLocked) {
-            // Lock the cursor and hide it
-            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-        } else {
-            // Lock the cursor and hide it
-            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-        }
-    }
+//    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_RELEASE) {
+//        cursorLocked = !cursorLocked;
+//        if (cursorLocked) {
+//            // Lock the cursor and hide it
+//            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+//        } else {
+//            // Lock the cursor and hide it
+//            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+//        }
+//    }
 
 
     if (glfwGetKey(window, GLFW_KEY_W)) {
-        posZ += 0.2f;
+        posZ += dt;
     }
     if (glfwGetKey(window, GLFW_KEY_S)) {
-        posZ -= 0.2f;
+        posZ -= dt;
     }
     if (glfwGetKey(window, GLFW_KEY_A)) {
-        posX -= 0.2f;
+        posX -= dt;
     }
     if (glfwGetKey(window, GLFW_KEY_D)) {
-        posX += 0.2f;
+        posX += dt;
     }
     if (glfwGetKey(window, GLFW_KEY_SPACE)) {
-        posY += 0.2f;
+        posY += dt;
     }if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT)) {
-        posY -= 0.2f;
+        posY -= dt;
     }
     
 }

@@ -59,12 +59,15 @@ int App::Run() {
         system->Init();
     }
 
+    float dt = 0.0f;
     while (!glfwWindowShouldClose(window)) {
+        dt = timer.Mark();
+
         // Poll for events
         glfwPollEvents();
 
         for (auto & [systemTypeId, system] : systems) {
-            system->Update(0.0f);
+            system->Update(dt);
         }
 
         // CLear the window
@@ -77,6 +80,7 @@ int App::Run() {
         ImGui::ShowDemoWindow(); // Show demo window! :)
         if (ImGui::Begin("Stats")) {
             ImGui::Text("FPS %.2f", ImGui::GetIO().Framerate);
+            ImGui::Text("Delta %.4f", dt);
         }
         ImGui::End();
         // Do drawing here
