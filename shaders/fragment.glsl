@@ -9,7 +9,9 @@ in vec3 fragCoord;
 
 uniform vec2 Resolution;
 uniform float Time;
-uniform vec2 Mouse;
+
+/* Camera Uniforms */
+uniform float FieldOfView;
 uniform vec3 CameraPosition;
 uniform mat4 CameraView;
 
@@ -49,10 +51,6 @@ const float MAX_DISTANCE = 100.0;
 
 // The distance to an object that is considered a hit
 const float SURFACE_DIST = 0.001;
-
-// FOV constant
-const float FOV = 1.0; // todo add this??
-const float MOUSE_SENSITIVITY = 4.0;
 
 // 2D Rotation Function
 mat2 rot2D(float angle) {
@@ -138,42 +136,21 @@ vec4 rayMarch(vec3 ro, vec3 rd) {
 }
 
 void main() {
-    // vec2 screenPos = (gl_FragCoord.xy / Resolution.xy) * 2.0 - 1.0;
-    // vec3 cameraDir = vec3(0.0, 0.0, FOV);
-    // vec3 cameraPlaneU = vec3(1.0, 0.0, 0.0);
-    // vec3 cameraPlaneV = vec3(0.0, 1.0, 0.0) * Resolution.y / Resolution.x;
     vec2 uv = (gl_FragCoord.xy * 2. - Resolution.xy) / Resolution.y; // new
 
-    // Mouse pos
-    vec2 m = (Mouse.xy / Resolution.xy) * 2.0 - 1.0;
-    m *= MOUSE_SENSITIVITY;
-    // m = vec2(0.0);
-
     /* Ray Direction And Origin */
-    // vec3 rayDir = cameraDir + screenPos.x * cameraPlaneU + screenPos.y * cameraPlaneV;
-    vec3 rayDir = normalize((CameraView * vec4(uv * FOV, 1.0, 0.0)).xyz); // normalize(vec3(uv * FOV, 1.0));
-    vec3 rayPos = CameraPosition; // vec3(2.0, 2.0, -8.0);
-
-    // // rayPos.yz = rotate2d(rayPos.yz, m.y);
-    // rayDir.yz = rotate2d(rayDir.yz, m.y);
-
-    // // rayPos.xz = rotate2d(rayPos.xz, -m.x);
-    // rayDir.xz = rotate2d(rayDir.xz, -m.x);
+    vec3 rayDir = normalize((CameraView * vec4(uv * FieldOfView, 1.0, 0.0)).xyz);
+    vec3 rayPos = CameraPosition;
 
     ivec3 mapPos = ivec3(floor(rayPos + 0.));
-
     vec3 deltaDist = abs(vec3(length(rayDir)) / rayDir);
-
     ivec3 rayStep = ivec3(sign(rayDir));
-
     vec3 sideDist = (sign(rayDir) * (vec3(mapPos) - rayPos) + (sign(rayDir) * 0.5) + 0.5) * deltaDist;
-
     bvec3 mask;
 
     vec4 color = vec4(0.0);
 
     int iterations = 0;
-
     for (int i = 0; i < MAX_RAY_STEPS; i++) {
         ++iterations;
         // Basically we hit something, so stop the loop, and because of the masking
@@ -200,6 +177,8 @@ void main() {
         mapPos += ivec3(vec3(mask)) * rayStep;
     }
 
+    // If the max distance was reached, we need this.
+    // Otherwise we get a voxel rendered at the max distance.
     if (iterations < MAX_RAY_STEPS) {
         // vec3 color = vec3(1.0, 0.0, 0.0);
         if (mask.x) {
@@ -212,10 +191,6 @@ void main() {
             color.rgb *= vec3(0.75);
         }
     }
-
-    // If the max distance was reached, we need this.
-    // Otherwise we get a voxel rendered at the max distance.
-    // if (iterations == MAX_RAY_STEPS) color = vec4(0.0);
 
     FragColor = color;
 }

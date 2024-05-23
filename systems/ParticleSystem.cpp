@@ -60,18 +60,6 @@ void ParticleSystem::Update(float dt) {
     auto window = app->GetWindow();
 
     if (dt == 0.0f) return;
-
-    if (InputSystem::IsKeyTriggered(GLFW_KEY_ESCAPE)) {
-        cursorLocked = !cursorLocked;
-        if (cursorLocked) {
-            // Lock the cursor and hide it
-            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-        } else {
-            // Lock the cursor and hide it
-            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-        }
-    }
-    
 }
 
 void ParticleSystem::Render() {
@@ -90,8 +78,10 @@ void ParticleSystem::Render() {
     glUniform2f(glGetUniformLocation(shaderProgram, "Mouse"), static_cast<float>(xPos), static_cast<float>(yPos));
 
     auto camera = app->GetSystem<CameraSystem>();
+    auto cameraFieldOfView = camera->GetFOV();
     auto cameraPos = camera->GetPosition();
     auto cameraMatrix = camera->CameraMatrix();
+    glUniform1f(glGetUniformLocation(shaderProgram, "FieldOfView"), cameraFieldOfView);
     glUniform3f(glGetUniformLocation(shaderProgram, "CameraPosition"), cameraPos.x, cameraPos.y, cameraPos.z);
     glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "CameraView"), 1, GL_FALSE, glm::value_ptr(cameraMatrix));
 

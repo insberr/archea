@@ -29,14 +29,19 @@ public:
 
     void Reset();
 
+    float GetFOV() const;
+
 private:
     void Translate(glm::vec3 translation);
 
     glm::vec3 position;
     glm::vec3 target;
-    float fieldOfView;
+    float fieldOfView { 0.7f };
 
     float yaw { -90.0f };
     float pitch { 0.0f };
+    float sensitivity { 0.3f };
     float travelSpeed { 5.0f };
+
+    bool cursorLocked { false };
 };
