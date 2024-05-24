@@ -14,6 +14,10 @@ layout (binding = 1, std430) readonly restrict buffer Colors {
     vec4 colors[];
 };
 
+uniform mat4 model;
+uniform mat4 view;
+uniform mat4 projection;
+
 uniform vec2 Resolution;
 uniform float Time;
 /* Camera Uniforms */
@@ -94,9 +98,16 @@ float edgeCheck(vec3 rayPos, vec3 rayDir, ivec3 mapPos) {
 void main() {
     vec2 uv = (gl_FragCoord.xy * 2. - Resolution.xy) / Resolution.y;
 
+    // Transform uv to view space
+    vec4 viewCoords = inverse(projection) * vec4(uv * 2.0 - 1.0, 1.0, 1.0);
+    viewCoords /= viewCoords.w;
+
     /* Ray Direction And Origin */
-    vec3 rayDir = normalize((CameraView * vec4(uv * FieldOfView, 1.0, 0.0)).xyz);
-    vec3 rayPos = CameraPosition / ParticleScale;
+    // vec3 rayDir = normalize((CameraView * vec4(uv * FieldOfView, 1.0, 0.0)).xyz);
+    vec3 rayDir = normalize(viewCoords.xyz - CameraPosition);
+    // vec3 rayPos = CameraPosition / ParticleScale;
+    float nearPlane = 0.1;
+    vec3 rayPos = CameraPosition + rayDir * nearPlane;
 
     ivec3 mapPos = ivec3(floor(rayPos + 0.0));
     vec3 deltaDist = abs(vec3(length(rayDir)) / rayDir);
