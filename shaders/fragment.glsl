@@ -7,10 +7,10 @@
 out vec4 FragColor;
 in vec3 fragCoord;
 
-layout (binding = 0, std430) readonly buffer Particles {
+layout (binding = 0, std430) readonly restrict buffer Particles {
     int particles[];
 };
-layout (binding = 1, std430) readonly buffer Colors {
+layout (binding = 1, std430) readonly restrict buffer Colors {
     vec4 colors[];
 };
 
@@ -88,9 +88,9 @@ const int arraySize = 50;
 // test if a voxel exists here
 vec4 getParticle(ivec3 c) {
     // Ground
-    if (c.y == -2.0) return vec4(0.7);
+    if (c.y == -2.0) return vec4(vec3(0.5), 0.6); // 0.6
     // X axis
-    if (c.y == -1.0 && c.z == -1.0) return vec4(1.0, 0.0, 0.0, 0.4); // x axis
+    if (c.y == -1.0 && c.z == -1.0) return vec4(1.0, 0.0, 0.0, 0.4); // x axis // 0.4
     if (c.x == -1.0 && c.z == -1.0) return vec4(0.0, 1.0, 0.0, 0.4); // y axis
     if (c.x == -1.0 && c.y == -1.0) return vec4(0.0, 0.0, 1.0, 0.4); // z axis
 
@@ -159,6 +159,7 @@ void main() {
     vec4 color = vec4(0.0);
 
     int iterations = 0;
+    int timesThroughVoxel = 0;
     vec4 lastIterDidHitAndColor = vec4(-1.0);
     for (int i = 0; i < MAX_RAY_STEPS; i++) {
         ++iterations;
@@ -177,6 +178,7 @@ void main() {
                 color.a = 1.0 - forwardAlphaInv * (1.0 - tempColor.a);
             }
 
+            timesThroughVoxel++;
 
             if (tempColor.a == 1.0) break;
         }
@@ -188,12 +190,24 @@ void main() {
         //All components of mask are false except for the corresponding largest component
         //of sideDist, which is the axis along which the ray should be incremented.
         sideDist += vec3(mask) * deltaDist;
+        // This looks really weird, use at own risk
+        // if (fract(sideDist.x) < 0.02) color = vec4(1.0, 0.0, 0.0, 1.0);
         mapPos += ivec3(vec3(mask)) * rayStep;
     }
+
+    vec3 ri = 1.0 / rayDir;
+    vec3 rs = sign(rayDir);
+    vec3 mini = (mapPos - rayPos + 0.5 - 0.5 * vec3(rs)) * ri;
+    float t = max(mini.x, max(mini.y, mini.z));
+    vec3 pos = rayPos + rayDir * t;
+    vec3 uvw = pos - mapPos;
+    vec3 wir = smoothstep(0.4, 0.5, abs(uvw - 0.5));
+    float vvv = (1.0 - wir.x * wir.y) * (1.0 - wir.x * wir.z) * (1.0 - wir.y * wir.z);
 
     // If the max distance was reached, we need this.
     // Otherwise we get a voxel rendered at the max distance.
     if (iterations < MAX_RAY_STEPS) {
+         color.rgb *= vvv;
         // vec3 color = vec3(1.0, 0.0, 0.0);
         if (mask.x) {
             color.rgb *= vec3(0.5);
