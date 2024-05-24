@@ -26,16 +26,70 @@ void ParticleSystem::Init() {
     if (shaderProgram == 0) return;
 
     // Set up vertex data and buffers and configure vertex attributes
-    float quadVertices[] = {
-            -1.0f, -1.0f,
-            1.0f, -1.0f,
-            1.0f,  1.0f,
-            -1.0f,  1.0f
+    // Define the vertices for a cube
+    float cubeVertices[] = {
+            // Front face
+            -0.5f, -0.5f,  0.5f,  // 0
+            0.5f, -0.5f,  0.5f,  // 1
+            0.5f,  0.5f,  0.5f,  // 2
+            -0.5f,  0.5f,  0.5f,  // 3
+
+            // Back face
+            -0.5f, -0.5f, -0.5f,  // 4
+            0.5f, -0.5f, -0.5f,  // 5
+            0.5f,  0.5f, -0.5f,  // 6
+            -0.5f,  0.5f, -0.5f,  // 7
+
+            // Top face
+            0.5f,  0.5f,  0.5f,  // 8
+            -0.5f,  0.5f,  0.5f,  // 9
+            -0.5f,  0.5f, -0.5f,  // 10
+            0.5f,  0.5f, -0.5f,  // 11
+
+            // Bottom face
+            -0.5f, -0.5f,  0.5f,  // 12
+            0.5f, -0.5f,  0.5f,  // 13
+            0.5f, -0.5f, -0.5f,  // 14
+            -0.5f, -0.5f, -0.5f,  // 15
+
+            // Right face
+            0.5f, -0.5f,  0.5f,  // 16
+            0.5f, -0.5f, -0.5f,  // 17
+            0.5f,  0.5f, -0.5f,  // 18
+            0.5f,  0.5f,  0.5f,  // 19
+
+            // Left face
+            -0.5f, -0.5f,  0.5f,  // 20
+            -0.5f, -0.5f, -0.5f,  // 21
+            -0.5f,  0.5f, -0.5f,  // 22
+            -0.5f,  0.5f,  0.5f   // 23
     };
 
+// Define the indices for the cube
     GLuint indices[] = {
+            // Front face
             0, 1, 2,
-            2, 3, 0
+            2, 3, 0,
+
+            // Back face
+            4, 5, 6,
+            6, 7, 4,
+
+            // Top face
+            8, 9, 10,
+            10, 11, 8,
+
+            // Bottom face
+            12, 13, 14,
+            14, 15, 12,
+
+            // Right face
+            16, 17, 18,
+            18, 19, 16,
+
+            // Left face
+            20, 21, 22,
+            22, 23, 20
     };
 
     glGenVertexArrays(1, &VAO);
@@ -45,12 +99,12 @@ void ParticleSystem::Init() {
     glBindVertexArray(VAO);
 
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), quadVertices, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices), cubeVertices, GL_STATIC_DRAW);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), &indices, GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -89,6 +143,28 @@ void ParticleSystem::Init() {
             }
         }
     }
+
+    /* Cube map */
+    // Generate and bind the cube map texture
+    glGenTextures(1, &cubeMapID);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMapID);
+
+    // Set cube map texture parameters
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+    const int width = 1.0;
+    const int height = 1.0;
+    // Allocate memory for each face of the cube map
+    for (int face = 0; face < 6; ++face) {
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    }
+
+    // Unbind the cube map texture
+    glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 }
 
 void ParticleSystem::Update(float dt) {
@@ -215,10 +291,24 @@ void ParticleSystem::Render() {
     glUniform1f(glGetUniformLocation(shaderProgram, "ParticleScale"), particleScale);
     glUniform1ui(glGetUniformLocation(shaderProgram, "EnableOutlines"), enableOutlines);
 
+    // Bind cubemap texture
+    // Bind the cube map texture
+    glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMapID);
+
+    // Set the texture unit (optional)
+    glActiveTexture(GL_TEXTURE0); // Assuming texture unit 0 is used
+    glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMapID); // Bind again to the active texture unit
+
+    // Set the cube map texture uniform in your shader (if needed)
+    // glUniform1i(cubeMapUniform, 0); // Assuming cubeMapUniform is the uniform location for the cube map texture in your shader
+
     // Bind the vertex data
     glBindVertexArray(VAO);
     // Call draw
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+    glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+
+    // Unbind the cube map texture (optional, if you're not using it elsewhere)
+    // glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 
     // glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, 0);
 

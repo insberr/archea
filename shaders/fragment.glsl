@@ -14,6 +14,8 @@ layout (binding = 1, std430) readonly restrict buffer Colors {
     vec4 colors[];
 };
 
+uniform samplerCube cubeMap;
+
 uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
@@ -103,9 +105,10 @@ void main() {
     viewCoords /= viewCoords.w;
 
     /* Ray Direction And Origin */
+    // vec3 rayDir = normalize((vec4(uv * FieldOfView, 1.0, 0.0)).xyz);
     // vec3 rayDir = normalize((CameraView * vec4(uv * FieldOfView, 1.0, 0.0)).xyz);
     vec3 rayDir = normalize(viewCoords.xyz - CameraPosition);
-    // vec3 rayPos = CameraPosition / ParticleScale;
+    // vec3 rayPos = vec3(0.0) / ParticleScale;
     float nearPlane = 0.1;
     vec3 rayPos = CameraPosition + rayDir * nearPlane;
 

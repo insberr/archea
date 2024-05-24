@@ -26,6 +26,7 @@ private:
 
     GLuint particlesBuffer { 0 };
     GLuint particlesColrosBuffer { 0 };
+    GLuint cubeMapID { 0 };
 
     GLuint VBO {0}, VAO {0}, EBO {0};
 
