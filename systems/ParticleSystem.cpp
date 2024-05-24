@@ -200,6 +200,17 @@ void ParticleSystem::Render() {
     glUniform3f(glGetUniformLocation(shaderProgram, "CameraPosition"), cameraPos.x, cameraPos.y, cameraPos.z);
     glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "CameraView"), 1, GL_FALSE, glm::value_ptr(cameraMatrix));
 
+    // Pass the matrices to the shader (for vertex shader for now)
+    GLuint modelLoc = glGetUniformLocation(shaderProgram, "model");
+    GLuint viewLoc = glGetUniformLocation(shaderProgram, "view");
+    GLuint projectionLoc = glGetUniformLocation(shaderProgram, "projection");
+    auto model = camera->GetModel();
+    auto view = camera->GetView();
+    auto projection = camera->GetProjection();
+    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+    glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+    glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
+
     glUniform1i(glGetUniformLocation(shaderProgram, "MAX_RAY_STEPS"), maxRaySteps);
     glUniform1f(glGetUniformLocation(shaderProgram, "ParticleScale"), particleScale);
     glUniform1ui(glGetUniformLocation(shaderProgram, "EnableOutlines"), enableOutlines);

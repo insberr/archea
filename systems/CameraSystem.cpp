@@ -13,6 +13,10 @@ const glm::vec3 UpVector(0.0f, 1.0f, 0.0f);
 CameraSystem::~CameraSystem() = default;
 
 void CameraSystem::Init() {
+    model = glm::mat4(1.0);
+    view = glm::mat4(1.0);
+    projection = glm::mat4(1.0);
+
     Reset();
 }
 
@@ -56,29 +60,46 @@ void CameraSystem::Update(float dt) {
     }
 
     // Dont update look position
-    if (!cursorLocked) return;
+    if (cursorLocked) {
 
-    auto [mouseX, mouseY] = InputSystem::MousePosition();
-    auto [lastX, lastY] = InputSystem::MousePositionLast();
+        auto [mouseX, mouseY] = InputSystem::MousePosition();
+        auto [lastX, lastY] = InputSystem::MousePositionLast();
 
-    float xoffset = static_cast<float>(mouseX - lastX);
-    float yoffset = static_cast<float>(mouseY - lastY); // Reversed since y-coordinates go from bottom to top
+        float xoffset = static_cast<float>(mouseX - lastX);
+        float yoffset = static_cast<float>(mouseY - lastY);
 
-    xoffset *= sensitivity;
-    yoffset *= sensitivity;
+        xoffset *= sensitivity;
+        yoffset *= sensitivity;
 
-    yaw += xoffset;
-    pitch += yoffset;
+        yaw += xoffset;
+        pitch += yoffset;
 
-    // Clamp pitch to avoid flipping
-    if (pitch > 89.0f) pitch = 89.0f;
-    if (pitch < -89.0f) pitch = -89.0f;
+        // Clamp pitch to avoid flipping
+        if (pitch > 89.0f) pitch = 89.0f;
+        if (pitch < -89.0f) pitch = -89.0f;
+    }
 
     // Forward base vector
     auto forwardBaseVector = glm::vec3(0.0f, 0.0f, 1.0f);
     glm::mat4 rotationMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(yaw), glm::vec3(0.0f, 1.0f, 0.0f)); // Yaw rotation around Y-axis
     rotationMatrix = glm::rotate(rotationMatrix, glm::radians(pitch), glm::vec3(1.0f, 0.0f, 0.0f)); // Pitch rotation around X-axis
     target = rotationMatrix * glm::vec4(forwardBaseVector, 0.0f);
+
+
+    /* Calculate Camera Matrices */
+    // Model
+    glm::translate(model, position);
+
+    // View
+    view = glm::lookAt(position, position + target, UpVector);
+    // view = glm::mat4(glm::quatLookAtLH(target, UpVector));
+    // Flip the y and z axes
+    glm::mat4 flipX = glm::scale(glm::mat4(1.0f), glm::vec3(-1.0f, 1.0f, 1.0f));
+    view = flipX * view;
+
+    // Projection
+    float aspectRatio = 1280.0f / 720.0f;
+    projection = glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 100.0f);
 }
 
 void CameraSystem::Render() {
@@ -138,4 +159,16 @@ void CameraSystem::Translate(glm::vec3 translation) {
 
 float CameraSystem::GetFOV() const {
     return fieldOfView;
+}
+
+glm::mat4 CameraSystem::GetModel() {
+    return model;
+}
+
+glm::mat4 CameraSystem::GetView() {
+    return view;
+}
+
+glm::mat4 CameraSystem::GetProjection() {
+    return projection;
 }
