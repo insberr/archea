@@ -21,6 +21,7 @@ uniform float Time;
 uniform float FieldOfView;
 uniform vec3 CameraPosition;
 uniform mat4 CameraView;
+uniform float ParticleScale;
 
 // todo Make these uniform arrays passed from the cpu
 //const vec4 colors[2] = vec4[2](
@@ -58,7 +59,6 @@ const float MAX_DISTANCE = 100.0;
 
 // The distance to an object that is considered a hit
 const float SURFACE_DIST = 0.001;
-const float voxelScale = 0.2;
 
 // 2D Rotation Function
 mat2 rot2D(float angle) {
@@ -88,7 +88,7 @@ const vec4 AXIS_PARTICLE = vec4(1.0, 0.0, 0.0, 1.0);
 const int arraySize = 50;
 // test if a voxel exists here
 vec4 getParticle(vec3 _c) {
-    ivec3 c = ivec3(_c / (1.0 - voxelScale));
+    ivec3 c = ivec3((_c / ParticleScale) + 0.5);
     // Ground
     if (c.y == -2.0) return vec4(vec3(0.5), 0.6); // 0.6
     // X axis
@@ -97,9 +97,9 @@ vec4 getParticle(vec3 _c) {
     if (c.x == -1.0 && c.y == -1.0) return vec4(0.0, 0.0, 1.0, 0.4); // z axis
 
     // Array index range checks
-    if (c.x > arraySize - 1) return NoParticle;
-    if (c.y > arraySize - 1) return NoParticle;
-    if (c.z > arraySize - 1) return NoParticle;
+    if (c.x >= arraySize) return NoParticle;
+    if (c.y >= arraySize) return NoParticle;
+    if (c.z >= arraySize) return NoParticle;
     if (c.x < 0) return NoParticle;
     if (c.y < 0) return NoParticle;
     if (c.z < 0) return NoParticle;
@@ -161,18 +161,19 @@ void main() {
 
     /* Ray Direction And Origin */
     vec3 rayDir = normalize((CameraView * vec4(uv * FieldOfView, 1.0, 0.0)).xyz);
-    vec3 rayPos = CameraPosition;
+    vec3 rayPos = CameraPosition / ParticleScale;
 
-    vec3 mapPos = floor(rayPos + 0.);
-    vec3 deltaDist = abs(vec3(length(rayDir)) / rayDir);
-    vec3 rayStep = sign(rayDir * voxelScale);
-    vec3 sideDist = (sign(rayDir) * (vec3(mapPos) - rayPos) + (sign(rayDir) * 0.5) + 0.5) * deltaDist;
+    vec3 mapPos = floor(rayPos) * ParticleScale;
+    vec3 deltaDist = abs(vec3(ParticleScale) / rayDir);
+    vec3 rayStep = sign(rayDir) * ParticleScale;
+    // vec3 sideDist = (sign(rayDir) * (mapPos - rayPos) + (sign(rayDir) * ParticleScale * 0.5) + ParticleScale * 0.5) * deltaDist;
+    vec3 sideDist = (sign(rayDir) * (mapPos - rayPos + 0.5 * ParticleScale)) * deltaDist;
     bvec3 mask;
 
     vec4 color = vec4(0.0);
 
     int iterations = 0;
-    int timesThroughVoxel = 0;
+    // int timesThroughVoxel = 0;
     vec4 lastIterDidHitAndColor = vec4(-1.0);
     for (int i = 0; i < MAX_RAY_STEPS; i++) {
         ++iterations;
@@ -193,7 +194,7 @@ void main() {
                 color.a = 1.0 - forwardAlphaInv * (1.0 - tempColor.a);
             }
 
-            timesThroughVoxel++;
+            // timesThroughVoxel++;
 
             if (tempColor.a == 1.0) break;
         }
@@ -208,6 +209,9 @@ void main() {
         // This looks really weird, use at own risk
         // if (fract(sideDist.x) < 0.02) color = vec4(1.0, 0.0, 0.0, 1.0);
         mapPos += vec3(mask) * rayStep;
+        // Adjust for smoother movement
+        float moveDist = min(min(deltaDist.x, deltaDist.y), deltaDist.z);
+        rayPos += rayDir * moveDist;
     }
 
     float vvv = edgeCheck(rayPos, rayDir, mapPos);
