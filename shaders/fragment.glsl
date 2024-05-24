@@ -150,7 +150,7 @@ float edgeCheck(vec3 rayPos, vec3 rayDir, vec3 mapPos) {
     float t = max(mini.x, max(mini.y, mini.z));
     vec3 pos = rayPos + rayDir * t;
     vec3 uvw = pos - mapPos;
-    vec3 wir = smoothstep(0.4, 0.5, abs(uvw - 0.5));
+    vec3 wir = step(0.45, abs(uvw - 0.5));
     return (1.0 - wir.x * wir.y) * (1.0 - wir.x * wir.z) * (1.0 - wir.y * wir.z);
 }
 
@@ -184,8 +184,10 @@ void main() {
             if (lastIterDidHitAndColor.rgb != tempColor.rgb) {
                 // Help with the alpha blending given by:
                 //   https://github.com/Bowserinator/TPTBox
+                float edge = edgeCheck(rayPos, rayDir, mapPos);
+
                 float forwardAlphaInv = 1.0 - color.a; // data.color.a ???
-                color.rgb += tempColor.rgb *  (tempColor.a * forwardAlphaInv);
+                color.rgb += tempColor.rgb * (tempColor.a * forwardAlphaInv) * edge;
                 color.a = 1.0 - forwardAlphaInv * (1.0 - tempColor.a);
             }
 
