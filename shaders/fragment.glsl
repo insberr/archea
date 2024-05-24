@@ -163,11 +163,11 @@ void main() {
     vec3 rayDir = normalize((CameraView * vec4(uv * FieldOfView, 1.0, 0.0)).xyz);
     vec3 rayPos = CameraPosition / ParticleScale;
 
-    vec3 mapPos = floor(rayPos) * ParticleScale;
+    vec3 mapPos = floor(rayPos - 0.5) * ParticleScale;
     vec3 deltaDist = abs(vec3(ParticleScale) / rayDir);
     vec3 rayStep = sign(rayDir) * ParticleScale;
     // vec3 sideDist = (sign(rayDir) * (mapPos - rayPos) + (sign(rayDir) * ParticleScale * 0.5) + ParticleScale * 0.5) * deltaDist;
-    vec3 sideDist = (sign(rayDir) * (mapPos - rayPos + 0.5 * ParticleScale)) * deltaDist;
+    vec3 sideDist = (sign(rayDir) * (mapPos - (rayPos - 0.5) * ParticleScale)) * deltaDist;
     bvec3 mask;
 
     vec4 color = vec4(0.0);
@@ -209,7 +209,7 @@ void main() {
         // This looks really weird, use at own risk
         // if (fract(sideDist.x) < 0.02) color = vec4(1.0, 0.0, 0.0, 1.0);
         mapPos += vec3(mask) * rayStep;
-        // Adjust for smoother movement
+
         float moveDist = min(min(deltaDist.x, deltaDist.y), deltaDist.z);
         rayPos += rayDir * moveDist;
     }
