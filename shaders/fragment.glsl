@@ -169,5 +169,12 @@ void main() {
         color.a = 1.0 - forwardAlphaInv * (1.0 - tempColor.a);
     }
 
+    // Depth Buffer
+    // -- https://stackoverflow.com/a/29397319/6079328
+    const float DEPTH_FAR_AWAY = 1000.0;
+    vec4 vClipCoord = CameraView * vec4(mapPos, 1.0);
+    float fNdcDepth = vClipCoord.z / vClipCoord.w;
+    gl_FragDepth = color.a > 0.0 ? (fNdcDepth + 1.0) * 0.5 : DEPTH_FAR_AWAY;
+
     FragColor = color;
 }
