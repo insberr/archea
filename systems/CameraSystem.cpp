@@ -18,13 +18,17 @@ void CameraSystem::Init() {
 
 void CameraSystem::Update(float dt) {
     auto window = app->GetWindow();
+    auto imGuiSystem = app->GetSystem<ImGuiSystem>();
+
     if (InputSystem::IsKeyTriggered(GLFW_KEY_ESCAPE)) {
         if (cursorLocked) {
             // Unlock the cursor and show it
             glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+            imGuiSystem->EnableImGui();
         } else {
             // Lock the cursor and hide it
             glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+            imGuiSystem->DisableImGui();
         }
         cursorLocked = !cursorLocked;
     }
