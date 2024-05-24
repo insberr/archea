@@ -16,49 +16,14 @@ layout (binding = 1, std430) readonly restrict buffer Colors {
 
 uniform vec2 Resolution;
 uniform float Time;
-
 /* Camera Uniforms */
 uniform float FieldOfView;
 uniform vec3 CameraPosition;
 uniform mat4 CameraView;
 uniform float ParticleScale;
-
-// todo Make these uniform arrays passed from the cpu
-//const vec4 colors[2] = vec4[2](
-//    vec4(0.5, 0.3, 0.2, 1.0),
-//    vec4(0.2, 0.3, 0.7, 0.7)
-//);
-//const int data[64] = int[64](
-//    0, 0, 0, 0,
-//    0, 1, 0, 0,
-//    0, 0, 0, 0,
-//    0, 0, 0, 0,
-//
-//    2, 0, 2, 0,
-//    0, 0, 0, 0,
-//    1, 0, 1, 0,
-//    0, 0, 0, 0,
-//
-//    0, 0, 0, 0,
-//    1, 0, 1, 0,
-//    0, 0, 0, 0,
-//    0, 0, 0, 0,
-//
-//    0, 0, 0, 0,
-//    1, 0, 1, 0,
-//    0, 0, 0, 0,
-//    0, 0, 0, 0
-//);
-
-// Constants
+uniform uint EnableOutlines;
 // The number of ray steps to make
-uniform int MAX_RAY_STEPS; // = 100;
-
-// Not sure if this is needed
-const float MAX_DISTANCE = 100.0;
-
-// The distance to an object that is considered a hit
-const float SURFACE_DIST = 0.001;
+uniform int MAX_RAY_STEPS;
 
 // 2D Rotation Function
 mat2 rot2D(float angle) {
@@ -84,17 +49,16 @@ float cubeSDF(vec3 point, vec3 size) {
 }
 
 const vec4 NoParticle = vec4(-1.0);
-const vec4 AXIS_PARTICLE = vec4(1.0, 0.0, 0.0, 1.0);
-const int arraySize = 50;
+const int arraySize = 50; // make this a uniform
 // test if a voxel exists here
 vec4 getParticle(ivec3 c) {
     // ivec3 c = ivec3((_c / ParticleScale) + 0.5);
     // Ground
-    if (c.y == -2.0) return vec4(vec3(0.5), 0.6); // 0.6
+    if (c.y == -1 && c.x >= 0 && c.z >= 0   && c.z <= arraySize && c.x <= arraySize) return vec4(vec3(0.3), 0.6); // 0.6
     // X axis
-    if (c.y == -1.0 && c.z == -1.0) return vec4(1.0, 0.0, 0.0, 0.4); // x axis // 0.4
-    if (c.x == -1.0 && c.z == -1.0) return vec4(0.0, 1.0, 0.0, 0.4); // y axis
-    if (c.x == -1.0 && c.y == -1.0) return vec4(0.0, 0.0, 1.0, 0.4); // z axis
+    if (c.y == -1 && c.z == -1   && c.x >= -1) return vec4(1.0, 0.0, 0.0, 0.4); // x axis // 0.4
+    if (c.x == -1 && c.z == -1   && c.y >= -1) return vec4(0.0, 1.0, 0.0, 0.4); // y axis
+    if (c.x == -1 && c.y == -1   && c.z >= -1) return vec4(0.0, 0.0, 1.0, 0.4); // z axis
 
     // Array index range checks
     if (c.x >= arraySize) return NoParticle;
@@ -171,10 +135,11 @@ void main() {
     vec3 sideDist = (sign(rayDir) * (vec3(mapPos) - rayPos) + (sign(rayDir) * 0.5) + 0.5) * deltaDist;
     bvec3 mask;
 
+    // This must start as 0 or else things will be tinted by this color
     vec4 color = vec4(0.0);
 
     int iterations = 0;
-    // int timesThroughVoxel = 0;
+    int timesThroughVoxel = 0;
     vec4 lastIterDidHitAndColor = vec4(-1.0);
     for (int i = 0; i < MAX_RAY_STEPS; i++) {
         ++iterations;
@@ -188,14 +153,18 @@ void main() {
             if (lastIterDidHitAndColor.rgb != tempColor.rgb) {
                 // Help with the alpha blending given by:
                 //   https://github.com/Bowserinator/TPTBox
-                float edge = edgeCheck(rayPos, rayDir, mapPos);
+
+                float edge = 1.0;
+                if (EnableOutlines == 1) {
+                    edge = edgeCheck(rayPos, rayDir, mapPos);
+                }
 
                 float forwardAlphaInv = 1.0 - color.a; // data.color.a ???
-                color.rgb += tempColor.rgb * (tempColor.a * forwardAlphaInv); // * edge;
+                color.rgb += tempColor.rgb * (tempColor.a * forwardAlphaInv) * edge;
                 color.a = 1.0 - forwardAlphaInv * (1.0 - tempColor.a);
             }
 
-            // timesThroughVoxel++;
+            timesThroughVoxel++;
 
             if (tempColor.a == 1.0) break;
         }
@@ -212,12 +181,13 @@ void main() {
         mapPos += ivec3(vec3(mask)) * rayStep;
     }
 
-    float vvv = edgeCheck(rayPos, rayDir, mapPos);
-
     // If the max distance was reached, we need this.
     // Otherwise we get a voxel rendered at the max distance.
     if (iterations < MAX_RAY_STEPS) {
-        // color.rgb *= vvv;
+        if (EnableOutlines == 1) {
+            float vvv = edgeCheck(rayPos, rayDir, mapPos);
+            color.rgb *= vvv;
+        }
         // vec3 color = vec3(1.0, 0.0, 0.0);
         if (mask.x) {
             color.rgb *= vec3(0.5);
@@ -228,6 +198,12 @@ void main() {
         if (mask.z) {
             color.rgb *= vec3(0.75);
         }
+    } else {
+        // "Sky" color
+        vec4 tempColor = vec4(0.0, 0.5, 0.5, 1.0);
+        float forwardAlphaInv = 1.0 - color.a;
+        color.rgb += tempColor.rgb * (tempColor.a * forwardAlphaInv);
+        color.a = 1.0 - forwardAlphaInv * (1.0 - tempColor.a);
     }
 
     FragColor = color;

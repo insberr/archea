@@ -31,6 +31,7 @@ private:
 
     // Settings
     int maxRaySteps { 200 };
-    float particleScale { 1.0f };
+    float particleScale { 0.4f };
+    bool enableOutlines { false };
 };
 

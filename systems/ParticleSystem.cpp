@@ -170,6 +170,7 @@ void ParticleSystem::Render() {
 
     glUniform1i(glGetUniformLocation(shaderProgram, "MAX_RAY_STEPS"), maxRaySteps);
     glUniform1f(glGetUniformLocation(shaderProgram, "ParticleScale"), particleScale);
+    glUniform1ui(glGetUniformLocation(shaderProgram, "EnableOutlines"), enableOutlines);
 
     // Bind the vertex data
     glBindVertexArray(VAO);
@@ -181,6 +182,7 @@ void ParticleSystem::Render() {
     if (ImGui::Begin("Simulation Controls")) {
         ImGui::SliderInt("Max Ray Steps", &maxRaySteps, 0, 1000);
         ImGui::SliderFloat("Particle Scale", &particleScale, 0.001f, 2.0f, "%.3f");
+        ImGui::Checkbox("Show Particle Outlines", &enableOutlines);
     }
     ImGui::End();
 }
