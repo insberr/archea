@@ -29,6 +29,8 @@ private:
 
     GLuint VBO {0}, VAO {0}, EBO {0};
 
+    glm::ivec3 drawPos;
+
     // Settings
     int maxRaySteps { 200 };
     float particleScale { 0.4f };

@@ -71,6 +71,7 @@ void ParticleSystem::Init() {
     glCreateBuffers(1, &particlesColrosBuffer);
     std::vector<glm::vec4> particleColors;
     // add colors
+    particleColors.push_back(glm::vec4(255, 0, 0, 50) / 255.0f);
     particleColors.push_back(glm::vec4(200, 150, 10, 255) / 255.0f);
     particleColors.push_back(glm::vec4(13, 136, 188, 100) / 255.0f);
     particleColors.push_back(glm::vec4(239, 103, 23, 255) / 255.0f);
@@ -84,7 +85,7 @@ void ParticleSystem::Init() {
     for (unsigned x = 2; x < 7; ++x) {
         for (unsigned y = 5; y < 10; ++y) {
             for (unsigned z = 2; z < 7; ++z) {
-                particles[z * (50 * 50) + y * (50) + x] = 1;
+                particles[z * (50 * 50) + y * (50) + x] = 2;
             }
         }
     }
@@ -95,21 +96,52 @@ void ParticleSystem::Update(float dt) {
 
     if (dt == 0.0f) return;
 
+    int& part = particles[drawPos.z * (50 * 50) + drawPos.y * (50) + drawPos.x];
+    if (part <= 1) {
+        part = 0;
+    }
+
     if (InputSystem::IsKeyHeld(GLFW_KEY_Q)) {
-        particles[3 * (50 * 50) + 5 * (50) + 3] = 1;
+        particles[drawPos.z * (50 * 50) + drawPos.y * (50) + drawPos.x] = 2;
+    }
+
+    if (InputSystem::IsKeyHeld(GLFW_KEY_LEFT)) {
+        drawPos.x = std::clamp(drawPos.x - 1, 0, 50 - 1);
+    }
+    if (InputSystem::IsKeyHeld(GLFW_KEY_RIGHT)) {
+        drawPos.x = std::clamp(drawPos.x + 1, 0, 50 - 1);
+    }
+    if (InputSystem::IsKeyHeld(GLFW_KEY_F)) {
+        if (InputSystem::IsKeyHeld(GLFW_KEY_UP)) {
+            drawPos.z = std::clamp(drawPos.z + 1, 0, 50 - 1);
+        }
+        if (InputSystem::IsKeyHeld(GLFW_KEY_DOWN)) {
+            drawPos.z = std::clamp(drawPos.z - 1, 0, 50 - 1);
+        }
+    } else {
+        if (InputSystem::IsKeyHeld(GLFW_KEY_UP)) {
+            drawPos.y = std::clamp(drawPos.y + 1, 0, 50 - 1);
+        }
+        if (InputSystem::IsKeyHeld(GLFW_KEY_DOWN)) {
+            drawPos.y = std::clamp(drawPos.y - 1, 0, 50 - 1);
+        }
+    }
+    int& part2 = particles[drawPos.z * (50 * 50) + drawPos.y * (50) + drawPos.x];
+    if (part2 <= 1) {
+        part2 = 1;
     }
 
     static float step = 0.0f;
-    if (step < 1.0f) {
+    if (step < 0.4f) {
         step += dt;
     }
-    if (step >= 1.0f) {
+    if (step >= 0.4f) {
         for (unsigned x = 0; x < 50; ++x) {
             for (int y = 0; y < 50; ++y) {
                 for (unsigned z = 0; z < 50; ++z) {
                     // z * (ysize * xsize) + y * (xsize) + x
                     int particle = particles[z * (50 * 50) + y * (50) + x];
-                    if (particle == 0) continue;
+                    if (particle <= 1) continue;
 
                     int newY = std::clamp<int>(y - 1, 0, 49);
                     int atNewY = particles[z * (50 * 50) + newY * (50) + x];
@@ -180,6 +212,7 @@ void ParticleSystem::Render() {
     // glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, 0);
 
     if (ImGui::Begin("Simulation Controls")) {
+        ImGui::Text("Draw Pos (Change With Arrow Keys) %i %i %i", drawPos.x, drawPos.y, drawPos.z);
         ImGui::SliderInt("Max Ray Steps", &maxRaySteps, 0, 1000);
         ImGui::SliderFloat("Particle Scale", &particleScale, 0.001f, 2.0f, "%.3f");
         ImGui::Checkbox("Show Particle Outlines", &enableOutlines);
