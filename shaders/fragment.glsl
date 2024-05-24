@@ -87,8 +87,8 @@ const vec4 NoParticle = vec4(-1.0);
 const vec4 AXIS_PARTICLE = vec4(1.0, 0.0, 0.0, 1.0);
 const int arraySize = 50;
 // test if a voxel exists here
-vec4 getParticle(vec3 _c) {
-    ivec3 c = ivec3((_c / ParticleScale) + 0.5);
+vec4 getParticle(ivec3 c) {
+    // ivec3 c = ivec3((_c / ParticleScale) + 0.5);
     // Ground
     if (c.y == -2.0) return vec4(vec3(0.5), 0.6); // 0.6
     // X axis
@@ -145,7 +145,7 @@ vec4 rayMarch(vec3 ro, vec3 rd) {
     // return vec4(0.0);
 }
 
-float edgeCheck(vec3 rayPos, vec3 rayDir, vec3 mapPos) {
+float edgeCheck(vec3 rayPos, vec3 rayDir, ivec3 mapPos) {
     vec3 ri = 1.0 / rayDir;
     vec3 rs = sign(rayDir);
     vec3 mini = (mapPos - rayPos + 0.5 - 0.5 * vec3(rs)) * ri;
@@ -163,11 +163,12 @@ void main() {
     vec3 rayDir = normalize((CameraView * vec4(uv * FieldOfView, 1.0, 0.0)).xyz);
     vec3 rayPos = CameraPosition / ParticleScale;
 
-    vec3 mapPos = floor(rayPos - 0.5) * ParticleScale;
-    vec3 deltaDist = abs(vec3(ParticleScale) / rayDir);
-    vec3 rayStep = sign(rayDir) * ParticleScale;
+    ivec3 mapPos = ivec3(floor(rayPos + 0.0));
+    vec3 deltaDist = abs(vec3(length(rayDir)) / rayDir);
+    ivec3 rayStep = ivec3(sign(rayDir)); // * ParticleScale;
     // vec3 sideDist = (sign(rayDir) * (mapPos - rayPos) + (sign(rayDir) * ParticleScale * 0.5) + ParticleScale * 0.5) * deltaDist;
-    vec3 sideDist = (sign(rayDir) * (mapPos - (rayPos - 0.5) * ParticleScale)) * deltaDist;
+    // vec3 sideDist = (sign(rayDir) * (mapPos - (rayPos - 0.5) * ParticleScale)) * deltaDist;
+    vec3 sideDist = (sign(rayDir) * (vec3(mapPos) - rayPos) + (sign(rayDir) * 0.5) + 0.5) * deltaDist;
     bvec3 mask;
 
     vec4 color = vec4(0.0);
@@ -208,10 +209,7 @@ void main() {
         sideDist += vec3(mask) * deltaDist;
         // This looks really weird, use at own risk
         // if (fract(sideDist.x) < 0.02) color = vec4(1.0, 0.0, 0.0, 1.0);
-        mapPos += vec3(mask) * rayStep;
-
-        float moveDist = min(min(deltaDist.x, deltaDist.y), deltaDist.z);
-        rayPos += rayDir * moveDist;
+        mapPos += ivec3(vec3(mask)) * rayStep;
     }
 
     float vvv = edgeCheck(rayPos, rayDir, mapPos);
