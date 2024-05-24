@@ -143,6 +143,17 @@ vec4 rayMarch(vec3 ro, vec3 rd) {
     // return vec4(0.0);
 }
 
+float edgeCheck(vec3 rayPos, vec3 rayDir, vec3 mapPos) {
+    vec3 ri = 1.0 / rayDir;
+    vec3 rs = sign(rayDir);
+    vec3 mini = (mapPos - rayPos + 0.5 - 0.5 * vec3(rs)) * ri;
+    float t = max(mini.x, max(mini.y, mini.z));
+    vec3 pos = rayPos + rayDir * t;
+    vec3 uvw = pos - mapPos;
+    vec3 wir = smoothstep(0.4, 0.5, abs(uvw - 0.5));
+    return (1.0 - wir.x * wir.y) * (1.0 - wir.x * wir.z) * (1.0 - wir.y * wir.z);
+}
+
 void main() {
     vec2 uv = (gl_FragCoord.xy * 2. - Resolution.xy) / Resolution.y; // new
 
@@ -195,14 +206,7 @@ void main() {
         mapPos += ivec3(vec3(mask)) * rayStep;
     }
 
-    vec3 ri = 1.0 / rayDir;
-    vec3 rs = sign(rayDir);
-    vec3 mini = (mapPos - rayPos + 0.5 - 0.5 * vec3(rs)) * ri;
-    float t = max(mini.x, max(mini.y, mini.z));
-    vec3 pos = rayPos + rayDir * t;
-    vec3 uvw = pos - mapPos;
-    vec3 wir = smoothstep(0.4, 0.5, abs(uvw - 0.5));
-    float vvv = (1.0 - wir.x * wir.y) * (1.0 - wir.x * wir.z) * (1.0 - wir.y * wir.z);
+    float vvv = edgeCheck(rayPos, rayDir, mapPos);
 
     // If the max distance was reached, we need this.
     // Otherwise we get a voxel rendered at the max distance.
