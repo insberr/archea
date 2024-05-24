@@ -159,6 +159,7 @@ void main() {
     vec4 color = vec4(0.0);
 
     int iterations = 0;
+    vec4 lastIterDidHitAndColor = vec4(-1.0);
     for (int i = 0; i < MAX_RAY_STEPS; i++) {
         ++iterations;
         // Basically we hit something, so stop the loop, and because of the masking
@@ -167,14 +168,19 @@ void main() {
 
         // We hit something
         if (tempColor.r != -1.0) {
-            // Help with the alpha blending given by:
-            //   https://github.com/Bowserinator/TPTBox
-            float forwardAlphaInv = 1.0 - color.a; // data.color.a ???
-            color.rgb += tempColor.rgb *  (tempColor.a * forwardAlphaInv);
-            color.a = 1.0 - forwardAlphaInv * (1.0 - tempColor.a);
+
+            if (lastIterDidHitAndColor.rgb != tempColor.rgb) {
+                // Help with the alpha blending given by:
+                //   https://github.com/Bowserinator/TPTBox
+                float forwardAlphaInv = 1.0 - color.a; // data.color.a ???
+                color.rgb += tempColor.rgb *  (tempColor.a * forwardAlphaInv);
+                color.a = 1.0 - forwardAlphaInv * (1.0 - tempColor.a);
+            }
+
 
             if (tempColor.a == 1.0) break;
         }
+        lastIterDidHitAndColor = tempColor;
 
         // Thanks kzy for the suggestion!
         mask = lessThanEqual(sideDist.xyz, min(sideDist.yzx, sideDist.zxy));
