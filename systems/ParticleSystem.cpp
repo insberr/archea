@@ -80,6 +80,14 @@ void ParticleSystem::Init() {
         (const void*)particleColors.data(),
         GL_DYNAMIC_STORAGE_BIT
     );
+
+    for (unsigned x = 2; x < 7; ++x) {
+        for (unsigned y = 5; y < 10; ++y) {
+            for (unsigned z = 2; z < 7; ++z) {
+                particles[z * (50 * 50) + y * (50) + x] = 1;
+            }
+        }
+    }
 }
 
 void ParticleSystem::Update(float dt) {
@@ -97,13 +105,13 @@ void ParticleSystem::Update(float dt) {
     }
     if (step >= 1.0f) {
         for (unsigned x = 0; x < 50; ++x) {
-            for (unsigned y = 0; y < 50; ++y) {
+            for (int y = 0; y < 50; ++y) {
                 for (unsigned z = 0; z < 50; ++z) {
                     // z * (ysize * xsize) + y * (xsize) + x
                     int particle = particles[z * (50 * 50) + y * (50) + x];
                     if (particle == 0) continue;
 
-                    unsigned newY = std::clamp<unsigned>(y - 1, 0, 49);
+                    int newY = std::clamp<int>(y - 1, 0, 49);
                     int atNewY = particles[z * (50 * 50) + newY * (50) + x];
                     if (atNewY != 0) continue;
                     particles[z * (50 * 50) + newY * (50) + x] = particle;
