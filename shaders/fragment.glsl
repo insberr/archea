@@ -122,14 +122,22 @@ void main() {
                 // Help with the alpha blending given by:
                 //   https://github.com/Bowserinator/TPTBox
 
-                float edge = 1.0;
-                if (EnableOutlines == 1) {
-                    edge = edgeCheck(rayPos, rayDir, mapPos);
-                }
+//                float edge = 1.0;
+//                if (EnableOutlines == 1) {
+//                    edge = edgeCheck(rayPos, rayDir, mapPos);
+//                }
 
                 float forwardAlphaInv = 1.0 - color.a; // data.color.a ???
-                color.rgb += tempColor.rgb * (tempColor.a * forwardAlphaInv) * edge;
+                color.rgb += tempColor.rgb * (tempColor.a * forwardAlphaInv); // * edge;
                 color.a = 1.0 - forwardAlphaInv * (1.0 - tempColor.a);
+
+                if (EnableOutlines == 1 && tempColor.a != 1.0) {
+                    float edge = edgeCheck(rayPos, rayDir, mapPos);
+                    if (edge != 1.0) {
+                        color.rgb = vec3(edge);
+                        color.a = 1.0;
+                    }
+                }
             }
 
             if (tempColor.a == 1.0) break;
@@ -149,7 +157,7 @@ void main() {
     if (iterations < MAX_RAY_STEPS) {
         if (EnableOutlines == 1) {
             float vvv = edgeCheck(rayPos, rayDir, mapPos);
-            color.rgb *= vvv;
+            if (vvv != 1.0) color.rgb = vec3(vvv);
         }
 
         if (mask.x) {
