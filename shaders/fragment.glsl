@@ -50,13 +50,13 @@ float cubeSDF(vec3 point, vec3 size) {
 
 const vec4 NoParticle = vec4(-1.0);
 const int arraySize = 50; // make this a uniform
-// test if a voxel exists here
+// Test if a voxel exists here
 vec4 getParticle(ivec3 c) {
-    // ivec3 c = ivec3((_c / ParticleScale) + 0.5);
     // Ground
-    if (c.y == -1 && c.x >= 0 && c.z >= 0   && c.z <= arraySize && c.x <= arraySize) return vec4(vec3(0.3), 0.6); // 0.6
-    // X axis
-    if (c.y == -1 && c.z == -1   && c.x >= -1) return vec4(1.0, 0.0, 0.0, 0.4); // x axis // 0.4
+    if (c.y == -1 && c.x >= 0 && c.z >= 0   && c.z <= arraySize && c.x <= arraySize) return vec4(vec3(0.3), 0.6);
+
+    // Axis Voxels
+    if (c.y == -1 && c.z == -1   && c.x >= -1) return vec4(1.0, 0.0, 0.0, 0.4); // x axis
     if (c.x == -1 && c.z == -1   && c.y >= -1) return vec4(0.0, 1.0, 0.0, 0.4); // y axis
     if (c.x == -1 && c.y == -1   && c.z >= -1) return vec4(0.0, 0.0, 1.0, 0.4); // z axis
 
@@ -77,38 +77,9 @@ vec4 getParticle(ivec3 c) {
     return colors[val - 1];
 }
 
-// The ray marching magic happens here
-vec4 rayMarch(vec3 ro, vec3 rd) {
-    float totalDistance = 0.0;
-    vec3 color = vec3(0.0);
-
-    for (int i = 0; i < MAX_RAY_STEPS; ++i) {
-        vec3 p = ro + rd * totalDistance;
-
-        float d = 0.0; // scene(p);
-
-        totalDistance += d;
-
-        // Color based on iteration count
-        // color = vec3(i) / MAX_STEPS;
-
-        if (d < SURFACE_DIST || totalDistance > MAX_DISTANCE) break;
-    }
-
-    // Color based on depth
-    color = vec3(totalDistance * .2);
-
-    return vec4(color, 1.0);
-
-    //    if (totalDistance > MAX_DISTANCE) {
-    //        return vec4(0.0);
-    //    } else {
-    //            return vec4(0.7);
-    //    }
-
-    // return vec4(0.0);
-}
-
+// Check of we are near the edge of the voxel,
+//  and if so return a float to multiply the color value by
+// basically if the value is 1.0, its not the edge
 float edgeCheck(vec3 rayPos, vec3 rayDir, ivec3 mapPos) {
     vec3 ri = 1.0 / rayDir;
     vec3 rs = sign(rayDir);
@@ -121,7 +92,7 @@ float edgeCheck(vec3 rayPos, vec3 rayDir, ivec3 mapPos) {
 }
 
 void main() {
-    vec2 uv = (gl_FragCoord.xy * 2. - Resolution.xy) / Resolution.y; // new
+    vec2 uv = (gl_FragCoord.xy * 2. - Resolution.xy) / Resolution.y;
 
     /* Ray Direction And Origin */
     vec3 rayDir = normalize((CameraView * vec4(uv * FieldOfView, 1.0, 0.0)).xyz);
@@ -129,9 +100,7 @@ void main() {
 
     ivec3 mapPos = ivec3(floor(rayPos + 0.0));
     vec3 deltaDist = abs(vec3(length(rayDir)) / rayDir);
-    ivec3 rayStep = ivec3(sign(rayDir)); // * ParticleScale;
-    // vec3 sideDist = (sign(rayDir) * (mapPos - rayPos) + (sign(rayDir) * ParticleScale * 0.5) + ParticleScale * 0.5) * deltaDist;
-    // vec3 sideDist = (sign(rayDir) * (mapPos - (rayPos - 0.5) * ParticleScale)) * deltaDist;
+    ivec3 rayStep = ivec3(sign(rayDir));
     vec3 sideDist = (sign(rayDir) * (vec3(mapPos) - rayPos) + (sign(rayDir) * 0.5) + 0.5) * deltaDist;
     bvec3 mask;
 
@@ -139,7 +108,6 @@ void main() {
     vec4 color = vec4(0.0);
 
     int iterations = 0;
-    int timesThroughVoxel = 0;
     vec4 lastIterDidHitAndColor = vec4(-1.0);
     for (int i = 0; i < MAX_RAY_STEPS; i++) {
         ++iterations;
@@ -147,7 +115,7 @@ void main() {
         //   code below, a voxel will be rendered at the last position.
         vec4 tempColor = getParticle(mapPos);
 
-        // We hit something
+        // We hit something!
         if (tempColor.r != -1.0) {
 
             if (lastIterDidHitAndColor.rgb != tempColor.rgb) {
@@ -164,20 +132,15 @@ void main() {
                 color.a = 1.0 - forwardAlphaInv * (1.0 - tempColor.a);
             }
 
-            timesThroughVoxel++;
-
             if (tempColor.a == 1.0) break;
         }
         lastIterDidHitAndColor = tempColor;
 
-        // Thanks kzy for the suggestion!
+        // -- Thanks kzy for the suggestion!
         mask = lessThanEqual(sideDist.xyz, min(sideDist.yzx, sideDist.zxy));
-
-        //All components of mask are false except for the corresponding largest component
-        //of sideDist, which is the axis along which the ray should be incremented.
+        // -- All components of mask are false except for the corresponding largest component
+        // -- of sideDist, which is the axis along which the ray should be incremented.
         sideDist += vec3(mask) * deltaDist;
-        // This looks really weird, use at own risk
-        // if (fract(sideDist.x) < 0.02) color = vec4(1.0, 0.0, 0.0, 1.0);
         mapPos += ivec3(vec3(mask)) * rayStep;
     }
 
@@ -188,7 +151,7 @@ void main() {
             float vvv = edgeCheck(rayPos, rayDir, mapPos);
             color.rgb *= vvv;
         }
-        // vec3 color = vec3(1.0, 0.0, 0.0);
+
         if (mask.x) {
             color.rgb *= vec3(0.5);
         }
@@ -200,7 +163,7 @@ void main() {
         }
     } else {
         // "Sky" color
-        vec4 tempColor = vec4(0.0, 0.5, 0.5, 1.0);
+        vec4 tempColor = vec4(0.1, 0.4, 0.5, 1.0);
         float forwardAlphaInv = 1.0 - color.a;
         color.rgb += tempColor.rgb * (tempColor.a * forwardAlphaInv);
         color.a = 1.0 - forwardAlphaInv * (1.0 - tempColor.a);
