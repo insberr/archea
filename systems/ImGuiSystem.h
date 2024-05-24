@@ -21,6 +21,10 @@ public:
 
     void StartFrame();
     void EndFrame();
-private:
 
+    void EnableImGui();
+    void DisableImGui();
+    void IsImGuiEnabled();
+private:
+    bool imGuiEnabled { true };
 };

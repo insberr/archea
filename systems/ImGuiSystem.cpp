@@ -49,3 +49,21 @@ void ImGuiSystem::EndFrame() {
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
+
+void ImGuiSystem::EnableImGui() {
+    imGuiEnabled = true;
+
+    // Allow ImGui to use the mouse
+    ImGui::GetIO().ConfigFlags &= ~ImGuiConfigFlags_NoMouse;
+}
+
+void ImGuiSystem::DisableImGui() {
+    imGuiEnabled = false;
+
+    // Don't allow ImGui to use the mouse
+    ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_NoMouse;
+}
+
+void ImGuiSystem::IsImGuiEnabled() {
+
+}
