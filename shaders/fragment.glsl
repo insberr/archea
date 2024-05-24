@@ -58,6 +58,7 @@ const float MAX_DISTANCE = 100.0;
 
 // The distance to an object that is considered a hit
 const float SURFACE_DIST = 0.001;
+const float voxelScale = 0.2;
 
 // 2D Rotation Function
 mat2 rot2D(float angle) {
@@ -86,7 +87,8 @@ const vec4 NoParticle = vec4(-1.0);
 const vec4 AXIS_PARTICLE = vec4(1.0, 0.0, 0.0, 1.0);
 const int arraySize = 50;
 // test if a voxel exists here
-vec4 getParticle(ivec3 c) {
+vec4 getParticle(vec3 _c) {
+    ivec3 c = ivec3(_c / (1.0 - voxelScale));
     // Ground
     if (c.y == -2.0) return vec4(vec3(0.5), 0.6); // 0.6
     // X axis
@@ -161,9 +163,9 @@ void main() {
     vec3 rayDir = normalize((CameraView * vec4(uv * FieldOfView, 1.0, 0.0)).xyz);
     vec3 rayPos = CameraPosition;
 
-    ivec3 mapPos = ivec3(floor(rayPos + 0.));
+    vec3 mapPos = floor(rayPos + 0.);
     vec3 deltaDist = abs(vec3(length(rayDir)) / rayDir);
-    ivec3 rayStep = ivec3(sign(rayDir));
+    vec3 rayStep = sign(rayDir * voxelScale);
     vec3 sideDist = (sign(rayDir) * (vec3(mapPos) - rayPos) + (sign(rayDir) * 0.5) + 0.5) * deltaDist;
     bvec3 mask;
 
@@ -187,7 +189,7 @@ void main() {
                 float edge = edgeCheck(rayPos, rayDir, mapPos);
 
                 float forwardAlphaInv = 1.0 - color.a; // data.color.a ???
-                color.rgb += tempColor.rgb * (tempColor.a * forwardAlphaInv) * edge;
+                color.rgb += tempColor.rgb * (tempColor.a * forwardAlphaInv); // * edge;
                 color.a = 1.0 - forwardAlphaInv * (1.0 - tempColor.a);
             }
 
@@ -205,7 +207,7 @@ void main() {
         sideDist += vec3(mask) * deltaDist;
         // This looks really weird, use at own risk
         // if (fract(sideDist.x) < 0.02) color = vec4(1.0, 0.0, 0.0, 1.0);
-        mapPos += ivec3(vec3(mask)) * rayStep;
+        mapPos += vec3(mask) * rayStep;
     }
 
     float vvv = edgeCheck(rayPos, rayDir, mapPos);
@@ -213,7 +215,7 @@ void main() {
     // If the max distance was reached, we need this.
     // Otherwise we get a voxel rendered at the max distance.
     if (iterations < MAX_RAY_STEPS) {
-         color.rgb *= vvv;
+        // color.rgb *= vvv;
         // vec3 color = vec3(1.0, 0.0, 0.0);
         if (mask.x) {
             color.rgb *= vec3(0.5);

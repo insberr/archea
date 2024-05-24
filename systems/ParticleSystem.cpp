@@ -169,6 +169,8 @@ void ParticleSystem::Render() {
     glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "CameraView"), 1, GL_FALSE, glm::value_ptr(cameraMatrix));
 
     glUniform1i(glGetUniformLocation(shaderProgram, "MAX_RAY_STEPS"), maxRaySteps);
+    glUniform1f(glGetUniformLocation(shaderProgram, "ParticleScale"), particleScale);
+
     // Bind the vertex data
     glBindVertexArray(VAO);
     // Call draw
@@ -178,6 +180,7 @@ void ParticleSystem::Render() {
 
     if (ImGui::Begin("Simulation Controls")) {
         ImGui::SliderInt("Max Ray Steps", &maxRaySteps, 0, 1000);
+        ImGui::SliderFloat("Particle Scale", &particleScale, 0.001f, 2.0f, "%.3f");
     }
     ImGui::End();
 }
