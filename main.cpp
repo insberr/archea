@@ -9,6 +9,7 @@
 #include "systems/CameraSystem.h"
 #include "systems/ParticleSystem.h"
 #include "systems/ImGuiSystem.h"
+#include "systems/particle_types/ParticleTypeSystem.h"
 
 int main() {
     auto app = App{};
@@ -25,6 +26,8 @@ int main() {
     // ImGui System
     app.AddSystem(std::make_unique<ImGuiSystem>());
 
+    // Add Particle Type System
+    app.AddSystem(std::make_unique<ParticleTypeSystem>());
     // Particle Simulation
     app.AddSystem(std::make_unique<ParticleSystem>());
 

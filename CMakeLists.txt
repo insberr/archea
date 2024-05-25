@@ -62,7 +62,10 @@ add_executable(archea
         systems/CameraSystem.h
         systems/ImGuiSystem.cpp
         systems/ImGuiSystem.h
-        systems/particle_types/ParticleType.cpp
+        systems/particle_types/ParticleType.h
+        systems/particle_types/SandParticle_Type.h
+        systems/particle_types/ParticleTypeSystem.cpp
+        systems/particle_types/ParticleTypeSystem.h
 )
 # Run the copy_shaders commands
 add_dependencies(archea copy_shaders)

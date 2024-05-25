@@ -14,12 +14,3 @@ struct ParticleType {
     float temperature;
 
 };
-
-
-
-// sandparticle.cpp
-const ParticleType SandParticle = {
-    .state = ParticleType::State::Solid,
-    .color = {200, 150, 10, 255},
-    .temperature = 30.0f
-};
