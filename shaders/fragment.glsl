@@ -272,7 +272,7 @@ void main() {
         }
     } else {
         // "Sky" color
-        vec4 tempColor = vec4(0.0, 0.0, 0.0, 1.0);
+        vec4 tempColor = vec4(0.3, 0.4, 0.4, 1.0);
         float forwardAlphaInv = 1.0 - color.a;
         color.rgb += tempColor.rgb * (tempColor.a * forwardAlphaInv);
         color.a = 1.0 - forwardAlphaInv * (1.0 - tempColor.a);
