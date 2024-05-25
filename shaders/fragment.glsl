@@ -99,18 +99,19 @@ float edgeCheck(vec3 rayPos, vec3 rayDir, ivec3 mapPos) {
 
 void main() {
     vec2 uv = (gl_FragCoord.xy * 2. - Resolution.xy) / Resolution.y;
+    uv.y *= Resolution.x / Resolution.y;
 
     // Transform uv to view space
-    vec4 viewCoords = inverse(projection) * vec4(uv * 2.0 - 1.0, 1.0, 1.0);
-    viewCoords /= viewCoords.w;
+    vec4 viewCoords = inverse(projection * view) * vec4(uv, 1.0, 1.0) * FieldOfView;
+    // viewCoords /= viewCoords.w;
 
     /* Ray Direction And Origin */
-    // vec3 rayDir = normalize((vec4(uv * FieldOfView, 1.0, 0.0)).xyz);
     // vec3 rayDir = normalize((CameraView * vec4(uv * FieldOfView, 1.0, 0.0)).xyz);
-    vec3 rayDir = normalize(viewCoords.xyz - CameraPosition);
+    vec3 rayDir = normalize(viewCoords.xyz); // + normalize((view * vec4(uv * tan((45 * (3.14159/180))), 1.0, 0.0)).xyz);
     // vec3 rayPos = vec3(0.0) / ParticleScale;
-    float nearPlane = 0.1;
-    vec3 rayPos = CameraPosition + rayDir * nearPlane;
+    // float nearPlane = 0.1;
+    // vec3 rayPos = (CameraPosition / ParticleScale) + rayDir * nearPlane;
+    vec3 rayPos = CameraPosition / ParticleScale;
 
     ivec3 mapPos = ivec3(floor(rayPos + 0.0));
     vec3 deltaDist = abs(vec3(length(rayDir)) / rayDir);
