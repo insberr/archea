@@ -21,7 +21,9 @@ layout (binding = 1, std430) readonly restrict buffer Colors {
     vec4 colors[];
 };
 
+uniform mat4 model;
 uniform mat4 view;
+uniform mat4 projection;
 uniform float ParticleScale;
 uniform uint EnableOutlines;
 // The number of ray steps to make
@@ -38,6 +40,7 @@ uniform int MAX_RAY_STEPS;
 // of this particular model.
 #define COUNT_STEPS 100
 
+const float DEPTH_FAR_AWAY = 1000.0;
 
 float opSubtraction(float d1, float d2) // Inigo Quilez (https://iquilezles.org/articles/distfunctions)
 {
@@ -150,17 +153,17 @@ const int arraySize = 50; // make this a uniform
 // Test if a voxel exists here
 vec4 getParticle(ivec3 c) {
     // Ground
-    if (c.y == -1 && c.x >= 0 && c.z >= 0   && c.z <= arraySize && c.x <= arraySize) return vec4(vec3(0.3), 0.6);
-
-    // Axis Voxels
-    if (c.y == -1 && c.z == -1   && c.x >= -1) return vec4(1.0, 0.0, 0.0, 0.4); // x axis
-    if (c.x == -1 && c.z == -1   && c.y >= -1) return vec4(0.0, 1.0, 0.0, 0.4); // y axis
-    if (c.x == -1 && c.y == -1   && c.z >= -1) return vec4(0.0, 0.0, 1.0, 0.4); // z axis
+    if (c.y == -1 && c.x >= 0 && c.z >= 0   && c.z < arraySize && c.x < arraySize) return vec4(vec3(0.3), 0.6);
 
     // Array index range checks
     if (c.x >= arraySize) return NoParticle;
     if (c.y >= arraySize) return NoParticle;
     if (c.z >= arraySize) return NoParticle;
+    // Axis Voxels
+    if (c.y == -1 && c.z == -1   && c.x >= -1) return vec4(1.0, 0.0, 0.0, 0.4); // x axis
+    if (c.x == -1 && c.z == -1   && c.y >= -1) return vec4(0.0, 1.0, 0.0, 0.4); // y axis
+    if (c.x == -1 && c.y == -1   && c.z >= -1) return vec4(0.0, 0.0, 1.0, 0.4); // z axis
+    // Index checks
     if (c.x < 0) return NoParticle;
     if (c.y < 0) return NoParticle;
     if (c.z < 0) return NoParticle;
@@ -203,6 +206,7 @@ void main() {
     ivec3 rayStep = ivec3(sign(rayDir));
     vec3 sideDist = (sign(rayDir) * (vec3(mapPos) - rayPos) + (sign(rayDir) * 0.5) + 0.5) * deltaDist;
     bvec3 mask;
+    ivec3 firstHitMapPos = ivec3(0);
 
     // This must start as 0 or else things will be tinted by this color
     vec4 color = vec4(0.0);
@@ -219,6 +223,8 @@ void main() {
         // We hit something!
         if (tempColor.r != -1.0) {
             somethingHit = true;
+            // Set the first thing we hit. For depth buffering transparent objects
+            firstHitMapPos = mapPos;
             if (lastIterDidHitAndColor.rgb != tempColor.rgb) {
                 // Help with the alpha blending given by:
                 //   https://github.com/Bowserinator/TPTBox
@@ -276,14 +282,18 @@ void main() {
         float forwardAlphaInv = 1.0 - color.a;
         color.rgb += tempColor.rgb * (tempColor.a * forwardAlphaInv);
         color.a = 1.0 - forwardAlphaInv * (1.0 - tempColor.a);
+
+        gl_FragDepth = 0.0;
+        FragColor = color;
+        return;
     }
 
     // Depth Buffer
     // -- https://stackoverflow.com/a/29397319/6079328
-//    const float DEPTH_FAR_AWAY = 1000.0;
-//    vec4 vClipCoord = view * vec4(mapPos, 1.0);
-//    float fNdcDepth = vClipCoord.z / vClipCoord.w;
-//    gl_FragDepth = color.a > 0.0 ? (fNdcDepth + 1.0) * 0.5 : DEPTH_FAR_AWAY;
+    vec4 vClipCoord = projection * view * model * vec4(firstHitMapPos, 1.0);
+    float fNdcDepth = vClipCoord.z / vClipCoord.w;
+    //                                          vvv This should be 1.0 but if it is then particles go away when close
+    gl_FragDepth = color.a > 0.0 ? (fNdcDepth + 0.9) * 0.5 : DEPTH_FAR_AWAY;
 
     FragColor = color;
 }
