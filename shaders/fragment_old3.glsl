@@ -14,8 +14,6 @@ layout (binding = 1, std430) readonly restrict buffer Colors {
     vec4 colors[];
 };
 
-uniform samplerCube cubeMap;
-
 uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
