@@ -244,7 +244,7 @@ void ParticleSystem::Render() {
     int width, height;
     glfwGetFramebufferSize(window, &width, &height);
     // glUniform2f(glGetUniformLocation(shaderProgram, "Resolution"), width, height);
-    // glUniform1f(glGetUniformLocation(shaderProgram, "Time"), glfwGetTime());
+    glUniform1f(glGetUniformLocation(shaderProgram, "Time"), glfwGetTime());
 
     auto camera = app->GetSystem<CameraSystem>();
     auto cameraFieldOfView = camera->GetFOV();
