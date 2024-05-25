@@ -22,6 +22,7 @@ layout (binding = 1, std430) readonly restrict buffer Colors {
 };
 
 uniform mat4 view;
+uniform float ParticleScale;
 uniform uint EnableOutlines;
 // The number of ray steps to make
 uniform int MAX_RAY_STEPS;
@@ -111,7 +112,7 @@ vec2 intersectAABB (vec3 rayOrigin, vec3 rayDir, vec3 boxMin, vec3 boxMax)
 }
 
 
-void main_old ()
+void main_old()
 {
     // Try commenting 'normalize' operation and then move
     // camera around object to see what happens.
@@ -119,8 +120,8 @@ void main_old ()
     vec3 point = fragOrigin;
 
     // Uncomment this line to move a ray inside the cube
-    // point = point + direction * max(0, intersectAABB(point, direction, vec3(-0.5), vec3(+0.5)).x);
-
+    point = point + direction * max(0, intersectAABB(point, direction, vec3(-0.5 * 10.0), vec3(+0.5 * 10.0)).x);
+    point /= ParticleScale;
     // ...
     for (int n = 0; n < COUNT_STEPS; n++)
     {
@@ -197,7 +198,6 @@ void main() {
     // Uncomment this line to move a ray inside the cube
     // rayPos = rayPos + rayDir * max(0, intersectAABB(rayPos, rayDir, vec3(-0.5), vec3(+0.5)).x);
 
-
     ivec3 mapPos = ivec3(floor(rayPos + 0.0));
     vec3 deltaDist = abs(vec3(length(rayDir)) / rayDir);
     ivec3 rayStep = ivec3(sign(rayDir));
@@ -209,6 +209,7 @@ void main() {
 
     int iterations = 0;
     vec4 lastIterDidHitAndColor = vec4(-1.0);
+    bool somethingHit = false;
     for (int i = 0; i < MAX_RAY_STEPS; i++) {
         ++iterations;
         // Basically we hit something, so stop the loop, and because of the masking
@@ -217,7 +218,7 @@ void main() {
 
         // We hit something!
         if (tempColor.r != -1.0) {
-
+            somethingHit = true;
             if (lastIterDidHitAndColor.rgb != tempColor.rgb) {
                 // Help with the alpha blending given by:
                 //   https://github.com/Bowserinator/TPTBox
@@ -234,7 +235,7 @@ void main() {
                 if (EnableOutlines == 1 && tempColor.a != 1.0) {
                     float edge = edgeCheck(rayPos, rayDir, mapPos);
                     if (edge != 1.0) {
-                        color.rgb = vec3(edge);
+                        color.rgb = vec3(0.2);
                         color.a = 1.0;
                     }
                 }
@@ -257,7 +258,7 @@ void main() {
     if (iterations < MAX_RAY_STEPS) {
         if (EnableOutlines == 1) {
             float vvv = edgeCheck(rayPos, rayDir, mapPos);
-            if (vvv != 1.0) color.rgb = vec3(vvv);
+            if (vvv != 1.0) color.rgb = vec3(0.2);
         }
 
         if (mask.x) {
@@ -271,7 +272,7 @@ void main() {
         }
     } else {
         // "Sky" color
-        vec4 tempColor = vec4(0.1, 0.4, 0.5, 1.0);
+        vec4 tempColor = vec4(0.0, 0.0, 0.0, 1.0);
         float forwardAlphaInv = 1.0 - color.a;
         color.rgb += tempColor.rgb * (tempColor.a * forwardAlphaInv);
         color.a = 1.0 - forwardAlphaInv * (1.0 - tempColor.a);
@@ -279,10 +280,10 @@ void main() {
 
     // Depth Buffer
     // -- https://stackoverflow.com/a/29397319/6079328
-    const float DEPTH_FAR_AWAY = 1000.0;
-    vec4 vClipCoord = view * vec4(mapPos, 1.0);
-    float fNdcDepth = vClipCoord.z / vClipCoord.w;
-    gl_FragDepth = color.a > 0.0 ? (fNdcDepth + 1.0) * 0.5 : DEPTH_FAR_AWAY;
+//    const float DEPTH_FAR_AWAY = 1000.0;
+//    vec4 vClipCoord = view * vec4(mapPos, 1.0);
+//    float fNdcDepth = vClipCoord.z / vClipCoord.w;
+//    gl_FragDepth = color.a > 0.0 ? (fNdcDepth + 1.0) * 0.5 : DEPTH_FAR_AWAY;
 
     FragColor = color;
 }

@@ -122,6 +122,7 @@ int App::Init() {
 
     // Enable depth testing
     glEnable(GL_DEPTH_TEST);
+    glClearColor(0.4f, 0.4f, 0.4f, 0.4f);
 
     return 0;
 }

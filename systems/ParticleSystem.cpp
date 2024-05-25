@@ -143,28 +143,6 @@ void ParticleSystem::Init() {
             }
         }
     }
-
-    /* Cube map */
-    // Generate and bind the cube map texture
-    glGenTextures(1, &cubeMapID);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMapID);
-
-    // Set cube map texture parameters
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-
-    const int width = 1.0;
-    const int height = 1.0;
-    // Allocate memory for each face of the cube map
-    for (int face = 0; face < 6; ++face) {
-        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-    }
-
-    // Unbind the cube map texture
-    glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 }
 
 void ParticleSystem::Update(float dt) {
@@ -265,16 +243,16 @@ void ParticleSystem::Render() {
 
     int width, height;
     glfwGetFramebufferSize(window, &width, &height);
-    glUniform2f(glGetUniformLocation(shaderProgram, "Resolution"), width, height);
-    glUniform1f(glGetUniformLocation(shaderProgram, "Time"), glfwGetTime());
+    // glUniform2f(glGetUniformLocation(shaderProgram, "Resolution"), width, height);
+    // glUniform1f(glGetUniformLocation(shaderProgram, "Time"), glfwGetTime());
 
     auto camera = app->GetSystem<CameraSystem>();
     auto cameraFieldOfView = camera->GetFOV();
     auto cameraPos = camera->GetPosition();
     auto cameraMatrix = camera->CameraMatrix();
-    glUniform1f(glGetUniformLocation(shaderProgram, "FieldOfView"), cameraFieldOfView);
+    // glUniform1f(glGetUniformLocation(shaderProgram, "FieldOfView"), cameraFieldOfView);
     glUniform3f(glGetUniformLocation(shaderProgram, "CameraPosition"), cameraPos.x, cameraPos.y, cameraPos.z);
-    glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "CameraView"), 1, GL_FALSE, glm::value_ptr(cameraMatrix));
+    // glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "CameraView"), 1, GL_FALSE, glm::value_ptr(cameraMatrix));
 
     // Pass the matrices to the shader (for vertex shader for now)
     GLuint modelLoc = glGetUniformLocation(shaderProgram, "model");
@@ -291,31 +269,17 @@ void ParticleSystem::Render() {
     glUniform1f(glGetUniformLocation(shaderProgram, "ParticleScale"), particleScale);
     glUniform1ui(glGetUniformLocation(shaderProgram, "EnableOutlines"), enableOutlines);
 
-    // Bind cubemap texture
-    // Bind the cube map texture
-    glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMapID);
-
-    // Set the texture unit (optional)
-    glActiveTexture(GL_TEXTURE0); // Assuming texture unit 0 is used
-    glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMapID); // Bind again to the active texture unit
-
-    // Set the cube map texture uniform in your shader (if needed)
-    // glUniform1i(cubeMapUniform, 0); // Assuming cubeMapUniform is the uniform location for the cube map texture in your shader
-
     // Bind the vertex data
     glBindVertexArray(VAO);
     // Call draw
     glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
-
-    // Unbind the cube map texture (optional, if you're not using it elsewhere)
-    // glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 
     // glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, 0);
 
     if (ImGui::Begin("Simulation Controls")) {
         ImGui::Text("Draw Pos (Change With Arrow Keys) %i %i %i", drawPos.x, drawPos.y, drawPos.z);
         ImGui::SliderInt("Max Ray Steps", &maxRaySteps, 0, 1000);
-        ImGui::SliderFloat("Particle Scale", &particleScale, 0.001f, 2.0f, "%.3f");
+        ImGui::SliderFloat("Particle Scale", &particleScale, 0.001f, 5.0f, "%.8f");
         ImGui::Checkbox("Show Particle Outlines", &enableOutlines);
     }
     ImGui::End();
