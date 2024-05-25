@@ -53,7 +53,7 @@ int App::Run() {
         }
 
         // CLear the window
-        glClear(GL_COLOR_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // Start Imgui Frame
         GetSystem<ImGuiSystem>()->StartFrame();
@@ -119,6 +119,9 @@ int App::Init() {
         glfwTerminate();
         return -1;
     }
+
+    // Enable depth testing
+    glEnable(GL_DEPTH_TEST);
 
     return 0;
 }
