@@ -147,6 +147,13 @@ void main_old()
     FragColor = vec4(fragVertexColor.xyz, 1) * vec4(0.5, 0.5, 0.5, 1);
 }
 
+vec4 alphaBlend(vec4 color1, vec4 color2) {
+    float forwardAlphaInv = 1.0 - color1.a;
+    color1.rgb += color2.rgb * (color2.a * forwardAlphaInv);
+    color1.a = 1.0 - forwardAlphaInv * (1.0 - color2.a);
+
+    return color1;
+}
 
 const vec4 NoParticle = vec4(-1.0);
 const int arraySize = 50; // make this a uniform
@@ -159,22 +166,29 @@ vec4 getParticle(ivec3 c) {
     if (c.x >= arraySize) return NoParticle;
     if (c.y >= arraySize) return NoParticle;
     if (c.z >= arraySize) return NoParticle;
-    // Axis Voxels
-    if (c.y == -1 && c.z == -1   && c.x >= -1) return vec4(1.0, 0.0, 0.0, 0.4); // x axis
-    if (c.x == -1 && c.z == -1   && c.y >= -1) return vec4(0.0, 1.0, 0.0, 0.4); // y axis
-    if (c.x == -1 && c.y == -1   && c.z >= -1) return vec4(0.0, 0.0, 1.0, 0.4); // z axis
+
     // Index checks
-    if (c.x < 0) return NoParticle;
-    if (c.y < 0) return NoParticle;
-    if (c.z < 0) return NoParticle;
+    if (c.x < 0 || c.y < 0 || c.z < 0) return NoParticle;
 
     // Get the value in the array
     // z * (ysize * xsize) + y * (xsize) + x
     int val = particles[c.z * (arraySize * arraySize) + c.y * (arraySize) + c.x];
 
-    if (val == 0) return NoParticle;
+    if (val == 0) {
+        if (c.y == 0 && c.z == 0   && c.x >= 0) return vec4(1.0, 0.0, 0.0, 0.2); // x axis
+        if (c.x == 0 && c.z == 0   && c.y >= 0) return vec4(0.0, 1.0, 0.0, 0.2); // y axis
+        if (c.x == 0 && c.y == 0   && c.z >= 0) return vec4(0.0, 0.0, 1.0, 0.2); // z axis
+        return NoParticle;
+    }
 
-    return colors[val - 1];
+    // Axis Voxels
+    vec4 col = colors[val - 1];
+    if (c.y == 0 && c.z == 0   && c.x >= 0) col = alphaBlend(col, vec4(1.0, 0.0, 0.0, 0.2)); // x axis
+    if (c.x == 0 && c.z == 0   && c.y >= 0) col = alphaBlend(col, vec4(0.0, 1.0, 0.0, 0.2)); // y axis
+    if (c.x == 0 && c.y == 0   && c.z >= 0) col = alphaBlend(col, vec4(0.0, 0.0, 1.0, 0.2)); // z axis
+    return col;
+
+    // return colors[val - 1];
 }
 
 // Check of we are near the edge of the voxel,
