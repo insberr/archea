@@ -28,7 +28,8 @@ void main()
     // Scale again by the size of the array (50.0) to make it that many voxels big
     //   Add 1.0 to the array size becasue of offset stuff I guess
     //     (actually I think the platform size is 1 bigger than it should be)
-    vec3 aPosScaled = ((aPos + 0.5) * ParticleScale * 50.0) + translation; // (scale * vec4(aPos, 1.0)).xyz; // (aPos + vec3(0.5)) * (50.0 + 1.0);
+    vec3 aPosScaled = ((aPos + 0.5) * ParticleScale * 50.0) + translation;
+    // vec3 aPosScaled = (scale * vec4(aPos, 1.0)).xyz; // (aPos + vec3(0.5)) * (50.0 + 1.0);
 
     // Transform vertex position from local-space to clip-space
     gl_Position = projection * view * model * vec4(aPosScaled, 1.0);
