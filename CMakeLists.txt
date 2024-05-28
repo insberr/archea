@@ -51,7 +51,7 @@ add_executable(archea
         imgui/backends/imgui_impl_opengl3_loader.h
         # App
         App.cpp App.h
-        systems/System.cpp systems/System.h
+        systems/System.h
         shaders.cpp shaders.h
         systems/ParticleSystem.cpp systems/ParticleSystem.h
         systems/InputSystem.cpp
@@ -68,6 +68,8 @@ add_executable(archea
         systems/particle_types/ParticleTypeSystem.h
         systems/TestSingletonSystem.cpp
         systems/TestSingletonSystem.h
+        systems/GraphicsSystem.cpp
+        systems/GraphicsSystem.h
 )
 # Run the copy_shaders commands
 add_dependencies(archea copy_shaders)
