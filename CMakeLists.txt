@@ -66,6 +66,8 @@ add_executable(archea
         systems/particle_types/SandParticle_Type.h
         systems/particle_types/ParticleTypeSystem.cpp
         systems/particle_types/ParticleTypeSystem.h
+        systems/TestSingletonSystem.cpp
+        systems/TestSingletonSystem.h
 )
 # Run the copy_shaders commands
 add_dependencies(archea copy_shaders)

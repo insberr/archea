@@ -5,6 +5,8 @@
 #include "ImGuiSystem.h"
 #include "../App.h"
 
+bool ImGuiSystem::imGuiEnabled { true };
+
 ImGuiSystem::~ImGuiSystem() {
 }
 

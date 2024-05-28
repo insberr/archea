@@ -19,12 +19,12 @@ public:
     void Render() override;
     void Exit() override;
 
-    void StartFrame();
-    void EndFrame();
+    static void StartFrame();
+    static void EndFrame();
 
-    void EnableImGui();
-    void DisableImGui();
-    void IsImGuiEnabled();
+    static void EnableImGui();
+    static void DisableImGui();
+    static void IsImGuiEnabled();
 private:
-    bool imGuiEnabled { true };
+    static bool imGuiEnabled;
 };
