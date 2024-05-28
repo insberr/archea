@@ -2,16 +2,41 @@
 // Created by insberr on 5/21/24.
 //
 
-#include <algorithm>
-
 #include "ParticleSystem.h"
-#include "../App.h"
+
+#include <algorithm>
+#include <vector>
+
+#include "GraphicsSystem.h"
 #include "../shaders.h"
+// glm
+#include <glm/gtc/type_ptr.hpp>
+
 #include "InputSystem.h"
 #include "CameraSystem.h"
 #include "ImGuiSystem.h"
 
-void ParticleSystem::Init() {
+SystemBaseImpl(ParticleSystem)
+
+namespace ParticleSystem {
+    std::vector<int> particles;
+    GLuint shaderProgram { 0 };
+
+    GLuint particlesBuffer { 0 };
+    GLuint particlesColrosBuffer { 0 };
+
+    GLuint VBO {0}, VAO {0}, EBO {0};
+
+    glm::ivec3 drawPos;
+
+    // Settings
+    int maxRaySteps { 200 };
+    float particleScale { 0.4f };
+    bool enableOutlines { false };
+};
+
+int ParticleSystem::InstanceClass::Setup() { return 0; }
+void ParticleSystem::InstanceClass::Init() {
     // Load the contents of the shaders
     std::string vertexShaderSource = readShaderFile("shaders/vertex.glsl");
     std::string fragmentShaderSource = readShaderFile("shaders/fragment.glsl");
@@ -145,8 +170,8 @@ void ParticleSystem::Init() {
     }
 }
 
-void ParticleSystem::Update(float dt) {
-    auto window = app->GetWindow();
+void ParticleSystem::InstanceClass::Update(float dt) {
+    auto window = Graphics::GetWindow();
 
     if (dt == 0.0f) return;
 
@@ -230,8 +255,8 @@ void ParticleSystem::Update(float dt) {
 //
 //};
 
-void ParticleSystem::Render() {
-    auto window = app->GetWindow();
+void ParticleSystem::InstanceClass::Render() {
+    auto window = Graphics::GetWindow();
 
     // Bind the particles data
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, particlesBuffer);
@@ -246,10 +271,9 @@ void ParticleSystem::Render() {
     // glUniform2f(glGetUniformLocation(shaderProgram, "Resolution"), width, height);
     glUniform1f(glGetUniformLocation(shaderProgram, "Time"), glfwGetTime());
 
-    auto camera = app->GetSystem<CameraSystem>();
-    auto cameraFieldOfView = camera->GetFOV();
-    auto cameraPos = camera->GetPosition();
-    auto cameraMatrix = camera->CameraMatrix();
+    auto cameraFieldOfView = CameraSystem::GetFOV();
+    auto cameraPos = CameraSystem::GetPosition();
+    auto cameraMatrix = CameraSystem::CameraMatrix();
     // glUniform1f(glGetUniformLocation(shaderProgram, "FieldOfView"), cameraFieldOfView);
     glUniform3f(glGetUniformLocation(shaderProgram, "CameraPosition"), cameraPos.x, cameraPos.y, cameraPos.z);
     // glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "CameraView"), 1, GL_FALSE, glm::value_ptr(cameraMatrix));
@@ -258,9 +282,9 @@ void ParticleSystem::Render() {
     GLuint modelLoc = glGetUniformLocation(shaderProgram, "model");
     GLuint viewLoc = glGetUniformLocation(shaderProgram, "view");
     GLuint projectionLoc = glGetUniformLocation(shaderProgram, "projection");
-    auto model = camera->GetModel();
-    auto view = camera->GetView();
-    auto projection = camera->GetProjection();
+    auto model = CameraSystem::GetModel();
+    auto view = CameraSystem::GetView();
+    auto projection = cCameraSystem::GetProjection();
     glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
     glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
     glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
@@ -285,6 +309,10 @@ void ParticleSystem::Render() {
     ImGui::End();
 }
 
-void ParticleSystem::Exit() {
+void ParticleSystem::InstanceClass::Exit() {}
+void ParticleSystem::InstanceClass::Done() {}
 
-}
+/* Public Function Implementation */
+
+
+/* Private Function Implementation */
