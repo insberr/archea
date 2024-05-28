@@ -4,6 +4,27 @@
 
 #pragma once
 
+#define SystemBaseHeader(namespaceName) \
+namespace namespaceName { \
+    class InstanceClass : public System { \
+    public: \
+        InstanceClass() = default; \
+        ~InstanceClass() override = default; \
+        int Setup() override; \
+        void Init() override; \
+        void Update(float dt) override; \
+        void Render() override; \
+        void Exit() override; \
+        void Done() override; \
+    }; \
+    InstanceClass& Instance(); \
+    System* AsSystem(); }
+
+#define SystemBaseImpl(namespaceName) \
+namespace namespaceName { InstanceClass self {}; } \
+namespaceName::InstanceClass& namespaceName::Instance() { return self; } \
+System *namespaceName::AsSystem() { return reinterpret_cast<System*>(&self); }
+
 class System {
 public:
     System() = default;

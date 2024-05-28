@@ -4,13 +4,20 @@
 
 #include "TestSingletonSystem.h"
 
-void TestSystem::InstanceClass::Init() {}
-void TestSystem::InstanceClass::Update(float dt) {
-    FooBar(1, dt);
+SystemBaseImpl(TestSystem)
+
+namespace TestSystem {
+    /* Private Variables And Functions */
 }
+
+int TestSystem::InstanceClass::Setup() { return 0; }
+void TestSystem::InstanceClass::Init() {}
+void TestSystem::InstanceClass::Update(float dt) {}
 void TestSystem::InstanceClass::Render() {}
 void TestSystem::InstanceClass::Exit() {}
+void TestSystem::InstanceClass::Done() {}
 
-int TestSystem::FooBar(int x, int y) {
-    return x + y;
-}
+/* Public Function Implementation */
+
+
+/* Private Function Implementation */
