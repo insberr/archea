@@ -4,51 +4,36 @@
 
 #include "App.h"
 
+// Standard
 #include <iostream>
-#include "systems/CameraSystem.h"
+
+// Systems
+#include "systems/GraphicsSystem.h"
 #include "systems/ImGuiSystem.h"
 
-// Some constants
-const unsigned WindowWidth = 1280;
-const unsigned WindowHeight = 720;
-
-// Callback function for errors
-void errorCallback(int error, const char* description) {
-    std::cerr << "Error: " << description << std::endl;
-}
-
-void framebufferSizeCallback(GLFWwindow* window, int width, int height) {
-    glViewport(0, 0, width, height);
-}
-
-App::App() : window(nullptr) {
-    int code = Init();
-    if (code) {
-        errorCode = code;
-    }
-}
 
 App::~App() {
-    // Shutdown GLFW
-    glfwDestroyWindow(window);
-    glfwTerminate();
-}
+    // Make sure we call in reverse order
+    std::reverse(systems.begin(), systems.end());
+    for (auto& system : systems) {
+        system->Done();
+    }
+};
 
 int App::Run() {
-    if (errorCode) return errorCode;
-
-    for (auto & [systemTypeId, system] : systems) {
+    // Initialize all systems
+    for (auto& system : systems) {
         system->Init();
     }
 
     float dt = 0.0f;
-    while (!glfwWindowShouldClose(window)) {
+    while (!glfwWindowShouldClose(Graphics::GetWindow())) {
         dt = timer.Mark();
 
         // Poll for events
         glfwPollEvents();
 
-        for (auto & [systemTypeId, system] : systems) {
+        for (auto& system : systems) {
             system->Update(dt);
         }
 
@@ -56,7 +41,7 @@ int App::Run() {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // Start Imgui Frame
-        GetSystem<ImGuiSystem>()->StartFrame();
+        ImGuiSystem::StartFrame();
 
         ImGui::ShowDemoWindow(); // Show demo window! :)
         if (ImGui::Begin("Stats")) {
@@ -65,76 +50,30 @@ int App::Run() {
         }
         ImGui::End();
 
+
         // Do drawing here
-        for (auto & [systemTypeId, system] : systems) {
+        for (auto& system : systems) {
             system->Render();
         }
 
         // Rendering Imgui
-        GetSystem<ImGuiSystem>()->EndFrame();
+        ImGuiSystem::EndFrame();
 
         // Swap the buffers
-        glfwSwapBuffers(window);
+        glfwSwapBuffers(Graphics::GetWindow());
     }
 
-    for (auto & [systemTypeId, system] : systems) {
+    // Call exit in reverse order
+    std::reverse(systems.begin(), systems.end());
+    for (auto& system : systems) {
         system->Exit();
     }
 
     return 0;
 }
 
-int App::Init() {
-    // Initialize GLFW
-    if (!glfwInit()) {
-        std::cerr << "Failed to initialize GLFW" << std::endl;
-        return -1;
-    }
-
-    // Set the GLFW error callback
-    glfwSetErrorCallback(errorCallback);
-
-    // Give hints to glfw about version we wish to use
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
-    // Create the window using glfw
-    window = glfwCreateWindow(WindowWidth, WindowHeight, "Archea", nullptr, nullptr);
-    if (!window) {
-        std::cerr << "Failed to create GLFW window" << std::endl;
-        glfwTerminate();
-        return -1;
-    }
-
-    // Make window context current
-    glfwMakeContextCurrent(window);
-    // note: figure out what this does too
-    glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
-
-    // Initialize GLEW
-    GLenum err = glewInit();
-    if (err != GLEW_OK) {
-        std::cerr << "Failed to initialize GLEW: " << glewGetErrorString(err) << std::endl;
-        glfwTerminate();
-        return -1;
-    }
-
-    // Enable depth testing
-    glEnable(GL_DEPTH_TEST);
-    glClearColor(0.4f, 0.4f, 0.4f, 0.4f);
-
-    return 0;
+int App::AddSystem(System *system)  {
+    int setupCode = system->Setup();
+    systems.push_back(system);
+    return setupCode;
 }
-
-//void App::AddSystem(System* system) {
-//    systems.push_back(system);
-//}
-
-GLFWwindow* App::GetWindow() {
-    return window;
-}
-
-//System* App::GetSystem(std::string &systemName) {
-//    return systems[0];
-//}
