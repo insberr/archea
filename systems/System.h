@@ -4,24 +4,28 @@
 
 #pragma once
 
-#include <utility>
-#include <string>
-class App;
-
 class System {
-protected:
-    static App* app;
 public:
-    explicit System(std::string  systemName) : name(std::move(systemName)) {};
+    System() = default;
     virtual ~System() = default;
 
+    // Setup is called when the system is added to the app
+    // Setup must return an int to state success or failure
+    virtual int Setup() = 0;
+
+    // Init is called when app.Run() is called,
+    //   and before the game loop starts
     virtual void Init() = 0;
+
+    // Update is called every game loop
     virtual void Update(float dt) = 0;
+
+    // Render is called every game loop
     virtual void Render() = 0;
+
+    // Exit is called when the game loop is done
     virtual void Exit() = 0;
 
-    std::string name;
-
-    // Set the app variable so all systems can access it
-    static void SetApp(App* a);
+    // Done is called when the app's destructor is called
+    virtual void Done() = 0;
 };
