@@ -17,9 +17,9 @@ public:
 
     // Add a system to the engine.
     // Returns a status code from the system Setup function
-    int AddSystem(System* system);
+    int AddSystem(const System& system);
 private:
     EngineTimer timer;
 
-    std::vector<System*> systems;
+    std::vector<System> systems;
 };

@@ -16,14 +16,14 @@ App::~App() {
     // Make sure we call in reverse order
     std::reverse(systems.begin(), systems.end());
     for (auto& system : systems) {
-        system->Done();
+        system.Done();
     }
 };
 
 int App::Run() {
     // Initialize all systems
     for (auto& system : systems) {
-        system->Init();
+        system.Init();
     }
 
     float dt = 0.0f;
@@ -34,7 +34,7 @@ int App::Run() {
         glfwPollEvents();
 
         for (auto& system : systems) {
-            system->Update(dt);
+            system.Update(dt);
         }
 
         // CLear the window
@@ -53,7 +53,7 @@ int App::Run() {
 
         // Do drawing here
         for (auto& system : systems) {
-            system->Render();
+            system.Render();
         }
 
         // Rendering Imgui
@@ -66,14 +66,14 @@ int App::Run() {
     // Call exit in reverse order
     std::reverse(systems.begin(), systems.end());
     for (auto& system : systems) {
-        system->Exit();
+        system.Exit();
     }
 
     return 0;
 }
 
-int App::AddSystem(System *system)  {
-    int setupCode = system->Setup();
+int App::AddSystem(const System& system)  {
+    int setupCode = system.Setup();
     systems.push_back(system);
     return setupCode;
 }

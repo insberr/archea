@@ -5,8 +5,7 @@
 #pragma once
 #include "System.h"
 
-SystemBaseHeader(TestSystem)
-
 namespace TestSystem {
     /* Implementation Here */
+    System AsSystem();
 }

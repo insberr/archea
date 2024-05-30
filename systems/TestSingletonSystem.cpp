@@ -4,18 +4,34 @@
 
 #include "TestSingletonSystem.h"
 
-SystemBaseImpl(TestSystem)
-
 namespace TestSystem {
+    /* System Function Declarations */
+    int Setup();
+    void Init();
+    void Update(float dt);
+    void Render();
+    void Exit();
+    void Done();
+    System AsSystem() {
+        return {
+            Setup,
+            Init,
+            Update,
+            Render,
+            Exit,
+            Done
+        };
+    }
+
     /* Private Variables And Functions */
 }
 
-int TestSystem::InstanceClass::Setup() { return 0; }
-void TestSystem::InstanceClass::Init() {}
-void TestSystem::InstanceClass::Update(float dt) {}
-void TestSystem::InstanceClass::Render() {}
-void TestSystem::InstanceClass::Exit() {}
-void TestSystem::InstanceClass::Done() {}
+int TestSystem::Setup() { return 0; }
+void TestSystem::Init() {}
+void TestSystem::Update(float dt) {}
+void TestSystem::Render() {}
+void TestSystem::Exit() {}
+void TestSystem::Done() {}
 
 /* Public Function Implementation */
 
