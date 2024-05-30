@@ -9,22 +9,15 @@
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 
-class ImGuiSystem : public System {
-public:
-    ImGuiSystem() : System("ImGuiSystem") {}
-    ~ImGuiSystem() override;
+namespace ImGuiSystem {
+    System AsSystem();
 
-    void Init() override;
-    void Update(float dt) override;
-    void Render() override;
-    void Exit() override;
+    /* Implementation Here */
 
-    static void StartFrame();
-    static void EndFrame();
+    void StartFrame();
+    void EndFrame();
 
-    static void EnableImGui();
-    static void DisableImGui();
-    static void IsImGuiEnabled();
-private:
-    static bool imGuiEnabled;
+    void EnableImGui();
+    void DisableImGui();
+    bool IsImGuiEnabled();
 };

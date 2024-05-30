@@ -4,14 +4,34 @@
 
 #include "ImGuiSystem.h"
 #include "../App.h"
+#include "GraphicsSystem.h"
 
-bool ImGuiSystem::imGuiEnabled { true };
+namespace ImGuiSystem {
+    /* System Function Declarations */
+    int Setup();
+    void Init();
+    void Update(float dt);
+    void Render();
+    void Exit();
+    void Done();
+    System AsSystem() {
+        return {
+                Setup,
+                Init,
+                Update,
+                Render,
+                Exit,
+                Done
+        };
+    }
 
-ImGuiSystem::~ImGuiSystem() {
+    /* Private Variables And Functions */
+
+    bool imGuiEnabled { true };
 }
 
 void ImGuiSystem::Init() {
-    auto window = app->GetWindow();
+    auto window = Graphics::GetWindow();
 
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
@@ -66,6 +86,6 @@ void ImGuiSystem::DisableImGui() {
     ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_NoMouse;
 }
 
-void ImGuiSystem::IsImGuiEnabled() {
-
+bool ImGuiSystem::IsImGuiEnabled() {
+    return imGuiEnabled;
 }
