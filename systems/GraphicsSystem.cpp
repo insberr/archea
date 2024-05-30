@@ -8,8 +8,27 @@
 
 // Private values
 namespace Graphics {
-    InstanceClass self {};
+    /* System Function Declarations */
+    int Setup();
+    void Init();
+    void Update(float dt);
+    void Render();
+    void Exit();
+    void Done();
+    System AsSystem() {
+        return {
+                Setup,
+                Init,
+                Update,
+                Render,
+                Exit,
+                Done
+        };
+    }
 
+    /* Private Variables And Functions */
+
+    // The GLFW window
     GLFWwindow* window { nullptr };
 
     /* Internal Functions */
@@ -21,7 +40,7 @@ namespace Graphics {
     void framebufferSizeCallback(GLFWwindow* window, int width, int height);
 }
 
-int Graphics::InstanceClass::Setup() {
+int Graphics::Setup() {
     // Initialize GLFW
     if (!glfwInit()) {
         std::cerr << "Failed to initialize GLFW" << std::endl;
@@ -64,23 +83,15 @@ int Graphics::InstanceClass::Setup() {
     return 0;
 }
 
-void Graphics::InstanceClass::Init() {}
-void Graphics::InstanceClass::Exit() {}
+void Graphics::Init() {}
+void Graphics::Exit() {}
 
-void Graphics::InstanceClass::Done() {
+void Graphics::Done() {
     // Free GLFW window, GLFW, and GLEW if needed
 
     // Shutdown GLFW
     glfwDestroyWindow(window);
     glfwTerminate();
-}
-
-Graphics::InstanceClass &Graphics::Instance() {
-    return self;
-}
-
-System *Graphics::AsSystem() {
-    return reinterpret_cast<System*>(&self);
 }
 
 GLFWwindow* Graphics::GetWindow() {
