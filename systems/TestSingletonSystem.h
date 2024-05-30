@@ -6,6 +6,7 @@
 #include "System.h"
 
 namespace TestSystem {
-    /* Implementation Here */
     System AsSystem();
+
+    /* Implementation Here */
 }

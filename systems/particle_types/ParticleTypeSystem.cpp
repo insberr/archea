@@ -6,15 +6,37 @@
 
 #include "SandParticle_Type.h"
 
-// Declare static variable
-std::map<int, ParticleType> ParticleTypeSystem::particleTypes;
+namespace ParticleTypeSystem {
+    /* System Function Declarations */
+    int Setup();
+    void Init();
+    void Update(float dt);
+    void Render();
+    void Exit();
+    void Done();
+    System AsSystem() {
+        return {
+            Setup,
+            Init,
+            Update,
+            Render,
+            Exit,
+            Done
+        };
+    }
 
+    /* Private Variables And Functions */
+    std::map<int, ParticleType> particleTypes;
+}
+
+int ParticleTypeSystem::Setup() { return 0; }
 void ParticleTypeSystem::Init() {
     AddParticleType(SandParticle);
 }
 void ParticleTypeSystem::Update(float dt) {}
 void ParticleTypeSystem::Render() {}
 void ParticleTypeSystem::Exit() {}
+void ParticleTypeSystem::Done() {}
 
 void ParticleTypeSystem::AddParticleType(const ParticleType &particle) {
     // todo might be better to make the index based on the type enum
