@@ -5,19 +5,17 @@
 #include "App.h"
 
 /* Systems */
-#include "systems/InputSystem.h"
-#include "systems/CameraSystem.h"
-#include "systems/ParticleSystem.h"
-#include "systems/ImGuiSystem.h"
-#include "systems/particle_types/ParticleTypeSystem.h"
-
-// New systems
 #include "systems/GraphicsSystem.h"
+#include "systems/InputSystem.h"
+#include "systems/ImGuiSystem.h"
+#include "systems/CameraSystem.h"
+#include "systems/particle_types/ParticleTypeSystem.h"
+#include "systems/ParticleSystem.h"
+
 
 int main() {
     auto app = App{};
 
-    // New systems
     // Graphics system, handles the window and api calls to gl
     int code = app.AddSystem(Graphics::AsSystem());
     if (code) return code;
