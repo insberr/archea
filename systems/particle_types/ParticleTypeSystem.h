@@ -3,10 +3,11 @@
 //
 
 #pragma once
+
 #include "../System.h"
-#include "ParticleType.h"
-#include <map>
 #include <vector>
+
+typedef struct ParticleType ParticleType;
 
 namespace ParticleTypeSystem {
     System AsSystem();

@@ -4,6 +4,7 @@
 
 #include "ParticleTypeSystem.h"
 
+// Particle Types
 #include "SandParticle_Type.h"
 
 namespace ParticleTypeSystem {
@@ -26,7 +27,7 @@ namespace ParticleTypeSystem {
     }
 
     /* Private Variables And Functions */
-    std::map<int, ParticleType> particleTypes;
+    std::vector<ParticleType> particleTypes;
 }
 
 int ParticleTypeSystem::Setup() { return 0; }
@@ -39,14 +40,12 @@ void ParticleTypeSystem::Exit() {}
 void ParticleTypeSystem::Done() {}
 
 void ParticleTypeSystem::AddParticleType(const ParticleType &particle) {
-    // todo might be better to make the index based on the type enum
-    auto size = particleTypes.size();
-    particleTypes[size] = particle;
+    particleTypes.push_back(particle);
 }
 
 std::vector<std::array<unsigned char, 4>*> ParticleTypeSystem::GetParticleColorIndexesForShader() {
     std::vector<std::array<unsigned char, 4>*> colors;
-    for (auto& [index, particle] : particleTypes) {
+    for (auto& particle : particleTypes) {
         // to do
     }
     return colors;

@@ -3,6 +3,7 @@
 //
 
 #pragma once
+#include "ParticleType.h"
 
 // Why I don't need to import the particle type header and this still recognizes the type is beyond me
 const ParticleType SandParticle = {

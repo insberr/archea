@@ -2,6 +2,7 @@
 // Created by insberr on 5/22/24.
 //
 
+#include <iostream>
 #include "InputSystem.h"
 #include "../App.h"
 #include "ImGuiSystem.h"
@@ -70,7 +71,7 @@ bool InputSystem::IsKeyTriggered(int key) {
     auto stateCurrent = keysThisFrame.find(key);
 
     bool last = stateLast != keysLastFrame.end() && !stateLast->second;
-    bool current = stateLast != keysThisFrame.end() && !stateCurrent->second;
+    bool current = stateCurrent != keysThisFrame.end() && stateCurrent->second;
 
     return current && !last;
 }
@@ -85,7 +86,7 @@ bool InputSystem::IsKeyReleased(int key) {
     auto stateCurrent = keysThisFrame.find(key);
 
     bool last = stateLast != keysLastFrame.end() && stateLast->second;
-    bool current = stateLast != keysThisFrame.end() && stateCurrent->second;
+    bool current = stateCurrent != keysThisFrame.end() && stateCurrent->second;
 
     return !current && last;
 }
@@ -111,8 +112,7 @@ void InputSystem::keyboardInputCallback(GLFWwindow* window, int key, int scancod
 
     if (action == GLFW_RELEASE) {
         keysThisFrame[key] = false;
-    }
-    if (action == GLFW_PRESS) {
+    } if (action == GLFW_PRESS) {
         keysThisFrame[key] = true;
     }
 

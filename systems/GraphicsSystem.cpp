@@ -107,6 +107,6 @@ void Graphics::errorCallback(int error, const char *description) {
     std::cerr << "Error: " << description << std::endl;
 }
 
-void Graphics::framebufferSizeCallback(GLFWwindow* window, int width, int height) {
+void Graphics::framebufferSizeCallback(GLFWwindow* wind, int width, int height) {
     glViewport(0, 0, width, height);
 }

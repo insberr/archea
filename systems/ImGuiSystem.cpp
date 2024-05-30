@@ -8,20 +8,20 @@
 
 namespace ImGuiSystem {
     /* System Function Declarations */
-    // int Setup();
-    void Init();
+    int Setup();
+    // void Init();
     void Update(float dt);
     void Render();
-    void Exit();
-    // void Done();
+    // void Exit();
+    void Done();
     System AsSystem() {
         return {
-                nullptr, // Setup,
-                Init,
+                Setup,
+                nullptr, // Init,
                 Update,
                 Render,
-                Exit,
-                nullptr // Done
+                nullptr, // Exit,
+                Done
         };
     }
 
@@ -30,9 +30,7 @@ namespace ImGuiSystem {
     bool imGuiEnabled { true };
 }
 
-void ImGuiSystem::Init() {
-    auto window = Graphics::GetWindow();
-
+int ImGuiSystem::Setup() {
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
@@ -41,8 +39,10 @@ void ImGuiSystem::Init() {
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
 
     // Setup Platform/Renderer backends
-    ImGui_ImplGlfw_InitForOpenGL(window, true);          // Second param install_callback=true will install GLFW callbacks and chain to existing ones.
+    ImGui_ImplGlfw_InitForOpenGL(Graphics::GetWindow(), true);          // Second param install_callback=true will install GLFW callbacks and chain to existing ones.
     ImGui_ImplOpenGL3_Init();
+
+    return 0;
 }
 
 void ImGuiSystem::Update(float dt) {
@@ -53,7 +53,7 @@ void ImGuiSystem::Render() {
 
 }
 
-void ImGuiSystem::Exit() {
+void ImGuiSystem::Done() {
     // Shutdown Imgui
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
