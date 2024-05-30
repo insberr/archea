@@ -7,10 +7,50 @@
 #include "CameraSystem.h"
 #include "InputSystem.h"
 #include "ImGuiSystem.h"
+#include "GraphicsSystem.h"
 
-const glm::vec3 UpVector(0.0f, 1.0f, 0.0f);
+namespace CameraSystem {
+    /* System Function Declarations */
+    int Setup();
+    void Init();
+    void Update(float dt);
+    void Render();
+    void Exit();
+    void Done();
+    System AsSystem() {
+        return {
+                Setup,
+                Init,
+                Update,
+                Render,
+                Exit,
+                Done
+        };
+    }
 
-CameraSystem::~CameraSystem() = default;
+    /* Private Variables And Functions */
+
+    const glm::vec3 UpVector(0.0f, 1.0f, 0.0f);
+
+    // Translate the camera some amount added to the current position
+    void Translate(glm::vec3 translation);
+
+    glm::vec3 position;
+    glm::vec3 target;
+    float fieldOfView { 0.7f };
+
+    /* New */
+    glm::mat4 model;
+    glm::mat4 view;
+    glm::mat4 projection;
+
+    float yaw { -90.0f };
+    float pitch { 0.0f };
+    float sensitivity { 0.3f };
+    float travelSpeed { 5.0f };
+
+    bool cursorLocked { false };
+}
 
 void CameraSystem::Init() {
     model = glm::mat4(1.0);
@@ -21,18 +61,17 @@ void CameraSystem::Init() {
 }
 
 void CameraSystem::Update(float dt) {
-    auto window = app->GetWindow();
-    auto imGuiSystem = app->GetSystem<ImGuiSystem>();
+    auto window = Graphics::GetWindow();
 
     if (InputSystem::IsKeyTriggered(GLFW_KEY_ESCAPE)) {
         if (cursorLocked) {
             // Unlock the cursor and show it
             glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-            imGuiSystem->EnableImGui();
+            ImGuiSystem::EnableImGui();
         } else {
             // Lock the cursor and hide it
             glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-            imGuiSystem->DisableImGui();
+            ImGuiSystem::DisableImGui();
         }
         cursorLocked = !cursorLocked;
     }
@@ -157,7 +196,7 @@ void CameraSystem::Translate(glm::vec3 translation) {
     position += glm::vec3(transform);
 }
 
-float CameraSystem::GetFOV() const {
+float CameraSystem::GetFOV() {
     return fieldOfView;
 }
 

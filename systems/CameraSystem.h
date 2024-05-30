@@ -11,15 +11,10 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-class CameraSystem : public System {
-public:
-    CameraSystem() : System("Camera") {}
-    ~CameraSystem() override;
+namespace CameraSystem {
+    System AsSystem();
 
-    void Init() override;
-    void Update(float dt) override;
-    void Render() override;
-    void Exit() override;
+    /* Implementation Here */
 
     /* Camera Functions */
     glm::vec3 GetPosition();
@@ -29,28 +24,9 @@ public:
 
     void Reset();
 
-    float GetFOV() const;
+    float GetFOV();
 
     glm::mat4 GetModel();
     glm::mat4 GetView();
     glm::mat4 GetProjection();
-
-private:
-    void Translate(glm::vec3 translation);
-
-    glm::vec3 position;
-    glm::vec3 target;
-    float fieldOfView { 0.7f };
-
-    /* New */
-    glm::mat4 model;
-    glm::mat4 view;
-    glm::mat4 projection;
-
-    float yaw { -90.0f };
-    float pitch { 0.0f };
-    float sensitivity { 0.3f };
-    float travelSpeed { 5.0f };
-
-    bool cursorLocked { false };
 };
