@@ -5,8 +5,9 @@
 #pragma once
 #include "System.h"
 
-SystemBaseHeader(ParticleSystem)
-
 namespace ParticleSystem {
+    System AsSystem();
+
+    /* Implementation Here */
 
 }

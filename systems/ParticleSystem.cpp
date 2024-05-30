@@ -16,9 +16,27 @@
 #include "CameraSystem.h"
 #include "ImGuiSystem.h"
 
-SystemBaseImpl(ParticleSystem)
-
 namespace ParticleSystem {
+    /* System Function Declarations */
+    int Setup();
+    void Init();
+    void Update(float dt);
+    void Render();
+    void Exit();
+    void Done();
+    System AsSystem() {
+        return {
+            Setup,
+            Init,
+            Update,
+            Render,
+            Exit,
+            Done
+        };
+    }
+
+    /* Private Variables And Functions */
+
     std::vector<int> particles;
     GLuint shaderProgram { 0 };
 
@@ -35,8 +53,8 @@ namespace ParticleSystem {
     bool enableOutlines { false };
 };
 
-int ParticleSystem::InstanceClass::Setup() { return 0; }
-void ParticleSystem::InstanceClass::Init() {
+int ParticleSystem::Setup() { return 0; }
+void ParticleSystem::Init() {
     // Load the contents of the shaders
     std::string vertexShaderSource = readShaderFile("shaders/vertex.glsl");
     std::string fragmentShaderSource = readShaderFile("shaders/fragment.glsl");
@@ -170,7 +188,7 @@ void ParticleSystem::InstanceClass::Init() {
     }
 }
 
-void ParticleSystem::InstanceClass::Update(float dt) {
+void ParticleSystem::Update(float dt) {
     auto window = Graphics::GetWindow();
 
     if (dt == 0.0f) return;
@@ -255,7 +273,7 @@ void ParticleSystem::InstanceClass::Update(float dt) {
 //
 //};
 
-void ParticleSystem::InstanceClass::Render() {
+void ParticleSystem::Render() {
     auto window = Graphics::GetWindow();
 
     // Bind the particles data
@@ -284,7 +302,7 @@ void ParticleSystem::InstanceClass::Render() {
     GLuint projectionLoc = glGetUniformLocation(shaderProgram, "projection");
     auto model = CameraSystem::GetModel();
     auto view = CameraSystem::GetView();
-    auto projection = cCameraSystem::GetProjection();
+    auto projection = CameraSystem::GetProjection();
     glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
     glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
     glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
@@ -309,8 +327,8 @@ void ParticleSystem::InstanceClass::Render() {
     ImGui::End();
 }
 
-void ParticleSystem::InstanceClass::Exit() {}
-void ParticleSystem::InstanceClass::Done() {}
+void ParticleSystem::Exit() {}
+void ParticleSystem::Done() {}
 
 /* Public Function Implementation */
 
