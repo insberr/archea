@@ -9,20 +9,20 @@
 
 namespace InputSystem {
     /* System Function Declarations */
-    int Setup();
+    // int Setup();
     void Init();
     void Update(float dt);
     void Render();
     void Exit();
-    void Done();
+    // void Done();
     System AsSystem() {
         return {
-                Setup,
-                Init,
-                Update,
-                Render,
-                Exit,
-                Done
+            nullptr,
+            Init,
+            Update,
+            Render,
+            Exit,
+            nullptr
         };
     }
 
