@@ -5,21 +5,48 @@
 #include "InputSystem.h"
 #include "../App.h"
 #include "ImGuiSystem.h"
+#include "GraphicsSystem.h"
 
-// Initialize the static variables
-// Keyboard
-std::unordered_map<int, bool> InputSystem::keysLastFrame;
-std::unordered_map<int, bool> InputSystem::keysThisFrame;
-// Mouse Buttons
-std::unordered_map<int, bool> InputSystem::mouseButtonThisFrame;
-// Mouse Position
-std::pair<double, double> InputSystem::mousePositionLastFrame;
-std::pair<double, double> InputSystem::mousePositionThisFrame;
+namespace InputSystem {
+    /* System Function Declarations */
+    int Setup();
+    void Init();
+    void Update(float dt);
+    void Render();
+    void Exit();
+    void Done();
+    System AsSystem() {
+        return {
+                Setup,
+                Init,
+                Update,
+                Render,
+                Exit,
+                Done
+        };
+    }
 
-InputSystem::~InputSystem() = default;
+    /* Private Variables And Functions */
+
+
+    // Keyboard
+    std::unordered_map<int, bool> keysLastFrame;
+    std::unordered_map<int, bool> keysThisFrame;
+
+    // Mouse Buttons
+    std::unordered_map<int, bool> mouseButtonThisFrame;
+
+    // Mouse Position
+    std::pair<double, double> mousePositionLastFrame;
+    std::pair<double, double> mousePositionThisFrame;
+
+    void keyboardInputCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
+    void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
+    void mousePositionCallback(GLFWwindow* window, double xPosition, double yPosition);
+}
 
 void InputSystem::Init() {
-    auto window = app->GetWindow();
+    auto window = Graphics::GetWindow();
     glfwSetKeyCallback(window, keyboardInputCallback);
     glfwSetMouseButtonCallback(window, mouseButtonCallback);
     glfwSetCursorPosCallback(window, mousePositionCallback);
