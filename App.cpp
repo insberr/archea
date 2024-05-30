@@ -14,7 +14,8 @@
 
 App::~App() {
     // Make sure we call in reverse order
-    std::reverse(systems.begin(), systems.end());
+    // Already in reverse order from Exit call
+    // std::reverse(systems.begin(), systems.end());
     for (auto& system : systems) {
         if (system.Done) system.Done();
     }
