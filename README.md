@@ -6,13 +6,12 @@ This project has been a bit of a challenge so far and has been through multiple 
 You can watch my streams of making this project on [YouTube here](https://www.youtube.com/playlist?list=PLegENDHYPkX28wjNpFBd16ikRTgV8ekCf).  
 If you don't feel like watching the streams (I don't blame you, they are long), you can watch my [dev log videos instead](https://www.youtube.com/playlist?list=PLegENDHYPkX0YnBPZnPjTTeSgQtDirN8P)
 
-## Setup
+## Development Setup
 Make sure to follow the specific OS instructions.
 
 (SOON) ~~For VSCode, there should be a run and debug configuration already provided.~~
 
-JetBrains CLion will automatically set everything up, however the ImGui folder needs to be deleted and re-cloned manually.
-I will fix this someday (probably by not using the git repo, or fixing the git repo link)
+JetBrains CLion will automatically set up the build configs.
 
 ### Linux
 First you need to install `OpenGL` development libraries. This is really easy on linux.
