@@ -19,7 +19,7 @@ include_directories(imgui/backends)
 # Copy shaders to build directory
 set(SOURCE_DIR "${CMAKE_SOURCE_DIR}/shaders") # Source directory to copy from
 set(DEST_DIR "${CMAKE_BINARY_DIR}/shaders") # Destination directory to copy to
-file(COPY ${SOURCE_DIR} DESTINATION ${DEST_DIR}) # Copy the files during configuration
+file(COPY ${SOURCE_DIR} DESTINATION ${CMAKE_BINARY_DIR}) # Copy the files during configuration
 # Copy shaders to build directory during the build process
 add_custom_command(
         OUTPUT ${DEST_DIR}
