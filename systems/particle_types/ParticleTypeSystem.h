@@ -7,14 +7,15 @@
 #include "../System.h"
 #include <vector>
 
-typedef struct ParticleType ParticleType;
+struct NormColor;
+struct ParticleType;
 
 namespace ParticleTypeSystem {
     System AsSystem();
 
     /* Implementation Here */
     void AddParticleType(const ParticleType& particle);
-    std::vector<std::array<unsigned char, 4>*> GetParticleColorIndexesForShader();
+    std::vector<NormColor> GetParticleColorIndexesForShader();
 
     ParticleType& GetParticleTypeInfo(unsigned int typeIndex);
 };

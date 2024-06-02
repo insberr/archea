@@ -6,6 +6,7 @@
 
 // Particle Types
 #include <algorithm>
+#include <array>
 
 #include "SandParticle_Type.h"
 
@@ -52,6 +53,17 @@ void ParticleTypeSystem::Done() {}
 
 void ParticleTypeSystem::AddParticleType(const ParticleType &particle) {
     particleTypes.push_back(particle);
+}
+
+std::vector<NormColor> ParticleTypeSystem::GetParticleColorIndexesForShader()
+{
+    std::vector<NormColor> colors;
+    for (const auto& particleType : particleTypes)
+    {
+        colors.push_back(particleType.color.normalized());
+    }
+
+    return colors;
 }
 
 ParticleType& ParticleTypeSystem::GetParticleTypeInfo(unsigned int typeIndex) {

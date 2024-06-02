@@ -15,6 +15,8 @@
 #include "InputSystem.h"
 #include "CameraSystem.h"
 #include "ImGuiSystem.h"
+#include "particle_types/ParticleType.h"
+#include "particle_types/ParticleTypeSystem.h"
 
 namespace ParticleSystem {
     /* System Function Declarations */
@@ -154,9 +156,13 @@ void ParticleSystem::Init() {
     glBindVertexArray(0);
 
     glCreateBuffers(1, &particlesBuffer);
-    particles.reserve(50 * 50 * 50);
-    for (auto& part : particles) {
-        part = 0;
+
+    for (unsigned x = 0; x < 50; ++x) {
+        for (unsigned y = 0; y < 50; ++y) {
+            for (unsigned z = 0; z < 50; ++z) {
+                particles.push_back(0);
+            }
+        }
     }
     glNamedBufferStorage(
         particlesBuffer,
@@ -166,31 +172,24 @@ void ParticleSystem::Init() {
     );
 
     glCreateBuffers(1, &particlesColrosBuffer);
-    std::vector<glm::vec4> particleColors;
+    // std::vector<glm::vec4> particleColors;
     // add colors
-    particleColors.push_back(glm::vec4(255, 0, 0, 50) / 255.0f);
-    particleColors.push_back(glm::vec4(200, 150, 10, 255) / 255.0f);
-    particleColors.push_back(glm::vec4(13, 136, 188, 100) / 255.0f);
-    particleColors.push_back(glm::vec4(239, 103, 23, 255) / 255.0f);
+    // particleColors.push_back(glm::vec4(255, 0, 0, 50) / 255.0f);
+    // particleColors.push_back(glm::vec4(200, 150, 10, 255) / 255.0f);
+    // particleColors.push_back(glm::vec4(13, 136, 188, 100) / 255.0f);
+    // particleColors.push_back(glm::vec4(239, 103, 23, 255) / 255.0f);
+    auto particleColors = ParticleTypeSystem::GetParticleColorIndexesForShader();
     glNamedBufferStorage(
         particlesColrosBuffer,
-        sizeof(glm::vec4) * particleColors.size(),
+        sizeof(NormColor) * particleColors.size(),
         (const void*)particleColors.data(),
         GL_DYNAMIC_STORAGE_BIT
     );
 
-    for (unsigned x = 0; x < 50; ++x) {
-        for (unsigned y = 0; y < 50; ++y) {
-            for (unsigned z = 0; z < 50; ++z) {
-                particles.push_back(0);
-            }
-        }
-    }
-
     for (unsigned x = 2; x < 7; ++x) {
         for (unsigned y = 5; y < 10; ++y) {
             for (unsigned z = 2; z < 7; ++z) {
-                particles[z * (50 * 50) + y * (50) + x] = 2;
+                particles[z * (50 * 50) + y * (50) + x] = 1;
             }
         }
     }
