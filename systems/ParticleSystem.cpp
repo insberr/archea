@@ -10,6 +10,7 @@
 #include "GraphicsSystem.h"
 #include "../shaders.h"
 // glm
+#include <iostream>
 #include <glm/gtc/type_ptr.hpp>
 
 #include "InputSystem.h"
@@ -247,12 +248,20 @@ void ParticleSystem::Update(float dt) {
                     int particle = particles[z * (50 * 50) + y * (50) + x];
                     if (particle <= 1) continue;
 
-                    int newY = std::clamp<int>(y - 1, 0, 49);
-                    int atNewY = particles[z * (50 * 50) + newY * (50) + x];
-                    if (atNewY != 0) continue;
-                    particles[z * (50 * 50) + newY * (50) + x] = particle;
-                    // remove
-                    particles[z * (50 * 50) + y * (50) + x] = 0;
+                    auto particleTypeInfo = ParticleTypeSystem::GetParticleTypeInfo(particle - 1);
+
+                    for (const auto& moveToTry : particleTypeInfo.movement)
+                    {
+                        if (moveToTry == ParticleMovement::Down) {
+                            int newY = std::clamp<int>(y - 1, 0, 49);
+                            int atNewY = particles[z * (50 * 50) + newY * (50) + x];
+                            if (atNewY != 0) continue;
+                            particles[z * (50 * 50) + newY * (50) + x] = particle;
+                            // remove
+                            particles[z * (50 * 50) + y * (50) + x] = 0;
+                            break;
+                        }
+                    }
                 }
             }
         }

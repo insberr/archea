@@ -47,5 +47,5 @@ struct ParticleType {
     State state;
     ParticleColor color;
     float temperature;
-    ParticleMovement movement[];
+    std::vector<ParticleMovement> movement;
 };

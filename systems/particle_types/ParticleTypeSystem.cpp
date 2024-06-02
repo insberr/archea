@@ -14,19 +14,14 @@
 namespace ParticleTypeSystem {
     /* System Function Declarations */
     int Setup();
-    void Init();
-    void Update(float dt);
-    void Render();
-    void Exit();
-    void Done();
     System AsSystem() {
         return {
             Setup,
-            Init,
-            Update,
-            Render,
-            Exit,
-            Done
+            nullptr,
+            nullptr,
+            nullptr,
+            nullptr,
+            nullptr
         };
     }
 
@@ -43,15 +38,12 @@ namespace ParticleTypeSystem {
 
 }
 
-int ParticleTypeSystem::Setup() { return 0; }
-void ParticleTypeSystem::Init() {
+int ParticleTypeSystem::Setup() {
     AddParticleType(DebugParticle);
     AddParticleType(SandParticle);
+
+    return 0;
 }
-void ParticleTypeSystem::Update(float dt) {}
-void ParticleTypeSystem::Render() {}
-void ParticleTypeSystem::Exit() {}
-void ParticleTypeSystem::Done() {}
 
 void ParticleTypeSystem::AddParticleType(const ParticleType &particle) {
     particleTypes.push_back(particle);
