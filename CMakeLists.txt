@@ -70,6 +70,7 @@ add_executable(archea
         systems/TestSingletonSystem.h
         systems/GraphicsSystem.cpp
         systems/GraphicsSystem.h
+        systems/particle_types/DebugParticle_Type.h
 )
 # Run the copy_shaders commands
 add_dependencies(archea copy_shaders)

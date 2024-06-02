@@ -5,7 +5,6 @@
 #pragma once
 #include "ParticleType.h"
 
-// Why I don't need to import the particle type header and this still recognizes the type is beyond me
 const ParticleType SandParticle = {
     .nameId = "Sand",
     .state = State::Solid,
@@ -13,4 +12,3 @@ const ParticleType SandParticle = {
     .temperature = 30.0f,
     .movement = { ParticleMovement::Down, ParticleMovement::Up }
 };
-

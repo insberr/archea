@@ -174,10 +174,10 @@ void ParticleSystem::Init() {
     glCreateBuffers(1, &particlesColrosBuffer);
     // std::vector<glm::vec4> particleColors;
     // add colors
-    // particleColors.push_back(glm::vec4(255, 0, 0, 50) / 255.0f);
-    // particleColors.push_back(glm::vec4(200, 150, 10, 255) / 255.0f);
-    // particleColors.push_back(glm::vec4(13, 136, 188, 100) / 255.0f);
-    // particleColors.push_back(glm::vec4(239, 103, 23, 255) / 255.0f);
+    // particleColors.push_back(glm::vec4(255, 0, 0, 50) / 255.0f); // debug/draw
+    // particleColors.push_back(glm::vec4(200, 150, 10, 255) / 255.0f); // sand
+    // particleColors.push_back(glm::vec4(13, 136, 188, 100) / 255.0f); // water
+    // particleColors.push_back(glm::vec4(239, 103, 23, 255) / 255.0f); // lava
     auto particleColors = ParticleTypeSystem::GetParticleColorIndexesForShader();
     glNamedBufferStorage(
         particlesColrosBuffer,
@@ -189,7 +189,7 @@ void ParticleSystem::Init() {
     for (unsigned x = 2; x < 7; ++x) {
         for (unsigned y = 5; y < 10; ++y) {
             for (unsigned z = 2; z < 7; ++z) {
-                particles[z * (50 * 50) + y * (50) + x] = 1;
+                particles[z * (50 * 50) + y * (50) + x] = 2;
             }
         }
     }

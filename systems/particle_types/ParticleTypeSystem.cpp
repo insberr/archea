@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <array>
 
+#include "DebugParticle_Type.h"
 #include "SandParticle_Type.h"
 
 namespace ParticleTypeSystem {
@@ -44,6 +45,7 @@ namespace ParticleTypeSystem {
 
 int ParticleTypeSystem::Setup() { return 0; }
 void ParticleTypeSystem::Init() {
+    AddParticleType(DebugParticle);
     AddParticleType(SandParticle);
 }
 void ParticleTypeSystem::Update(float dt) {}
