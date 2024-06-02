@@ -59,18 +59,20 @@ void InputSystem::Init() {
 }
 
 void InputSystem::Update(float dt) {
+}
+
+void InputSystem::Render()
+{
     keysLastFrame = keysThisFrame;
     mousePositionLastFrame = mousePositionThisFrame;
 }
-
-void InputSystem::Render() {}
 void InputSystem::Exit() {}
 
 bool InputSystem::IsKeyTriggered(int key) {
     auto stateLast = keysLastFrame.find(key);
     auto stateCurrent = keysThisFrame.find(key);
 
-    bool last = stateLast != keysLastFrame.end() && !stateLast->second;
+    bool last = stateLast != keysLastFrame.end() && stateLast->second;
     bool current = stateCurrent != keysThisFrame.end() && stateCurrent->second;
 
     return current && !last;
