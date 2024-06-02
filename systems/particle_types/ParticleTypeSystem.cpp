@@ -31,8 +31,8 @@ namespace ParticleTypeSystem {
     /* Private Variables And Functions */
     ParticleType noType {
         .nameId = "NoType",
-        .color = { 255, 255, 255, 255 },
         .state = State::Solid,
+        .color = { 255, 255, 255, 255 },
         .temperature = 0,
         .movement = {},
     };
