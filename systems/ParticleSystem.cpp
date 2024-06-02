@@ -244,6 +244,8 @@ void ParticleSystem::Update(float dt) {
         for (unsigned x = 0; x < 50; ++x) {
             for (int y = 0; y < 50; ++y) {
                 for (unsigned z = 0; z < 50; ++z) {
+                    const auto currentPos = glm::ivec3(x, y, z);
+
                     // z * (ysize * xsize) + y * (xsize) + x
                     int particle = particles[z * (50 * 50) + y * (50) + x];
                     if (particle <= 1) continue;
@@ -252,15 +254,18 @@ void ParticleSystem::Update(float dt) {
 
                     for (const auto& moveToTry : particleTypeInfo.movement)
                     {
-                        if (moveToTry == ParticleMovement::Down) {
-                            int newY = std::clamp<int>(y - 1, 0, 49);
-                            int atNewY = particles[z * (50 * 50) + newY * (50) + x];
-                            if (atNewY != 0) continue;
-                            particles[z * (50 * 50) + newY * (50) + x] = particle;
-                            // remove
-                            particles[z * (50 * 50) + y * (50) + x] = 0;
-                            break;
-                        }
+                        // ivec3 cast is probably temp?
+                        auto posToTry = currentPos + glm::ivec3(moveToTry);
+                        if (posToTry.y < 0) continue;
+                        posToTry = glm::clamp(posToTry, glm::ivec3(0), glm::ivec3(49));
+                        // int newY = std::clamp<int>(y - 1, 0, 49);
+
+                        int atNewPos = particles[posToTry.z * (50 * 50) + posToTry.y * (50) + posToTry.x];
+                        if (atNewPos != 0) continue;
+                        particles[posToTry.z * (50 * 50) + posToTry.y * (50) + posToTry.x] = particle;
+                        // remove
+                        particles[z * (50 * 50) + y * (50) + x] = 0;
+                        break;
                     }
                 }
             }

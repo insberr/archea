@@ -10,5 +10,11 @@ const ParticleType SandParticle = {
     .state = State::Solid,
     .color = {200, 150, 10, 255},
     .temperature = 30.0f,
-    .movement = { ParticleMovement::Down, ParticleMovement::Up }
+    .movement = {
+        Particle::Down,
+        Particle::Down + Particle::Right,
+        Particle::Down + Particle::Left,
+        Particle::Down + Particle::Forward,
+        Particle::Down + Particle::Backward,
+    }
 };
