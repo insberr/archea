@@ -15,4 +15,6 @@ namespace ParticleTypeSystem {
     /* Implementation Here */
     void AddParticleType(const ParticleType& particle);
     std::vector<std::array<unsigned char, 4>*> GetParticleColorIndexesForShader();
+
+    ParticleType& GetParticleTypeInfo(unsigned int typeIndex);
 };

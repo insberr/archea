@@ -7,8 +7,10 @@
 
 // Why I don't need to import the particle type header and this still recognizes the type is beyond me
 const ParticleType SandParticle = {
-    .state = ParticleType::State::Solid,
+    .nameId = "Sand",
+    .state = State::Solid,
     .color = {200, 150, 10, 255},
-    .temperature = 30.0f
+    .temperature = 30.0f,
+    .movement = { ParticleMovement::Down, ParticleMovement::Up }
 };
 

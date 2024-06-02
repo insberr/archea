@@ -5,6 +5,8 @@
 #include "ParticleTypeSystem.h"
 
 // Particle Types
+#include <algorithm>
+
 #include "SandParticle_Type.h"
 
 namespace ParticleTypeSystem {
@@ -27,7 +29,16 @@ namespace ParticleTypeSystem {
     }
 
     /* Private Variables And Functions */
+    ParticleType noType {
+        .nameId = "NoType",
+        .color = { 255, 255, 255, 255 },
+        .state = State::Solid,
+        .temperature = 0,
+        .movement = {},
+    };
+
     std::vector<ParticleType> particleTypes;
+
 }
 
 int ParticleTypeSystem::Setup() { return 0; }
@@ -43,10 +54,12 @@ void ParticleTypeSystem::AddParticleType(const ParticleType &particle) {
     particleTypes.push_back(particle);
 }
 
-std::vector<std::array<unsigned char, 4>*> ParticleTypeSystem::GetParticleColorIndexesForShader() {
-    std::vector<std::array<unsigned char, 4>*> colors;
-    for (auto& particle : particleTypes) {
-        // to do
-    }
-    return colors;
+ParticleType& ParticleTypeSystem::GetParticleTypeInfo(unsigned int typeIndex) {
+    // Make sure the vector is not empty
+    if (particleTypes.empty()) return noType;
+    // The -1 is fine since it is not empty
+    typeIndex = std::clamp(typeIndex, 0u, static_cast<unsigned>(particleTypes.size()) - 1);
+    return particleTypes[typeIndex];
 }
+
+
