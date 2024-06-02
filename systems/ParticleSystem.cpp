@@ -179,6 +179,14 @@ void ParticleSystem::Init() {
         GL_DYNAMIC_STORAGE_BIT
     );
 
+    for (unsigned x = 0; x < 50; ++x) {
+        for (unsigned y = 0; y < 50; ++y) {
+            for (unsigned z = 0; z < 50; ++z) {
+                particles.push_back(0);
+            }
+        }
+    }
+
     for (unsigned x = 2; x < 7; ++x) {
         for (unsigned y = 5; y < 10; ++y) {
             for (unsigned z = 2; z < 7; ++z) {
