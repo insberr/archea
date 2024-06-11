@@ -9,6 +9,8 @@
 namespace Particle {
     using namespace glm;
 
+    // no move
+    const vec3 None = vec3(0);
     // y -1
     const vec3 Down = vec3(0, -1, 0);
     // y +1
@@ -21,6 +23,18 @@ namespace Particle {
     const vec3 Forward = vec3(0, 0, -1);
     // z +1
     const vec3 Backward = vec3(0, 0, 1);
+
+    enum MovementRuleType {
+        Single,
+        All,
+        Random,
+    };
+    struct MovementRule {
+        MovementRuleType type;
+        bool continueAllFail;
+        bool combineWithNext;
+        std::vector<vec3> moves;
+    };
 
 }
 
@@ -60,5 +74,5 @@ struct ParticleType {
     State state;
     ParticleColor color;
     float temperature;
-    std::vector<glm::vec3> movement;
+    std::vector<Particle::MovementRule> movement;
 };

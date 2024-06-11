@@ -11,10 +11,26 @@ const ParticleType SandParticle = {
     .color = {200, 150, 10, 255},
     .temperature = 30.0f,
     .movement = {
-        Particle::Down,
-        Particle::Down + Particle::Right,
-        Particle::Down + Particle::Left,
-        Particle::Down + Particle::Forward,
-        Particle::Down + Particle::Backward,
+        // Try to move straight down
+        {
+            .type = Particle::MovementRuleType::Single,
+            .continueAllFail = true,
+            .combineWithNext = false,
+            .moves = {
+                Particle::Down,
+            }
+        },
+        {
+            .type = Particle::MovementRuleType::Random,
+            .continueAllFail = false,
+            .combineWithNext = false,
+            .moves = {
+                Particle::None,
+                Particle::Right,
+                Particle::Left,
+                Particle::Forward,
+                Particle::Backward,
+            }
+        },
     }
 };
