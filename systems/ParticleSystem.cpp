@@ -54,6 +54,7 @@ namespace ParticleSystem {
     int maxRaySteps { 200 };
     float particleScale { 0.4f };
     bool enableOutlines { false };
+    unsigned int chunkSize { 50 };
 };
 
 int ParticleSystem::Setup() { return 0; }
@@ -158,16 +159,16 @@ void ParticleSystem::Init() {
 
     glCreateBuffers(1, &particlesBuffer);
 
-    for (unsigned x = 0; x < 50; ++x) {
-        for (unsigned y = 0; y < 50; ++y) {
-            for (unsigned z = 0; z < 50; ++z) {
+    for (unsigned x = 0; x < chunkSize; ++x) {
+        for (unsigned y = 0; y < chunkSize; ++y) {
+            for (unsigned z = 0; z < chunkSize; ++z) {
                 particles.push_back(0);
             }
         }
     }
     glNamedBufferStorage(
         particlesBuffer,
-        sizeof(int) * (50 * 50 * 50),
+        sizeof(int) * (chunkSize * chunkSize * chunkSize),
         (const void*)particles.data(),
         GL_DYNAMIC_STORAGE_BIT
     );
@@ -190,7 +191,7 @@ void ParticleSystem::Init() {
     for (unsigned x = 2; x < 7; ++x) {
         for (unsigned y = 5; y < 10; ++y) {
             for (unsigned z = 2; z < 7; ++z) {
-                particles[z * (50 * 50) + y * (50) + x] = 2;
+                particles[z * (chunkSize * chunkSize) + y * (chunkSize) + x] = 2;
             }
         }
     }
@@ -201,37 +202,37 @@ void ParticleSystem::Update(float dt) {
 
     if (dt == 0.0f) return;
 
-    int& part = particles[drawPos.z * (50 * 50) + drawPos.y * (50) + drawPos.x];
+    int& part = particles[drawPos.z * (chunkSize * chunkSize) + drawPos.y * (chunkSize) + drawPos.x];
     if (part <= 1) {
         part = 0;
     }
 
     if (InputSystem::IsKeyHeld(GLFW_KEY_Q)) {
-        particles[drawPos.z * (50 * 50) + drawPos.y * (50) + drawPos.x] = 2;
+        particles[drawPos.z * (chunkSize * chunkSize) + drawPos.y * (chunkSize) + drawPos.x] = 2;
     }
 
     if (InputSystem::IsKeyHeld(GLFW_KEY_LEFT)) {
-        drawPos.x = std::clamp(drawPos.x - 1, 0, 50 - 1);
+        drawPos.x = std::clamp(drawPos.x - 1, 0, (int)chunkSize - 1);
     }
     if (InputSystem::IsKeyHeld(GLFW_KEY_RIGHT)) {
-        drawPos.x = std::clamp(drawPos.x + 1, 0, 50 - 1);
+        drawPos.x = std::clamp(drawPos.x + 1, 0, (int)chunkSize - 1);
     }
     if (InputSystem::IsKeyHeld(GLFW_KEY_F)) {
         if (InputSystem::IsKeyHeld(GLFW_KEY_UP)) {
-            drawPos.z = std::clamp(drawPos.z + 1, 0, 50 - 1);
+            drawPos.z = std::clamp(drawPos.z + 1, 0, (int)chunkSize - 1);
         }
         if (InputSystem::IsKeyHeld(GLFW_KEY_DOWN)) {
-            drawPos.z = std::clamp(drawPos.z - 1, 0, 50 - 1);
+            drawPos.z = std::clamp(drawPos.z - 1, 0, (int)chunkSize - 1);
         }
     } else {
         if (InputSystem::IsKeyHeld(GLFW_KEY_UP)) {
-            drawPos.y = std::clamp(drawPos.y + 1, 0, 50 - 1);
+            drawPos.y = std::clamp(drawPos.y + 1, 0, (int)chunkSize - 1);
         }
         if (InputSystem::IsKeyHeld(GLFW_KEY_DOWN)) {
-            drawPos.y = std::clamp(drawPos.y - 1, 0, 50 - 1);
+            drawPos.y = std::clamp(drawPos.y - 1, 0, (int)chunkSize - 1);
         }
     }
-    int& part2 = particles[drawPos.z * (50 * 50) + drawPos.y * (50) + drawPos.x];
+    int& part2 = particles[drawPos.z * (chunkSize * chunkSize) + drawPos.y * (chunkSize) + drawPos.x];
     if (part2 <= 1) {
         part2 = 1;
     }
@@ -241,13 +242,13 @@ void ParticleSystem::Update(float dt) {
         step += dt;
     }
     if (step >= 0.4f) {
-        for (unsigned x = 0; x < 50; ++x) {
-            for (int y = 0; y < 50; ++y) {
-                for (unsigned z = 0; z < 50; ++z) {
+        for (unsigned x = 0; x < chunkSize; ++x) {
+            for (int y = 0; y < chunkSize; ++y) {
+                for (unsigned z = 0; z < chunkSize; ++z) {
                     const auto currentPos = glm::ivec3(x, y, z);
 
                     // z * (ysize * xsize) + y * (xsize) + x
-                    int particle = particles[z * (50 * 50) + y * (50) + x];
+                    int particle = particles[z * (chunkSize * chunkSize) + y * (chunkSize) + x];
                     if (particle <= 1) continue;
 
                     auto particleTypeInfo = ParticleTypeSystem::GetParticleTypeInfo(particle - 1);
@@ -269,12 +270,16 @@ void ParticleSystem::Update(float dt) {
                         posToTry = glm::clamp(posToTry, glm::ivec3(0), glm::ivec3(49));
                         // int newY = std::clamp<int>(y - 1, 0, 49);
 
-                        int atNewPos = particles[posToTry.z * (50 * 50) + posToTry.y * (50) + posToTry.x];
+                        int atNewPos = particles[posToTry.z * (chunkSize * chunkSize) + posToTry.y * (chunkSize) + posToTry.x];
                         if (atNewPos != 0) continue;
-                        particles[posToTry.z * (50 * 50) + posToTry.y * (50) + posToTry.x] = particle;
+
+                        // We are here, we are allowed to move here
+
+
+                        particles[posToTry.z * (chunkSize * chunkSize) + posToTry.y * (chunkSize) + posToTry.x] = particle;
                         // remove
-                        particles[z * (50 * 50) + y * (50) + x] = 0;
-                        break;
+                        particles[z * (chunkSize * chunkSize) + y * (chunkSize) + x] = 0;
+                        // break;
                         // if works, break
                         // else continue
                     }
@@ -284,7 +289,7 @@ void ParticleSystem::Update(float dt) {
         }
         step = 0.0f;
     }
-    glNamedBufferSubData(particlesBuffer, 0, sizeof(int) * (50 * 50 * 50), (const void*)particles.data());
+    glNamedBufferSubData(particlesBuffer, 0, sizeof(int) * (chunkSize * chunkSize * chunkSize), (const void*)particles.data());
 }
 
 //struct Particel {
@@ -343,6 +348,7 @@ void ParticleSystem::Render() {
     glUniform1i(glGetUniformLocation(shaderProgram, "MAX_RAY_STEPS"), maxRaySteps);
     glUniform1f(glGetUniformLocation(shaderProgram, "ParticleScale"), particleScale);
     glUniform1ui(glGetUniformLocation(shaderProgram, "EnableOutlines"), enableOutlines);
+    glUniform1ui(glGetUniformLocation(shaderProgram, "ChunkSize"), chunkSize);
 
     // Bind the vertex data
     glBindVertexArray(VAO);
@@ -356,6 +362,9 @@ void ParticleSystem::Render() {
         ImGui::SliderInt("Max Ray Steps", &maxRaySteps, 0, 1000);
         ImGui::SliderFloat("Particle Scale", &particleScale, 0.001f, 5.0f, "%.8f");
         ImGui::Checkbox("Show Particle Outlines", &enableOutlines);
+        if (ImGui::SliderInt("Chunk Size", reinterpret_cast<int *>(&chunkSize), 10, 1000)) {
+            particles.resize(chunkSize * chunkSize * chunkSize);
+        }
     }
     ImGui::End();
 }
