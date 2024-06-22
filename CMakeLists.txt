@@ -71,6 +71,8 @@ add_executable(archea
         systems/GraphicsSystem.cpp
         systems/GraphicsSystem.h
         systems/particle_types/DebugParticle_Type.h
+        systems/particle_types/ParticleMove.cpp
+        systems/particle_types/ParticleMove.h
 )
 # Run the copy_shaders commands
 add_dependencies(archea copy_shaders)

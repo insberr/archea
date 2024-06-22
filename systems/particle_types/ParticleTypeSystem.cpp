@@ -3,10 +3,7 @@
 //
 
 #include "ParticleTypeSystem.h"
-
-// Particle Types
 #include <algorithm>
-#include <array>
 
 #include "DebugParticle_Type.h"
 #include "SandParticle_Type.h"
@@ -31,7 +28,7 @@ namespace ParticleTypeSystem {
         .state = State::Solid,
         .color = { 255, 255, 255, 255 },
         .temperature = 0,
-        .movement = {},
+        .getNextMove = ParticleMove::predefined::none,
     };
 
     std::vector<ParticleType> particleTypes;
@@ -67,5 +64,3 @@ ParticleType& ParticleTypeSystem::GetParticleTypeInfo(unsigned int typeIndex) {
     typeIndex = std::clamp(typeIndex, 0u, static_cast<unsigned>(particleTypes.size()) - 1);
     return particleTypes[typeIndex];
 }
-
-

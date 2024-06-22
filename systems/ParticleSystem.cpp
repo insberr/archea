@@ -16,8 +16,8 @@
 #include "InputSystem.h"
 #include "CameraSystem.h"
 #include "ImGuiSystem.h"
-#include "particle_types/ParticleType.h"
 #include "particle_types/ParticleTypeSystem.h"
+#include "particle_types/ParticleType.h"
 
 namespace ParticleSystem {
     /* System Function Declarations */
@@ -253,50 +253,32 @@ void ParticleSystem::Update(float dt) {
                     auto particleTypeInfo = ParticleTypeSystem::GetParticleTypeInfo(particle - 1);
 
                     auto posToTry = glm::ivec3(0);
-                    for (const auto& moveToTry : particleTypeInfo.movement)
-                    {
-                        if (moveToTry.type == Particle::Single) {
-                            for (const auto& m : moveToTry.moves) {
-                                // ivec3 cast is probably temp?
-                                posToTry = currentPos + glm::ivec3(m);
-                                if (posToTry.y < 0) continue;
-                                posToTry = glm::clamp(posToTry, glm::ivec3(0), glm::ivec3(49));
-                                // int newY = std::clamp<int>(y - 1, 0, 49);
 
-                                int atNewPos = particles[posToTry.z * (50 * 50) + posToTry.y * (50) + posToTry.x];
-                                if (atNewPos != 0) continue;
-                                particles[posToTry.z * (50 * 50) + posToTry.y * (50) + posToTry.x] = particle;
-                                // remove
-                                particles[z * (50 * 50) + y * (50) + x] = 0;
-                            }
-                        }
+                    // new
+                    auto nextMove = ParticleMove::MoveState {};
+                    while (true) {
+                        particleTypeInfo.getNextMove(nextMove);
 
-                        if (moveToTry.type == Particle::Random) {
-                            if (moveToTry.moves.empty()) break;
-                            // Temp
-                            const auto m = moveToTry.moves[0];
+                        if (nextMove.done) break;
 
-                            // ivec3 cast is probably temp?
-                            posToTry = currentPos + glm::ivec3(m);
-                            if (posToTry.y < 0) continue;
-                            posToTry = glm::clamp(posToTry, glm::ivec3(0), glm::ivec3(49));
-                            // int newY = std::clamp<int>(y - 1, 0, 49);
+                        posToTry = currentPos + glm::ivec3(nextMove.positionToTry);
 
-                            int atNewPos = particles[posToTry.z * (50 * 50) + posToTry.y * (50) + posToTry.x];
-                            if (atNewPos != 0) continue;
-                            particles[posToTry.z * (50 * 50) + posToTry.y * (50) + posToTry.x] = particle;
-                            // remove
-                            particles[z * (50 * 50) + y * (50) + x] = 0;
-                        }
-                            if (moveToTry.type == Particle::All)
-                                {
-                                    // todo Do all moves in the move value
-                                }
+                        // try pos
 
-                        if (moveToTry.continueAllFail) continue;
-                        if (moveToTry.combineWithNext) continue;
+                        if (posToTry.y < 0) continue;
+                        posToTry = glm::clamp(posToTry, glm::ivec3(0), glm::ivec3(49));
+                        // int newY = std::clamp<int>(y - 1, 0, 49);
+
+                        int atNewPos = particles[posToTry.z * (50 * 50) + posToTry.y * (50) + posToTry.x];
+                        if (atNewPos != 0) continue;
+                        particles[posToTry.z * (50 * 50) + posToTry.y * (50) + posToTry.x] = particle;
+                        // remove
+                        particles[z * (50 * 50) + y * (50) + x] = 0;
                         break;
+                        // if works, break
+                        // else continue
                     }
+                    //end
                 }
             }
         }

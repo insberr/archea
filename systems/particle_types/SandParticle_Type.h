@@ -10,27 +10,5 @@ const ParticleType SandParticle = {
     .state = State::Solid,
     .color = {200, 150, 10, 255},
     .temperature = 30.0f,
-    .movement = {
-        // Try to move straight down
-        {
-            .type = Particle::MovementRuleType::Single,
-            .continueAllFail = true,
-            .combineWithNext = false,
-            .moves = {
-                Particle::Down,
-            }
-        },
-        {
-            .type = Particle::MovementRuleType::Random,
-            .continueAllFail = false,
-            .combineWithNext = false,
-            .moves = {
-                Particle::None,
-                Particle::Right,
-                Particle::Left,
-                Particle::Forward,
-                Particle::Backward,
-            }
-        },
-    }
+    .getNextMove = ParticleMove::predefined::randomLRFB,
 };
