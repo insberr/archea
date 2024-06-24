@@ -51,7 +51,7 @@ namespace ParticleSystem {
     glm::ivec3 drawPos;
 
     // Settings
-    int maxRaySteps { 200 };
+    int maxRaySteps { 400 };
     float particleScale { 0.4f };
     bool enableOutlines { false };
     unsigned int chunkSize { 50 };
