@@ -16,14 +16,14 @@ App::~App() {
     // Make sure we call in reverse order
     // Already in reverse order from Exit call
     // std::reverse(systems.begin(), systems.end());
-    for (auto& system : systems) {
+    for (auto &system: systems) {
         if (system.Done) system.Done();
     }
 };
 
 int App::Run() {
     // Initialize all systems
-    for (auto& system : systems) {
+    for (auto &system: systems) {
         if (system.Init) system.Init();
     }
 
@@ -34,7 +34,7 @@ int App::Run() {
         // Poll for events
         glfwPollEvents();
 
-        for (auto& system : systems) {
+        for (auto &system: systems) {
             if (system.Update) system.Update(dt);
         }
 
@@ -53,7 +53,7 @@ int App::Run() {
 
 
         // Do drawing here
-        for (auto& system : systems) {
+        for (auto &system: systems) {
             if (system.Render) system.Render();
         }
 
@@ -66,14 +66,14 @@ int App::Run() {
 
     // Call exit in reverse order
     std::reverse(systems.begin(), systems.end());
-    for (auto& system : systems) {
+    for (auto &system: systems) {
         if (system.Exit) system.Exit();
     }
 
     return 0;
 }
 
-int App::AddSystem(const System& system)  {
+int App::AddSystem(const System &system) {
     int setupCode = system.Setup ? system.Setup() : 0;
     systems.push_back(system);
     return setupCode;

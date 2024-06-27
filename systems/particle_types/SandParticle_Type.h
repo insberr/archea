@@ -13,7 +13,7 @@ const ParticleType SandParticle = {
     .getNextMove = [](ParticleMove::MoveState& lastMoveState) {
         switch (lastMoveState.step) {
             case 0: return ParticleMove::predefined::down(lastMoveState);
-            case 1: return ParticleMove::predefined::randomLR(lastMoveState);
+            case 1: return ParticleMove::predefined::down(lastMoveState);
             case 2: { lastMoveState.done = true; return; };
             default: { lastMoveState.done = true; return; }
         }
