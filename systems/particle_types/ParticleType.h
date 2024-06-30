@@ -4,25 +4,7 @@
 
 #pragma once
 #include <glm/vec3.hpp>
-
-
-namespace Particle {
-    using namespace glm;
-
-    // y -1
-    const vec3 Down = vec3(0, -1, 0);
-    // y +1
-    const vec3 Up = vec3(0, 1, 0);
-    // x -1
-    const vec3 Left = vec3(-1, 0, 0);
-    // x +1
-    const vec3 Right = vec3(1, 0, 0);
-    // z -1
-    const vec3 Forward = vec3(0, 0, -1);
-    // z +1
-    const vec3 Backward = vec3(0, 0, 1);
-
-}
+#include "ParticleMove.h"
 
 enum State {
     Solid,
@@ -60,5 +42,5 @@ struct ParticleType {
     State state;
     ParticleColor color;
     float temperature;
-    std::vector<glm::vec3> movement;
+    void (*getNextMove)(ParticleMove::MoveState&);
 };

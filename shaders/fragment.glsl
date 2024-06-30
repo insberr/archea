@@ -28,6 +28,7 @@ uniform float ParticleScale;
 uniform uint EnableOutlines;
 // The number of ray steps to make
 uniform int MAX_RAY_STEPS;
+uniform uint ChunkSize;
 
 
 // In this situation, epsilon is the smallest acceptable number,
@@ -156,9 +157,11 @@ vec4 alphaBlend(vec4 color1, vec4 color2) {
 }
 
 const vec4 NoParticle = vec4(-1.0);
-const int arraySize = 50; // make this a uniform
+
 // Test if a voxel exists here
 vec4 getParticle(ivec3 c) {
+    uint arraySize = ChunkSize; // make this a uniform
+
     // Ground
     if (c.y == -1 && c.x >= 0 && c.z >= 0   && c.z < arraySize && c.x < arraySize) return vec4(vec3(0.3), 0.6);
 
