@@ -14,28 +14,25 @@ Make sure to follow the specific OS instructions.
 JetBrains CLion will automatically set up the build configs.
 
 ### Linux
+TODO: Make it so you don't have to do this. Also, you need to do this in order
+to run the compiled program.
+
 First you need to install `OpenGL` development libraries. This is really easy on linux.
 ```shell
 sudo apt install libglew-dev libglfw3-dev libglm-dev
 ```
 
-You will also need to install CMake.
-```shell
-# TODO add CMake install instructions
-```
-
-Then configure CMake in your IDE of choice.
-
 ### Windows
+TODO: Provide prebuilt packages because using vcpkg is annoying.
+
 Install packages with vcpkg (builtin to CLion)
 - glew
 - glfw3
 - glm
 
-Have fun good luck.
-
 ### MacOS
-I have no idea, you are on your own for this. (I will look later I guess)
+Unless you can get `OpenGL4.6` or later working on MacOS, you are out of luck. The shader code uses `OpenGL4.6` features
+and the program will crash when you run it.
 
 ## Cross Compiling
 I have to look up how to do these.
@@ -44,7 +41,7 @@ I have to look up how to do these.
 TODO
 
 ### Compile for Linux on Windows
-TODO
+TODO: Maybe just use WSL?
 
 ## Wording
 1. Particle - Refers to a voxel which is simulated (i.e. sand, water)
