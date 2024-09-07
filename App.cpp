@@ -6,6 +6,8 @@
 
 // Standard
 #include <iostream>
+// #include <chrono>
+// #include <thread>
 
 // Systems
 #include "systems/GraphicsSystem.h"
@@ -30,6 +32,13 @@ int App::Run() {
     float dt = 0.0f;
     while (!glfwWindowShouldClose(Graphics::GetWindow())) {
         dt = timer.Mark();
+
+        // todo: frame cap
+        // float maxFrameMSForFPS = 1000.0f / 120.0f;
+        // float usedMSLastFrame = dt * 1000.0f;
+        // int waitMS = static_cast<int>(maxFrameMSForFPS - usedMSLastFrame);
+        // std::chrono::milliseconds timespan(waitMS);
+        // std::this_thread::sleep_for(timespan);
 
         // Poll for events
         glfwPollEvents();

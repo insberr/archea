@@ -279,7 +279,7 @@ void ParticleSystem::Update(float dt) {
                         particles[posToTry.z * (chunkSize * chunkSize) + posToTry.y * (chunkSize) + posToTry.x] = particle;
                         // remove
                         particles[z * (chunkSize * chunkSize) + y * (chunkSize) + x] = 0;
-                        // break;
+                        break;
                         // if works, break
                         // else continue
                     }

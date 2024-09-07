@@ -12,9 +12,8 @@ const ParticleType SandParticle = {
     .temperature = 30.0f,
     .getNextMove = [](ParticleMove::MoveState& lastMoveState) {
         switch (lastMoveState.step) {
-            case 0: return ParticleMove::predefined::down(lastMoveState);
+            case 0: return ParticleMove::predefined::randomLR_Down(lastMoveState);
             case 1: return ParticleMove::predefined::down(lastMoveState);
-            case 2: { lastMoveState.done = true; return; };
             default: { lastMoveState.done = true; return; }
         }
 

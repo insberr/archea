@@ -41,5 +41,7 @@ namespace ParticleMove {
         void randomFB(MoveState& lastMoveState);
 
         void randomLRFB(MoveState& lastMoveState);
+
+        void randomLR_Down(MoveState& lastMoveState);
     }
 }
