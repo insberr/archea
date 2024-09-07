@@ -49,12 +49,14 @@ namespace ParticleSystem {
     GLuint VBO {0}, VAO {0}, EBO {0};
 
     glm::ivec3 drawPos;
+    unsigned drawType = 2;
 
     // Settings
     int maxRaySteps { 400 };
     float particleScale { 0.4f };
     bool enableOutlines { false };
     unsigned int chunkSize { 50 };
+    float stepSpeed = 0.4f;
 };
 
 int ParticleSystem::Setup() { return 0; }
@@ -208,7 +210,7 @@ void ParticleSystem::Update(float dt) {
     }
 
     if (InputSystem::IsKeyHeld(GLFW_KEY_Q)) {
-        particles[drawPos.z * (chunkSize * chunkSize) + drawPos.y * (chunkSize) + drawPos.x] = 2;
+        particles[drawPos.z * (chunkSize * chunkSize) + drawPos.y * (chunkSize) + drawPos.x] = drawType;
     }
 
     if (InputSystem::IsKeyHeld(GLFW_KEY_LEFT)) {
@@ -238,10 +240,10 @@ void ParticleSystem::Update(float dt) {
     }
 
     static float step = 0.0f;
-    if (step < 0.4f) {
+    if (step < stepSpeed) {
         step += dt;
     }
-    if (step >= 0.4f) {
+    if (step >= stepSpeed) {
         for (unsigned x = 0; x < chunkSize; ++x) {
             for (int y = 0; y < chunkSize; ++y) {
                 for (unsigned z = 0; z < chunkSize; ++z) {
@@ -358,13 +360,31 @@ void ParticleSystem::Render() {
     // glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, 0);
 
     if (ImGui::Begin("Simulation Controls")) {
-        ImGui::Text("Draw Pos (Change With Arrow Keys) %i %i %i", drawPos.x, drawPos.y, drawPos.z);
+        // ImGui::Text("Draw Pos (Change With Arrow Keys) %i %i %i", drawPos.x, drawPos.y, drawPos.z);
+        ImGui::SliderFloat("Simulation Step Speed", &stepSpeed, 0.0f, 1.0f);
         ImGui::SliderInt("Max Ray Steps", &maxRaySteps, 0, 1000);
         ImGui::SliderFloat("Particle Scale", &particleScale, 0.001f, 5.0f, "%.8f");
         ImGui::Checkbox("Show Particle Outlines", &enableOutlines);
-        if (ImGui::SliderInt("Chunk Size", reinterpret_cast<int *>(&chunkSize), 10, 1000)) {
-            particles.resize(chunkSize * chunkSize * chunkSize);
+        if (ImGui::SliderInt("Chunk Size", reinterpret_cast<int *>(&chunkSize), 10, 300)) {
+            if (chunkSize > 0) {
+                particles.resize(chunkSize * chunkSize * chunkSize);
+            }
         }
+    }
+    ImGui::End();
+
+    if (ImGui::Begin("Drawing Controls"))
+    {
+        ImGui::Text("Draw Pos (Change With Arrow Keys) %i %i %i", drawPos.x, drawPos.y, drawPos.z);
+
+        if (
+            int temp_drawPos[3] = { drawPos.x, drawPos.y, drawPos.z };
+            ImGui::SliderInt3("Draw Position X Y Z", temp_drawPos, 0, static_cast<int>(chunkSize) - 1)
+            ) {
+            drawPos = glm::vec3(temp_drawPos[0], temp_drawPos[1], temp_drawPos[2]);
+        }
+
+        ImGui::SliderInt("Draw Type", reinterpret_cast<int *>(&drawType), 0, ParticleTypeSystem::GetParticleTypeCount(), ParticleTypeSystem::GetParticleTypeInfo(drawType - 1).nameId);
     }
     ImGui::End();
 }

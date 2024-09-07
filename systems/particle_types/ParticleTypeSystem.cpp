@@ -7,6 +7,7 @@
 
 #include "DebugParticle_Type.h"
 #include "SandParticle_Type.h"
+#include "WaterParticle_Type.h"
 
 namespace ParticleTypeSystem {
     /* System Function Declarations */
@@ -38,6 +39,7 @@ namespace ParticleTypeSystem {
 int ParticleTypeSystem::Setup() {
     AddParticleType(DebugParticle);
     AddParticleType(SandParticle);
+    AddParticleType(WaterParticle);
 
     return 0;
 }
@@ -63,4 +65,8 @@ ParticleType& ParticleTypeSystem::GetParticleTypeInfo(unsigned int typeIndex) {
     // The -1 is fine since it is not empty
     typeIndex = std::clamp(typeIndex, 0u, static_cast<unsigned>(particleTypes.size()) - 1);
     return particleTypes[typeIndex];
+}
+
+unsigned int ParticleTypeSystem::GetParticleTypeCount() {
+    return particleTypes.size();
 }

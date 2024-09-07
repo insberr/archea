@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <string>
+
 #include "../System.h"
 #include <vector>
 
@@ -18,4 +20,6 @@ namespace ParticleTypeSystem {
     std::vector<NormColor> GetParticleColorIndexesForShader();
 
     ParticleType& GetParticleTypeInfo(unsigned int typeIndex);
+
+    unsigned int GetParticleTypeCount();
 };
