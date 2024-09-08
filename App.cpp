@@ -6,6 +6,8 @@
 
 // Standard
 #include <iostream>
+// #include <chrono>
+// #include <thread>
 
 // Systems
 #include "systems/GraphicsSystem.h"
@@ -16,14 +18,14 @@ App::~App() {
     // Make sure we call in reverse order
     // Already in reverse order from Exit call
     // std::reverse(systems.begin(), systems.end());
-    for (auto& system : systems) {
+    for (auto &system: systems) {
         if (system.Done) system.Done();
     }
 };
 
 int App::Run() {
     // Initialize all systems
-    for (auto& system : systems) {
+    for (auto &system: systems) {
         if (system.Init) system.Init();
     }
 
@@ -31,10 +33,17 @@ int App::Run() {
     while (!glfwWindowShouldClose(Graphics::GetWindow())) {
         dt = timer.Mark();
 
+        // todo: frame cap
+        // float maxFrameMSForFPS = 1000.0f / 120.0f;
+        // float usedMSLastFrame = dt * 1000.0f;
+        // int waitMS = static_cast<int>(maxFrameMSForFPS - usedMSLastFrame);
+        // std::chrono::milliseconds timespan(waitMS);
+        // std::this_thread::sleep_for(timespan);
+
         // Poll for events
         glfwPollEvents();
 
-        for (auto& system : systems) {
+        for (auto &system: systems) {
             if (system.Update) system.Update(dt);
         }
 
@@ -53,7 +62,7 @@ int App::Run() {
 
 
         // Do drawing here
-        for (auto& system : systems) {
+        for (auto &system: systems) {
             if (system.Render) system.Render();
         }
 
@@ -66,14 +75,14 @@ int App::Run() {
 
     // Call exit in reverse order
     std::reverse(systems.begin(), systems.end());
-    for (auto& system : systems) {
+    for (auto &system: systems) {
         if (system.Exit) system.Exit();
     }
 
     return 0;
 }
 
-int App::AddSystem(const System& system)  {
+int App::AddSystem(const System &system) {
     int setupCode = system.Setup ? system.Setup() : 0;
     systems.push_back(system);
     return setupCode;

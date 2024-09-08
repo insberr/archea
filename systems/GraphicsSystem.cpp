@@ -65,6 +65,10 @@ int Graphics::Setup() {
 
     // Make window context current
     glfwMakeContextCurrent(window);
+
+    // Request to disable vsync
+    // glfwSwapInterval(0);
+
     // note: figure out what this does too
     glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
 

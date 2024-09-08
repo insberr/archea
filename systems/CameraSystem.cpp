@@ -5,9 +5,13 @@
 #include <glm/gtc/quaternion.hpp>
 #include "../App.h"
 #include "CameraSystem.h"
+
+#include <glm/gtc/type_ptr.hpp>
+
 #include "InputSystem.h"
 #include "ImGuiSystem.h"
 #include "GraphicsSystem.h"
+#include "../shaders.h"
 
 namespace CameraSystem {
     /* System Function Declarations */
@@ -154,6 +158,134 @@ void CameraSystem::Render() {
         }
     }
     ImGui::End();
+
+    // Temp, Render a small cube where I am looking
+    GLuint VBO {0}, VAO {0}, EBO {0};
+
+    float cubeVertices[] = {
+            // Front face
+            -0.5f, -0.5f,  0.5f,  // 0
+            0.5f, -0.5f,  0.5f,  // 1
+            0.5f,  0.5f,  0.5f,  // 2
+            -0.5f,  0.5f,  0.5f,  // 3
+
+            // Back face
+            -0.5f, -0.5f, -0.5f,  // 4
+            0.5f, -0.5f, -0.5f,  // 5
+            0.5f,  0.5f, -0.5f,  // 6
+            -0.5f,  0.5f, -0.5f,  // 7
+
+            // Top face
+            0.5f,  0.5f,  0.5f,  // 8
+            -0.5f,  0.5f,  0.5f,  // 9
+            -0.5f,  0.5f, -0.5f,  // 10
+            0.5f,  0.5f, -0.5f,  // 11
+
+            // Bottom face
+            -0.5f, -0.5f,  0.5f,  // 12
+            0.5f, -0.5f,  0.5f,  // 13
+            0.5f, -0.5f, -0.5f,  // 14
+            -0.5f, -0.5f, -0.5f,  // 15
+
+            // Right face
+            0.5f, -0.5f,  0.5f,  // 16
+            0.5f, -0.5f, -0.5f,  // 17
+            0.5f,  0.5f, -0.5f,  // 18
+            0.5f,  0.5f,  0.5f,  // 19
+
+            // Left face
+            -0.5f, -0.5f,  0.5f,  // 20
+            -0.5f, -0.5f, -0.5f,  // 21
+            -0.5f,  0.5f, -0.5f,  // 22
+            -0.5f,  0.5f,  0.5f   // 23
+    };
+
+// Define the indices for the cube
+    GLuint indices[] = {
+            // Front face
+            0, 1, 2,
+            2, 3, 0,
+
+            // Back face
+            4, 5, 6,
+            6, 7, 4,
+
+            // Top face
+            8, 9, 10,
+            10, 11, 8,
+
+            // Bottom face
+            12, 13, 14,
+            14, 15, 12,
+
+            // Right face
+            16, 17, 18,
+            18, 19, 16,
+
+            // Left face
+            20, 21, 22,
+            22, 23, 20
+    };
+
+    glGenVertexArrays(1, &VAO);
+    glGenBuffers(1, &VBO);
+    glGenBuffers(1, &EBO);
+
+    glBindVertexArray(VAO);
+
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices), cubeVertices, GL_STATIC_DRAW);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), &indices, GL_STATIC_DRAW);
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+
+    // Load the contents of the shaders
+    std::string vertexShaderSource = readShaderFile("shaders/vertex_old3.glsl");
+    std::string fragmentShaderSource = readShaderFile("shaders/plain_color.glsl");
+
+    // Make sure they arent empty
+    if (vertexShaderSource.empty() || fragmentShaderSource.empty()) {
+        return;
+    }
+
+    // Create the shader program
+    GLuint shaderProgram = createShaderProgram(vertexShaderSource, fragmentShaderSource);
+    if (shaderProgram == 0) return;
+
+    glUseProgram(shaderProgram);
+
+    // TEMP ,, do render
+    auto window = Graphics::GetWindow();
+    int width, height;
+    glfwGetFramebufferSize(window, &width, &height);
+
+    GLuint modelLoc = glGetUniformLocation(shaderProgram, "model");
+    GLuint viewLoc = glGetUniformLocation(shaderProgram, "view");
+    GLuint projectionLoc = glGetUniformLocation(shaderProgram, "projection");
+    auto model = glm::scale(
+        glm::translate(
+            GetModel(),
+            position + target
+        ),
+        glm::vec3(0.05f)
+    );
+    auto view = GetView();
+    auto projection = GetProjection();
+    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+    glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+    glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
+    glUniform3f(glGetUniformLocation(shaderProgram, "Color"), 0.7f, 0.3f, 0.4f);
+
+    // Bind the vertex data
+    glBindVertexArray(VAO);
+    // Call draw
+    glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
 }
 
 void CameraSystem::Exit() {}

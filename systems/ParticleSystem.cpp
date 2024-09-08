@@ -16,8 +16,9 @@
 #include "InputSystem.h"
 #include "CameraSystem.h"
 #include "ImGuiSystem.h"
-#include "particle_types/ParticleType.h"
+#include "ParticleData.h"
 #include "particle_types/ParticleTypeSystem.h"
+#include "particle_types/ParticleType.h"
 
 namespace ParticleSystem {
     /* System Function Declarations */
@@ -39,8 +40,6 @@ namespace ParticleSystem {
     }
 
     /* Private Variables And Functions */
-
-    std::vector<int> particles;
     GLuint shaderProgram { 0 };
 
     GLuint particlesBuffer { 0 };
@@ -49,11 +48,18 @@ namespace ParticleSystem {
     GLuint VBO {0}, VAO {0}, EBO {0};
 
     glm::ivec3 drawPos;
+    glm::ivec3 lookingAtParticlePos;
+    float drawDistance { 1.0f };
+    unsigned drawType = 2;
 
     // Settings
-    int maxRaySteps { 200 };
+    int maxRaySteps { 400 };
     float particleScale { 0.4f };
     bool enableOutlines { false };
+    unsigned int chunkSize { 50 }; // sorta unused now
+    float stepDelay = 0.1f;
+
+    ParticleData::Manager particleDataManager {glm::uvec3(chunkSize)};
 };
 
 int ParticleSystem::Setup() { return 0; }
@@ -158,17 +164,17 @@ void ParticleSystem::Init() {
 
     glCreateBuffers(1, &particlesBuffer);
 
-    for (unsigned x = 0; x < 50; ++x) {
-        for (unsigned y = 0; y < 50; ++y) {
-            for (unsigned z = 0; z < 50; ++z) {
-                particles.push_back(0);
-            }
-        }
-    }
+    // for (unsigned x = 0; x < chunkSize; ++x) {
+    //     for (unsigned y = 0; y < chunkSize; ++y) {
+    //         for (unsigned z = 0; z < chunkSize; ++z) {
+    //             particles.push_back(0);
+    //         }
+    //     }
+    // }
     glNamedBufferStorage(
         particlesBuffer,
-        sizeof(int) * (50 * 50 * 50),
-        (const void*)particles.data(),
+        sizeof(int) * particleDataManager.GetCubicSize(),
+        (const void*)particleDataManager.GetParticleTypesData().data(),
         GL_DYNAMIC_STORAGE_BIT
     );
 
@@ -187,10 +193,11 @@ void ParticleSystem::Init() {
         GL_DYNAMIC_STORAGE_BIT
     );
 
-    for (unsigned x = 2; x < 7; ++x) {
-        for (unsigned y = 5; y < 10; ++y) {
-            for (unsigned z = 2; z < 7; ++z) {
-                particles[z * (50 * 50) + y * (50) + x] = 2;
+    for (unsigned x = 10; x < 20; ++x) {
+        for (unsigned y = 5; y < 15; ++y) {
+            for (unsigned z = 10; z < 20; ++z) {
+                // particles[z * (chunkSize * chunkSize) + y * (chunkSize) + x] = 2;
+                particleDataManager.SetType(glm::uvec3(x, y, z), 2);
             }
         }
     }
@@ -201,78 +208,94 @@ void ParticleSystem::Update(float dt) {
 
     if (dt == 0.0f) return;
 
-    int& part = particles[drawPos.z * (50 * 50) + drawPos.y * (50) + drawPos.x];
-    if (part <= 1) {
-        part = 0;
+    if (particleDataManager.Get(drawPos).particleType <= 1) {
+        particleDataManager.SetType(drawPos, 0);
     }
 
-    if (InputSystem::IsKeyHeld(GLFW_KEY_Q)) {
-        particles[drawPos.z * (50 * 50) + drawPos.y * (50) + drawPos.x] = 2;
+    if (InputSystem::IsMouseButtonHeld(GLFW_MOUSE_BUTTON_LEFT)) {
+        particleDataManager.SetType(drawPos, drawType);
     }
 
-    if (InputSystem::IsKeyHeld(GLFW_KEY_LEFT)) {
-        drawPos.x = std::clamp(drawPos.x - 1, 0, 50 - 1);
+    if (InputSystem::IsMouseButtonHeld(GLFW_MOUSE_BUTTON_RIGHT)) {
+        particleDataManager.SetType(drawPos, 0);
     }
-    if (InputSystem::IsKeyHeld(GLFW_KEY_RIGHT)) {
-        drawPos.x = std::clamp(drawPos.x + 1, 0, 50 - 1);
-    }
-    if (InputSystem::IsKeyHeld(GLFW_KEY_F)) {
-        if (InputSystem::IsKeyHeld(GLFW_KEY_UP)) {
-            drawPos.z = std::clamp(drawPos.z + 1, 0, 50 - 1);
-        }
-        if (InputSystem::IsKeyHeld(GLFW_KEY_DOWN)) {
-            drawPos.z = std::clamp(drawPos.z - 1, 0, 50 - 1);
-        }
-    } else {
-        if (InputSystem::IsKeyHeld(GLFW_KEY_UP)) {
-            drawPos.y = std::clamp(drawPos.y + 1, 0, 50 - 1);
-        }
-        if (InputSystem::IsKeyHeld(GLFW_KEY_DOWN)) {
-            drawPos.y = std::clamp(drawPos.y - 1, 0, 50 - 1);
-        }
-    }
-    int& part2 = particles[drawPos.z * (50 * 50) + drawPos.y * (50) + drawPos.x];
-    if (part2 <= 1) {
-        part2 = 1;
+
+    std::pair<double, double> mouseScroll = InputSystem::MouseScroll();
+
+    drawDistance += static_cast<float>(mouseScroll.second);
+    drawDistance = std::clamp(drawDistance, 0.0f, 100.0f);
+
+    const glm::vec3 camPos = CameraSystem::GetPosition();
+    const glm::vec3 camTarget = CameraSystem::GetTarget();
+
+    const glm::vec3 lookingAt = camPos + (camTarget * drawDistance);
+
+    // todo: it might be good to store the converted particle coordinate camPos and camTarget positions
+    lookingAtParticlePos = lookingAt / particleScale;
+
+    drawPos = glm::clamp(
+        glm::ivec3(lookingAtParticlePos),
+        glm::ivec3(0),
+        glm::ivec3(particleDataManager.GetDimensions()) - 1
+    );
+
+    if (particleDataManager.Get(drawPos).particleType == 0) {
+        particleDataManager.SetType(drawPos, 1);
     }
 
     static float step = 0.0f;
-    if (step < 0.4f) {
+    if (step < stepDelay) {
         step += dt;
     }
-    if (step >= 0.4f) {
-        for (unsigned x = 0; x < 50; ++x) {
-            for (int y = 0; y < 50; ++y) {
-                for (unsigned z = 0; z < 50; ++z) {
+    if (step >= stepDelay) {
+        const glm::uvec3& dimensions = particleDataManager.GetDimensions();
+        for (unsigned x = 0; x < dimensions.x; ++x) {
+            for (int y = 0; y < dimensions.y; ++y) {
+                for (unsigned z = 0; z < dimensions.z; ++z) {
                     const auto currentPos = glm::ivec3(x, y, z);
 
                     // z * (ysize * xsize) + y * (xsize) + x
-                    int particle = particles[z * (50 * 50) + y * (50) + x];
+                    unsigned particle = particleDataManager.Get(currentPos).particleType;
                     if (particle <= 1) continue;
 
                     auto particleTypeInfo = ParticleTypeSystem::GetParticleTypeInfo(particle - 1);
 
-                    for (const auto& moveToTry : particleTypeInfo.movement)
-                    {
-                        // ivec3 cast is probably temp?
-                        auto posToTry = currentPos + glm::ivec3(moveToTry);
+                    auto posToTry = glm::ivec3(0);
+
+                    // new
+                    auto nextMove = ParticleMove::MoveState {};
+                    while (true) {
+                        particleTypeInfo.getNextMove(nextMove);
+
+                        if (nextMove.done) break;
+
+                        posToTry = currentPos + glm::ivec3(nextMove.positionToTry);
+
+                        // try pos
+
                         if (posToTry.y < 0) continue;
                         posToTry = glm::clamp(posToTry, glm::ivec3(0), glm::ivec3(49));
                         // int newY = std::clamp<int>(y - 1, 0, 49);
 
-                        int atNewPos = particles[posToTry.z * (50 * 50) + posToTry.y * (50) + posToTry.x];
+                        unsigned atNewPos = particleDataManager.Get(posToTry).particleType;
                         if (atNewPos != 0) continue;
-                        particles[posToTry.z * (50 * 50) + posToTry.y * (50) + posToTry.x] = particle;
+
+                        // We are here, we are allowed to move here
+
+                        particleDataManager.SetType(posToTry, particle);
                         // remove
-                        particles[z * (50 * 50) + y * (50) + x] = 0;
+                        particleDataManager.SetType(glm::uvec3(x, y, z), 0);
                         break;
+                        // if works, break
+                        // else continue
                     }
+                    //end
                 }
             }
         }
         step = 0.0f;
     }
-    glNamedBufferSubData(particlesBuffer, 0, sizeof(int) * (50 * 50 * 50), (const void*)particles.data());
+    glNamedBufferSubData(particlesBuffer, 0, sizeof(int) * particleDataManager.GetCubicSize(), (const void*)particleDataManager.GetParticleTypesData().data());
 }
 
 //struct Particel {
@@ -331,6 +354,8 @@ void ParticleSystem::Render() {
     glUniform1i(glGetUniformLocation(shaderProgram, "MAX_RAY_STEPS"), maxRaySteps);
     glUniform1f(glGetUniformLocation(shaderProgram, "ParticleScale"), particleScale);
     glUniform1ui(glGetUniformLocation(shaderProgram, "EnableOutlines"), enableOutlines);
+    // Fixme, chunksize xyz is no longer garenteed to be the same
+    glUniform1ui(glGetUniformLocation(shaderProgram, "ChunkSize"), particleDataManager.GetDimensions().x);
 
     // Bind the vertex data
     glBindVertexArray(VAO);
@@ -340,10 +365,29 @@ void ParticleSystem::Render() {
     // glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, 0);
 
     if (ImGui::Begin("Simulation Controls")) {
-        ImGui::Text("Draw Pos (Change With Arrow Keys) %i %i %i", drawPos.x, drawPos.y, drawPos.z);
+        ImGui::SliderFloat("Simulation Step Speed", &stepDelay, 0.0f, 1.0f);
         ImGui::SliderInt("Max Ray Steps", &maxRaySteps, 0, 1000);
         ImGui::SliderFloat("Particle Scale", &particleScale, 0.001f, 5.0f, "%.8f");
         ImGui::Checkbox("Show Particle Outlines", &enableOutlines);
+        ImGui::Text("Chunk Size (Currently Disabled) %i", chunkSize);
+        // if (ImGui::SliderInt("Chunk Size", reinterpret_cast<int *>(&chunkSize), 10, 300)) {
+        //     if (chunkSize > 0) {
+        //         // Todo: add ability to resize?
+        //         // particles.resize(chunkSize * chunkSize * chunkSize);
+        //     }
+        // }
+    }
+    ImGui::End();
+
+    if (ImGui::Begin("Drawing Controls"))
+    {
+        ImGui::Text("Drawing is based on where you are looking");
+        ImGui::Text("Hold Left Mouse Button to draw");
+        ImGui::Text("Hold Right Mouse Button to erase");
+
+        ImGui::Text("Drawing Position (In Chunk) %i %i %i", drawPos.x, drawPos.y, drawPos.z);
+        ImGui::Text("Drawing Position (In World) %i %i %i", lookingAtParticlePos.x, lookingAtParticlePos.y, lookingAtParticlePos.z);
+        ImGui::SliderInt("Draw Type", reinterpret_cast<int *>(&drawType), 0, ParticleTypeSystem::GetParticleTypeCount(), ParticleTypeSystem::GetParticleTypeInfo(drawType - 1).nameId);
     }
     ImGui::End();
 }

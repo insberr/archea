@@ -3,13 +3,11 @@
 //
 
 #include "ParticleTypeSystem.h"
-
-// Particle Types
 #include <algorithm>
-#include <array>
 
 #include "DebugParticle_Type.h"
 #include "SandParticle_Type.h"
+#include "WaterParticle_Type.h"
 
 namespace ParticleTypeSystem {
     /* System Function Declarations */
@@ -31,7 +29,7 @@ namespace ParticleTypeSystem {
         .state = State::Solid,
         .color = { 255, 255, 255, 255 },
         .temperature = 0,
-        .movement = {},
+        .getNextMove = ParticleMove::predefined::none,
     };
 
     std::vector<ParticleType> particleTypes;
@@ -41,6 +39,7 @@ namespace ParticleTypeSystem {
 int ParticleTypeSystem::Setup() {
     AddParticleType(DebugParticle);
     AddParticleType(SandParticle);
+    AddParticleType(WaterParticle);
 
     return 0;
 }
@@ -68,4 +67,6 @@ ParticleType& ParticleTypeSystem::GetParticleTypeInfo(unsigned int typeIndex) {
     return particleTypes[typeIndex];
 }
 
-
+unsigned int ParticleTypeSystem::GetParticleTypeCount() {
+    return particleTypes.size();
+}
