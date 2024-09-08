@@ -43,6 +43,12 @@ TODO
 ### Compile for Linux on Windows
 TODO: Maybe just use WSL?
 
+## Things To Note And To Do
+- Ray marching: Might be good to know the camera position and then the ray step should step the distance from the camera to the scene cube.
+  This might help performance? Also, should discard rays that will never intersect with the scene.
+- Dynamic lighting. Allow particles to produce light?
+- I need to fix the depth buffer
+
 ## Wording
 1. Particle - Refers to a voxel which is simulated (i.e. sand, water)
 2. Voxel - The cubes you see in the world, duh

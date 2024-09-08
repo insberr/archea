@@ -13,7 +13,7 @@ namespace ParticleData
     // Convert a uvec3 to an array
     static std::array<unsigned, 3> Vec3ToArray(const glm::uvec3& position)
     {
-        return std::array{ position.x, position.y, position.z };
+        return std::array{ position.z, position.y, position.x };
     }
 
     DataWrapper Manager::Get(const glm::uvec3& position) {
@@ -78,6 +78,16 @@ namespace ParticleData
     const std::vector<InternalData>& Manager::GetParticleDataData() const
     {
         return particlesData;
+    }
+
+    unsigned Manager::GetCubicSize() const
+    {
+        return cubicSize;
+    }
+
+    const glm::uvec3& Manager::GetDimensions() const
+    {
+        return dimensions;
     }
 
     bool Manager::IsPositionInBounds(const glm::uvec3& position) const {

@@ -56,6 +56,9 @@ namespace ParticleData
         /* Access the raw data if needed */
         const std::vector<unsigned>& GetParticleTypesData() const;
         const std::vector<InternalData>& GetParticleDataData() const;
+
+        unsigned GetCubicSize() const;
+        const glm::uvec3& GetDimensions() const;
     private:
         const unsigned cubicSize;
         const glm::uvec3 dimensions;
