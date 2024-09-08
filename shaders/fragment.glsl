@@ -163,7 +163,7 @@ vec4 getParticle(ivec3 c) {
     uint arraySize = ChunkSize; // make this a uniform
 
     // Ground
-    if (c.y == -1 && c.x >= 0 && c.z >= 0   && c.z < arraySize && c.x < arraySize) return vec4(vec3(0.3), 0.6);
+    // if (c.y == -1 && c.x >= 0 && c.z >= 0   && c.z < arraySize && c.x < arraySize) return vec4(vec3(0.3), 0.6);
 
     // Array index range checks
     if (c.x >= arraySize) return NoParticle;
@@ -294,23 +294,25 @@ void main() {
             color.rgb *= vec3(0.75);
         }
     } else {
+        if (!somethingHit) {
+            discard;
+        }
         // "Sky" color
         vec4 tempColor = vec4(0.3, 0.4, 0.4, 1.0);
         float forwardAlphaInv = 1.0 - color.a;
         color.rgb += tempColor.rgb * (tempColor.a * forwardAlphaInv);
         color.a = 1.0 - forwardAlphaInv * (1.0 - tempColor.a);
 
-        gl_FragDepth = 0.0;
         FragColor = color;
         return;
     }
 
     // Depth Buffer
     // -- https://stackoverflow.com/a/29397319/6079328
-    vec4 vClipCoord = projection * view * model * vec4(firstHitMapPos, 1.0);
-    float fNdcDepth = vClipCoord.z / vClipCoord.w;
-    //                                          vvv This should be 1.0 but if it is then particles go away when close
-    gl_FragDepth = color.a > 0.0 ? (fNdcDepth + 0.9) * 0.5 : DEPTH_FAR_AWAY;
+    //    vec4 vClipCoord = projection * view * model * vec4(firstHitMapPos, 1.0);
+    //    float fNdcDepth = vClipCoord.z / vClipCoord.w;
+    //    //                                          vvv This should be 1.0 but if it is then particles go away when close
+    //    gl_FragDepth = color.a > 0.0 ? (fNdcDepth + 0.9) * 0.5 : DEPTH_FAR_AWAY;
 
     FragColor = color;
 }
