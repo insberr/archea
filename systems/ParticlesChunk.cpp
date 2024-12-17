@@ -73,14 +73,30 @@ ParticlesChunk::ParticlesChunk(
     if (!LoadChunkData())
     {
         // todo: Temp, for testing
-        for (unsigned x = 10; x < 20; ++x) {
+        for (unsigned x = 10; x < 25; ++x) {
             for (unsigned y = 5; y < 15; ++y) {
-                for (unsigned z = 10; z < 20; ++z) {
+                for (unsigned z = 10; z < 25; ++z) {
                     particleManager.SetType(glm::uvec3(x, y, z), 2);
                 }
             }
         }
     }
+
+    // Should probably use a thread pool and pass these in as scheduled work or something
+//    using namespace std::chrono_literals;
+//    static auto stepDelay = 1000ms;
+//    simulationThread = std::jthread([this]() {
+//        while (true) {
+//            this->ProcessNextSimulationStep();
+//
+//            // const auto start = std::chrono::high_resolution_clock::now();
+//            std::this_thread::sleep_for(stepDelay);
+//            // const auto end = std::chrono::high_resolution_clock::now();
+//            // const std::chrono::duration<double, std::milli> elapsed = end - start;
+//
+//            // std::cout << "Waited " << elapsed.count() << '\n';
+//        }
+//    });
 }
 
 ParticlesChunk::~ParticlesChunk() {

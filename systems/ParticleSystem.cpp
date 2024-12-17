@@ -12,6 +12,7 @@
 // glm
 #include <iostream>
 #include <glm/gtc/type_ptr.hpp>
+#include <set>
 
 #include "InputSystem.h"
 #include "CameraSystem.h"
@@ -183,38 +184,51 @@ void ParticleSystem::Update(float dt) {
 
     auto cameraChunkPosition = PositionConversion::WorldPositionToChunkPosition(CameraSystem::GetPosition() / particleScale, glm::uvec3(chunkSize));
     // std::cout << "Camera is in chunk " << cameraChunkPosition.x << " " << cameraChunkPosition.y << " " << cameraChunkPosition.z << std::endl;
-    bool chunkAtCameraChunkGridPosition = false;
+    const int chunkDistance = 2; // Distance to load chunks around the player
+
+    struct IVec3Comparator {
+        bool operator()(const glm::ivec3& a, const glm::ivec3& b) const {
+            if (a.x != b.x) return a.x < b.x;
+            if (a.y != b.y) return a.y < b.y;
+            return a.z < b.z;
+        }
+    };
+    // Determine the required chunk positions around the camera
+    std::set<glm::ivec3, IVec3Comparator> requiredChunkPositions;
+    for (int x = -chunkDistance; x <= chunkDistance; ++x) {
+        for (int z = -chunkDistance; z <= chunkDistance; ++z) {
+            auto temp_cameraChunkPosition = cameraChunkPosition;
+            // Enforce y to always be 0. We don't do vertical chunks right now
+            temp_cameraChunkPosition.y = 0;
+            requiredChunkPositions.insert(cameraChunkPosition + glm::ivec3(x, 0, z));
+        }
+    }
+
+    // Manage chunks in one pass
+    std::vector<ParticlesChunk*> updatedChunks;
+
     for (auto& chunk : particleChunks) {
-        chunk->Update(dt);
-
-        if (chunk->getChunkWorldPosition() == cameraChunkPosition) {
-            chunkAtCameraChunkGridPosition = true;
-        }
-
-        const auto distance = glm::length(
-            chunk->getChunkDistanceFrom(cameraChunkPosition)
-        );
-        // std::cout << "Chunk distance from camera: " << distance << std::endl;
-
-        if (distance > 2) {
+        auto pos = chunk->getChunkWorldPosition();
+        if (requiredChunkPositions.count(pos)) {
+            // Keep chunk if it's within range
+            updatedChunks.push_back(chunk);
+            // Remove from required set
+            requiredChunkPositions.erase(pos);
+        } else {
+            // Remove chunks outside range
             delete chunk;
-            chunk = nullptr;
-//            // todo: this needs to be refined ... lol
-//            const auto worldToGridPos  = PositionConversion::WorldPositionToChunkPosition(CameraSystem::GetPosition(), glm::uvec3(chunkSize));
-//            chunk = new ParticlesChunk(worldToGridPos, glm::uvec3(chunkSize), particleScale);
         }
     }
-    std::vector<ParticlesChunk*> newParticleChunks;
-    for (auto chunk : particleChunks) {
-        if (chunk == nullptr) continue;
-        newParticleChunks.emplace_back(chunk);
+
+    // Add missing chunks
+    for (const auto& pos : requiredChunkPositions) {
+        auto* newChunk = new ParticlesChunk(pos, glm::uvec3(chunkSize), particleScale);
+
+        updatedChunks.push_back(newChunk);
     }
-    particleChunks.swap(newParticleChunks);
-    if (!chunkAtCameraChunkGridPosition) {
-        particleChunks.emplace_back(
-            new ParticlesChunk(cameraChunkPosition, glm::uvec3(chunkSize), particleScale)
-        );
-    }
+
+    particleChunks = std::move(updatedChunks);
+
 
     static float step = 0.0f;
     if (step < stepDelay) {
@@ -224,7 +238,7 @@ void ParticleSystem::Update(float dt) {
         // todo: multithreading stuff
         std::vector<std::jthread> threads;
         for (const auto& chunk : particleChunks) {
-            threads.emplace_back([chunk]() {
+            threads.emplace_back([&chunk]() {
                 chunk->ProcessNextSimulationStep();
             });
         }

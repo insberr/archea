@@ -67,6 +67,8 @@ public:
 private:
     std::mutex lock; // I think this is right?
 
+    std::jthread simulationThread;
+
     float particleScale;
 
     glm::vec3 worldPosition;
