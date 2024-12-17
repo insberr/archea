@@ -38,7 +38,7 @@ namespace PositionConversion
 }
 
 namespace ChunkConfig {
-    static int maxRaySteps = 200;
+    static int maxRaySteps = 500;
     static bool enableOutlines = false;
 }
 
@@ -53,13 +53,17 @@ public:
     ~ParticlesChunk();
 
     // Update must have a really small workload
-    void Update(float dt);
+    bool Update(float dt);
     // todo: rename this?
     void ProcessNextSimulationStep();
     void Render(GLFWwindow* window, GLuint shaderProgram, GLuint particlesColorsBuffer, GLuint VAO);
 
     // If the chunk has a lock on it's data, this will block until it's done
     bool TryPlaceParticleAt(const glm::ivec3& worldParticlePosition, const ParticleData::DataWrapper& particleDataWraper);
+
+    glm::vec3 getChunkDistanceFrom(const glm::ivec3& chunkPos);
+
+    glm::ivec3 getChunkWorldPosition();
 private:
     std::mutex lock; // I think this is right?
 

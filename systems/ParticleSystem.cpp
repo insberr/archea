@@ -121,6 +121,7 @@ void ParticleSystem::Init() {
     for (unsigned x = 0; x < 2; ++x) {
         for (unsigned y = 0; y < 1; ++y) {
             for (unsigned z = 0; z < 2; ++z) {
+                std::cout << "Init chunk at pos " << x << " " << y << " " << z << std::endl;
                 particleChunks.push_back(
                     new ParticlesChunk(glm::ivec3(x, y, z), glm::uvec3(chunkSize), particleScale)
                 );
@@ -180,12 +181,39 @@ void ParticleSystem::Update(float dt) {
     //     particleDataManager.SetType(drawPos, 1);
     // }
 
-
+    auto cameraChunkPosition = PositionConversion::WorldPositionToChunkPosition(CameraSystem::GetPosition() / particleScale, glm::uvec3(chunkSize));
+    // std::cout << "Camera is in chunk " << cameraChunkPosition.x << " " << cameraChunkPosition.y << " " << cameraChunkPosition.z << std::endl;
+    bool chunkAtCameraChunkGridPosition = false;
     for (auto& chunk : particleChunks) {
-        if (chunk->Update(dt)) {
-            delete chunk;
-            chunk = new ParticlesChunk(glm::ivec3(0), glm::uvec3(chunkSize), particleScale);
+        chunk->Update(dt);
+
+        if (chunk->getChunkWorldPosition() == cameraChunkPosition) {
+            chunkAtCameraChunkGridPosition = true;
         }
+
+        const auto distance = glm::length(
+            chunk->getChunkDistanceFrom(cameraChunkPosition)
+        );
+        // std::cout << "Chunk distance from camera: " << distance << std::endl;
+
+        if (distance > 2) {
+            delete chunk;
+            chunk = nullptr;
+//            // todo: this needs to be refined ... lol
+//            const auto worldToGridPos  = PositionConversion::WorldPositionToChunkPosition(CameraSystem::GetPosition(), glm::uvec3(chunkSize));
+//            chunk = new ParticlesChunk(worldToGridPos, glm::uvec3(chunkSize), particleScale);
+        }
+    }
+    std::vector<ParticlesChunk*> newParticleChunks;
+    for (auto chunk : particleChunks) {
+        if (chunk == nullptr) continue;
+        newParticleChunks.emplace_back(chunk);
+    }
+    particleChunks.swap(newParticleChunks);
+    if (!chunkAtCameraChunkGridPosition) {
+        particleChunks.emplace_back(
+            new ParticlesChunk(cameraChunkPosition, glm::uvec3(chunkSize), particleScale)
+        );
     }
 
     static float step = 0.0f;

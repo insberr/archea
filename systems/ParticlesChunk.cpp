@@ -87,14 +87,16 @@ ParticlesChunk::~ParticlesChunk() {
     SaveChunkData();
 }
 
-void ParticlesChunk::Update(float dt) {
-    if (dt == 0.0f) return;
+bool ParticlesChunk::Update(float dt) {
+    if (dt == 0.0f) return true;
 
     // todo: use this to load/unload chunks
     // const glm::ivec3 currentChunk = PositionConversion::WorldPositionToChunkPosition(CameraSystem::GetPosition(), chunkParticleGridSize);
     // if (glm::distance(glm::vec3(currentChunk), glm::vec3(chunkGridPosition)) >= 2.0f) {
     //     // Do something
     // }
+
+    return true;
 }
 
 void ParticlesChunk::ProcessNextSimulationStep() {
@@ -264,6 +266,8 @@ bool ParticlesChunk::LoadChunkData()
         std::ifstream file(filenameForChunk.str(), std::ios::binary);
 
         if (file) {
+            std::cout << "Reading: " << filenameForChunk.str() << std::endl;
+
             file.read(
                 reinterpret_cast<char*>( const_cast<unsigned*>(particleManager.GetParticleTypesData().data()) ),
                 sizeof(unsigned) * 50 * 50 * 50
@@ -278,4 +282,12 @@ bool ParticlesChunk::LoadChunkData()
     } catch (std::exception& e) {
         return false;
     }
+}
+
+glm::vec3 ParticlesChunk::getChunkDistanceFrom(const glm::ivec3 &chunkPos) {
+    return chunkPos - this->chunkGridPosition;
+}
+
+glm::ivec3 ParticlesChunk::getChunkWorldPosition() {
+    return this->chunkGridPosition;
 }
