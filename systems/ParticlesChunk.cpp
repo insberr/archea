@@ -10,8 +10,6 @@
 #include <fstream>
 #include <cstring>  // for memcpy
 #include <cstddef> // for std::byte
-#include <bit>
-#include <semaphore>
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
@@ -100,6 +98,7 @@ ParticlesChunk::ParticlesChunk(
 }
 
 ParticlesChunk::~ParticlesChunk() {
+    const std::lock_guard guard(lock);
     SaveChunkData();
 }
 
@@ -123,9 +122,13 @@ void ParticlesChunk::ProcessNextSimulationStep() {
             for (unsigned z = 0; z < chunkParticleGridSize.z; ++z) {
                 const auto currentPos = glm::ivec3(x, y, z);
 
+                if (!particleManager.Exists(currentPos)) {
+                    continue;
+                }
+
                 // z * (ysize * xsize) + y * (xsize) + x
                 unsigned particle = particleManager.Get(currentPos).particleType;
-                if (particle <= 1) continue;
+                // if (particle <= 1) continue;
 
                 auto particleTypeInfo = ParticleTypeSystem::GetParticleTypeInfo(particle - 1);
 

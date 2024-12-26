@@ -38,7 +38,7 @@ namespace PositionConversion
 }
 
 namespace ChunkConfig {
-    static int maxRaySteps = 500;
+    static int maxRaySteps = 300;
     static bool enableOutlines = false;
 }
 

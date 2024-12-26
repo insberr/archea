@@ -65,6 +65,9 @@ namespace ParticleSystem {
 
     // Chunks
     std::vector<ParticlesChunk*> particleChunks;
+    std::mutex chunksLock;
+    std::jthread chunksThread;
+
 };
 
 int ParticleSystem::Setup() { return 0; }
@@ -117,7 +120,7 @@ void ParticleSystem::Init() {
     );
 
     ChunkConfig::enableOutlines = false;
-    ChunkConfig::maxRaySteps = 400;
+    ChunkConfig::maxRaySteps = 300;
 
     for (unsigned x = 0; x < 2; ++x) {
         for (unsigned y = 0; y < 1; ++y) {
@@ -129,6 +132,30 @@ void ParticleSystem::Init() {
             }
         }
     }
+
+    // todo: multithreading stuff
+    chunksThread = std::jthread([](const std::stop_token& stoken) {
+        while (true)
+        {
+            if (stoken.stop_requested()) {
+                std::cout << "Stop requested for chunks thread" << std::endl;
+
+                return;
+            }
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(200));
+
+            if (chunksLock.try_lock()) {
+                for (const auto& chunk : particleChunks) {
+                    // std::cout << chunk << std::endl;
+                    chunk->ProcessNextSimulationStep();
+                }
+                chunksLock.unlock();
+            }
+        }
+    });
+
+    std::cout << chunksThread.get_id() << std::endl;
 }
 
 void ParticleSystem::Update(float dt) {
@@ -207,49 +234,31 @@ void ParticleSystem::Update(float dt) {
     // Manage chunks in one pass
     std::vector<ParticlesChunk*> updatedChunks;
 
-    for (auto& chunk : particleChunks) {
-        auto pos = chunk->getChunkWorldPosition();
-        if (requiredChunkPositions.count(pos)) {
-            // Keep chunk if it's within range
-            updatedChunks.push_back(chunk);
-            // Remove from required set
-            requiredChunkPositions.erase(pos);
-        } else {
-            // Remove chunks outside range
-            delete chunk;
-        }
-    }
-
-    // Add missing chunks
-    for (const auto& pos : requiredChunkPositions) {
-        auto* newChunk = new ParticlesChunk(pos, glm::uvec3(chunkSize), particleScale);
-
-        updatedChunks.push_back(newChunk);
-    }
-
-    particleChunks = std::move(updatedChunks);
-
-
-    static float step = 0.0f;
-    if (step < stepDelay) {
-        step += dt;
-    }
-    if (step >= stepDelay) {
-        // todo: multithreading stuff
-        std::vector<std::jthread> threads;
-        for (const auto& chunk : particleChunks) {
-            threads.emplace_back([&chunk]() {
-                chunk->ProcessNextSimulationStep();
-            });
+    if (chunksLock.try_lock())
+    {
+        for (auto& chunk : particleChunks) {
+            auto pos = chunk->getChunkWorldPosition();
+            if (requiredChunkPositions.count(pos)) {
+                // Keep chunk if it's within range
+                updatedChunks.push_back(chunk);
+                // Remove from required set
+                requiredChunkPositions.erase(pos);
+            } else {
+                // Remove chunks outside range
+                delete chunk;
+            }
         }
 
-        for (auto& t : threads) {
-            t.join();
+        // Add missing chunks
+        for (const auto& pos : requiredChunkPositions) {
+            auto* newChunk = new ParticlesChunk(pos, glm::uvec3(chunkSize), particleScale);
+
+            updatedChunks.push_back(newChunk);
         }
 
-        step = 0.0f;
+        particleChunks = std::move(updatedChunks);
+        chunksLock.unlock();
     }
-
 }
 
 //struct Particel {
@@ -308,7 +317,8 @@ void ParticleSystem::Render() {
 }
 
 void ParticleSystem::Exit() {
-
+    chunksThread.request_stop();
+    chunksThread.join();
 }
 void ParticleSystem::Done() {
     for (const auto& chunk : particleChunks) {
