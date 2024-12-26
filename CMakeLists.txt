@@ -76,6 +76,9 @@ add_executable(archea
         systems/particle_types/WaterParticle_Type.h
         systems/ParticleData.cpp
         systems/ParticleData.h
+        systems/ParticlesChunk.cpp
+        systems/ParticlesChunk.h
+        systems/Shapes.h
 )
 # Run the copy_shaders commands
 add_dependencies(archea copy_shaders)
