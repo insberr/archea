@@ -15,6 +15,8 @@ include_directories(${OPENGL_INCLUDE_DIRS} ${GLEW_INCLUDE_DIRS} ${GLFW_INCLUDE_D
 # Include Imgui
 include_directories(include/imgui)
 include_directories(include/imgui/backends)
+#include_directories(include/octree-cpp/include)
+#add_subdirectory(include/octree-cpp)
 
 # Copy shaders to build directory
 set(SOURCE_DIR "${CMAKE_SOURCE_DIR}/shaders") # Source directory to copy from
@@ -79,6 +81,12 @@ add_executable(archea
         systems/ParticlesChunk.cpp
         systems/ParticlesChunk.h
         systems/Shapes.h
+        octree/Octree.cpp
+        octree/Octree.h
+        octree/OctreeNode.cpp
+        octree/OctreeNode.h
+        octree/BoundingBox.cpp
+        octree/BoundingBox.h
 )
 # Run the copy_shaders commands
 add_dependencies(archea copy_shaders)
