@@ -5,6 +5,7 @@
 
 #pragma once
 #include <mutex>
+#include <queue>
 #include <GL/glew.h>
 
 #include "ParticleData.h"
@@ -39,7 +40,7 @@ namespace PositionConversion
 
 namespace ChunkConfig {
     static int maxRaySteps = 300;
-    static bool enableOutlines = false;
+    static bool enableOutlines = true;
 }
 
 class ParticlesChunk {
@@ -78,6 +79,7 @@ private:
     glm::uvec3 chunkParticleGridSize;
 
     ParticleData::Manager particleManager;
+    std::deque<glm::ivec3> nextPositionsToUpdate;
 
     GLuint particlesBuffer;
 
