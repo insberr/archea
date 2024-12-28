@@ -40,7 +40,7 @@ namespace PositionConversion
 
 namespace ChunkConfig {
     static int maxRaySteps = 300;
-    static bool enableOutlines = true;
+    static bool enableOutlines = false;
 }
 
 class ParticlesChunk {
