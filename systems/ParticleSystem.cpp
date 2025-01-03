@@ -23,6 +23,100 @@
 #include "particle_types/ParticleTypeSystem.h"
 #include "particle_types/ParticleType.h"
 
+#include <mdspan>
+#include <array>
+#include <octree-cpp/OctreeCpp.h>
+#include <octree-cpp/OctreeQuery.h>
+namespace ParticlesDataManager {
+    // Custom hash function for glm::ivec3
+    struct IVec3Hash {
+        std::size_t operator()(const glm::ivec3& v) const noexcept {
+            // Combine the hash values of the three integers
+            std::size_t h1 = std::hash<int>()(v.x);
+            std::size_t h2 = std::hash<int>()(v.y);
+            std::size_t h3 = std::hash<int>()(v.z);
+            return h1 ^ (h2 << 1) ^ (h3 << 2); // Bit-shifting to reduce collisions
+        }
+    };
+
+    // particle type int
+    using Octree = OctreeCpp<glm::ivec3, unsigned int>;
+
+    struct Bounds {
+        glm::ivec3 min;
+        glm::ivec3 max;
+    };
+
+    class Chunk {
+        using size_max_extents = std::extents<size_t, SIZE_MAX, SIZE_MAX, SIZE_MAX>;
+        public:
+        Chunk(const unsigned int chunkSize, const Bounds& bounds, Octree& octree)
+            : chunkSize(chunkSize), bounds(bounds), octree(octree)
+        {
+
+        }
+
+        std::vector<unsigned int> getAllParticles() {
+            const auto points = octree.Query(Octree::Rect(bounds.min, bounds.max));
+
+            std::vector<unsigned int> particles(chunkSize * chunkSize * chunkSize);
+            std::mdspan<unsigned int, size_max_extents> particlesView = std::mdspan(particles.data(), chunkSize, chunkSize, chunkSize);
+
+            for (const auto& point : points) {
+                particlesView[std::array<int, 3>{point.Vector.x, point.Vector.y, point.Vector.z}] = point.Data;
+            }
+
+            return std::move(particles);
+        }
+
+        std::unordered_map<glm::ivec3, unsigned int, IVec3Hash> getParticlesAsMap() {
+            std::unordered_map<glm::ivec3, unsigned int, IVec3Hash> particles;
+
+            const auto points = octree.Query(Octree::Rect(bounds.min, bounds.max));
+
+            for (const auto& point : points) {
+                particles.insert(std::make_pair(point.Vector, point.Data));
+            }
+
+            return std::move(particles);
+        }
+
+    private:
+        unsigned int chunkSize;
+        Bounds bounds;
+        Octree& octree;
+    };
+
+    class Particles {
+        public:
+        Particles(unsigned int chunkSize, const Bounds& bounds) :
+            chunkSize(chunkSize),
+            octree(Octree({ bounds.min, bounds.max }))
+        {
+
+        }
+        ~Particles() {}
+
+        Chunk getChunk(const glm::ivec3& position) {
+            const Chunk chunk(chunkSize, {position, position + glm::ivec3(chunkSize - 1)}, octree);
+            return chunk;
+        }
+
+        // FIXME: Not a great name. Basically this is just for loading in particles
+        void insertParticles(const ::std::unordered_map<glm::ivec3, unsigned int, IVec3Hash>& particles_mapping) {
+            for (const auto& point : particles_mapping) {
+                auto position = point.first;
+                auto value = point.second;
+                octree.Add({ position, value });
+            }
+        }
+
+        private:
+        unsigned int chunkSize;
+        Octree octree;
+    };
+}
+
 namespace ParticleSystem {
     /* System Function Declarations */
     int Setup();
@@ -67,6 +161,12 @@ namespace ParticleSystem {
     std::vector<ParticlesChunk*> particleChunks;
     std::mutex chunksLock;
     std::jthread chunksThread;
+
+
+
+    // Demo new particle data thing
+    // 3x3 of chunks basically
+    ParticlesDataManager::Particles particlesData { chunkSize, { glm::ivec3(0), glm::ivec3(chunkSize * 3)}};
 
 };
 
@@ -143,7 +243,7 @@ void ParticleSystem::Init() {
                 return;
             }
 
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
             if (chunksLock.try_lock()) {
                 for (const auto& chunk : particleChunks) {
@@ -186,6 +286,10 @@ void ParticleSystem::Update(float dt) {
                 lookingAtParticlePos,
                 { glm::uvec3(0), drawType, { glm::vec3(0), 0.0f } }
             );
+
+            std::unordered_map<glm::ivec3, unsigned int, ParticlesDataManager::IVec3Hash> particlesMap;
+            particlesMap[lookingAtParticlePos] = drawType;
+            particlesData.insertParticles(particlesMap);
         }
     }
 
@@ -234,10 +338,10 @@ void ParticleSystem::Update(float dt) {
     }
 
     // Manage chunks in one pass
-    std::vector<ParticlesChunk*> updatedChunks;
 
-    if (chunksLock.try_lock())
-    {
+    if (chunksLock.try_lock()) {
+        std::vector<ParticlesChunk*> updatedChunks;
+
         for (auto& chunk : particleChunks) {
             auto pos = chunk->getChunkWorldPosition();
             if (requiredChunkPositions.count(pos)) {
@@ -284,6 +388,13 @@ void ParticleSystem::Update(float dt) {
 
 void ParticleSystem::Render() {
     auto window = Graphics::GetWindow();
+
+    // // TEMP testing
+    // ParticlesDataManager::Chunk chunk = particlesData.getChunk(glm::ivec3(0));
+    // for (const auto& particle : chunk.getParticlesAsMap()) {
+    //     auto pos = particle.first;
+    //     std::cout << "Particle in chunk 0,0,0 at position " << pos.x << "," << pos.y << "," << pos.z << ": " << particle.second << std::endl;
+    // }
 
     // todo: call render on all chunks
     for (const auto& chunk : particleChunks) {
