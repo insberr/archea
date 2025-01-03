@@ -42,7 +42,7 @@ namespace PositionConversion
         const glm::ivec3& particlePosition,
         const glm::uvec3& standardChunkParticleGridSize
     ) {
-        return particlePosition / glm::ivec3(standardChunkParticleGridSize);
+        return glm::floor(glm::vec3(particlePosition) / glm::vec3(standardChunkParticleGridSize));
     }
 }
 
