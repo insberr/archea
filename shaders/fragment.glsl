@@ -293,18 +293,12 @@ void main() {
         if (mask.z) {
             color.rgb *= vec3(0.75);
         }
-    } else {
-        if (!somethingHit) {
-            discard;
-        }
-        // "Sky" color
-        vec4 tempColor = vec4(0.3, 0.4, 0.4, 1.0);
-        float forwardAlphaInv = 1.0 - color.a;
-        color.rgb += tempColor.rgb * (tempColor.a * forwardAlphaInv);
-        color.a = 1.0 - forwardAlphaInv * (1.0 - tempColor.a);
+    }
 
-        FragColor = color;
-        return;
+    if (!somethingHit) {
+        discard;
+        // FragColor = vec4(0);
+        // return;
     }
 
     // Depth Buffer
