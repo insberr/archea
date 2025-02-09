@@ -25,8 +25,8 @@
 
 #include <mdspan>
 #include <array>
-#include <octree-cpp/OctreeCpp.h>
-#include <octree-cpp/OctreeQuery.h>
+#include <unordered_map>
+
 namespace ParticlesDataManager {
     // Custom hash function for glm::ivec3
     struct IVec3Hash {
@@ -39,9 +39,6 @@ namespace ParticlesDataManager {
         }
     };
 
-    // particle type int
-    using Octree = OctreeCpp<glm::ivec3, unsigned int>;
-
     struct Bounds {
         glm::ivec3 min;
         glm::ivec3 max;
@@ -50,20 +47,23 @@ namespace ParticlesDataManager {
     class Chunk {
         using size_max_extents = std::extents<size_t, SIZE_MAX, SIZE_MAX, SIZE_MAX>;
         public:
-        Chunk(const unsigned int chunkSize, const Bounds& bounds, Octree& octree)
-            : chunkSize(chunkSize), bounds(bounds), octree(octree)
+        Chunk(const unsigned int chunkSize, const Bounds& bounds, const std::unordered_map<glm::ivec3, unsigned int, IVec3Hash>& map)
+            : chunkSize(chunkSize), bounds(bounds), particlesMap(&map)
         {
 
         }
 
         std::vector<unsigned int> getAllParticles() {
-            const auto points = octree.Query(Octree::Rect(bounds.min, bounds.max));
-
             std::vector<unsigned int> particles(chunkSize * chunkSize * chunkSize);
             std::mdspan<unsigned int, size_max_extents> particlesView = std::mdspan(particles.data(), chunkSize, chunkSize, chunkSize);
 
-            for (const auto& point : points) {
-                particlesView[std::array<int, 3>{point.Vector.x, point.Vector.y, point.Vector.z}] = point.Data;
+            // todo: find a more efficient way to do this
+            for (int i = bounds.min.x; i <= bounds.max.x; i++) {
+                for (int j = bounds.min.y; j <= bounds.max.y; j++) {
+                    for (int k = bounds.min.z; k <= bounds.max.z; k++) {
+                        particlesView[std::array<int, 3>{i, j, k}] = particlesMap->at(glm::ivec3{i, j, k});
+                    }
+                }
             }
 
             return std::move(particles);
@@ -72,10 +72,13 @@ namespace ParticlesDataManager {
         std::unordered_map<glm::ivec3, unsigned int, IVec3Hash> getParticlesAsMap() {
             std::unordered_map<glm::ivec3, unsigned int, IVec3Hash> particles;
 
-            const auto points = octree.Query(Octree::Rect(bounds.min, bounds.max));
-
-            for (const auto& point : points) {
-                particles.insert(std::make_pair(point.Vector, point.Data));
+            for (int i = bounds.min.x; i <= bounds.max.x; i++) {
+                for (int j = bounds.min.y; j <= bounds.max.y; j++) {
+                    for (int k = bounds.min.z; k <= bounds.max.z; k++) {
+                        const auto pos = glm::ivec3{i, j, k};
+                        particles.insert(std::make_pair(pos, particlesMap->at(pos)));
+                    }
+                }
             }
 
             return std::move(particles);
@@ -84,36 +87,40 @@ namespace ParticlesDataManager {
     private:
         unsigned int chunkSize;
         Bounds bounds;
-        Octree& octree;
+        const std::unordered_map<glm::ivec3, unsigned int, IVec3Hash>* particlesMap;
     };
+
+    // todo: type alias?
+    // using MyHashMap = std::unordered_map<glm::ivec3, unsigned int, IVec3Hash>;
 
     class Particles {
         public:
         Particles(unsigned int chunkSize, const Bounds& bounds) :
-            chunkSize(chunkSize),
-            octree(Octree({ bounds.min, bounds.max }))
+            chunkSize(chunkSize)
         {
 
         }
         ~Particles() {}
 
         Chunk getChunk(const glm::ivec3& position) {
-            const Chunk chunk(chunkSize, {position, position + glm::ivec3(chunkSize - 1)}, octree);
+            const Chunk chunk(chunkSize, {position, position + glm::ivec3(chunkSize - 1)}, particlesMap);
             return chunk;
         }
 
         // FIXME: Not a great name. Basically this is just for loading in particles
         void insertParticles(const ::std::unordered_map<glm::ivec3, unsigned int, IVec3Hash>& particles_mapping) {
+            // FIXME: There's probably a better way to essentially combine two maps...
             for (const auto& point : particles_mapping) {
                 auto position = point.first;
                 auto value = point.second;
-                octree.Add({ position, value });
+                particlesMap.insert(std::make_pair(position, value));
             }
         }
 
         private:
+        std::unordered_map<glm::ivec3, unsigned int, IVec3Hash> particlesMap;
+
         unsigned int chunkSize;
-        Octree octree;
     };
 }
 
