@@ -47,6 +47,7 @@ namespace PositionConversion
 }
 
 ParticlesChunk::ParticlesChunk(
+    ParticleData::Chunk const* particleDataChunk,
     const glm::ivec3& chunkGridPosition,
     const glm::uvec3& particleGridSize,
     float particleScale
@@ -55,17 +56,20 @@ ParticlesChunk::ParticlesChunk(
     chunkGridPosition(chunkGridPosition),
     worldChunkScale(),
     chunkParticleGridSize(particleGridSize),
-    particleManager(particleGridSize)
+    particleDataChunk(particleDataChunk)
 {
     worldChunkScale = glm::vec3(particleGridSize) * particleScale;
     worldPosition = glm::vec3(chunkGridPosition) * worldChunkScale;
 
     glCreateBuffers(1, &particlesBuffer);
 
+    const glm::ivec3 chunkDimensions = particleDataChunk->getDimensions();
+    const int chunkCubicSize = chunkDimensions.x * chunkDimensions.y * chunkDimensions.z;
+
     glNamedBufferStorage(
         particlesBuffer,
-        sizeof(int) * particleManager.GetCubicSize(),
-        static_cast<const void*>(particleManager.GetParticleTypesData().data()),
+        sizeof(int) * chunkCubicSize,
+        static_cast<const void*>(particleDataChunk->asParticleTypes3DArray().data()),
         GL_DYNAMIC_STORAGE_BIT
     );
 
@@ -75,25 +79,20 @@ ParticlesChunk::ParticlesChunk(
         for (unsigned x = 10; x < 14; ++x) {
             for (unsigned y = 5; y < 14; ++y) {
                 for (unsigned z = 10; z < 14; ++z) {
-                    particleManager.SetType(glm::uvec3(x, y, z), 2);
+                    const glm::ivec3 position = glm::ivec3(x, y, z) + particleDataChunk->getBounds().min;
+                    particleDataChunk->addParticle(position, {
+                        position,
+                        2,
+                        32.0f
+                    });
                 }
             }
         }
     }
 
     // Add all non-air to queue for update
-    for (unsigned x = 0; x < chunkParticleGridSize.x; ++x) {
-        for (int y = 0; y < chunkParticleGridSize.y; ++y) {
-            for (unsigned z = 0; z < chunkParticleGridSize.z; ++z) {
-                const auto currentPos = glm::ivec3(x, y, z);
-
-                if (!particleManager.Exists(currentPos)) {
-                    continue;
-                }
-
-                nextPositionsToUpdate.push_back(currentPos);
-            }
-        }
+    for (const auto& [position, particleInfo] : particleDataChunk->asClonedMap()) {
+        nextPositionsToUpdate.push_back(position);
     }
 
     // Should probably use a thread pool and pass these in as scheduled work or something
@@ -131,73 +130,73 @@ bool ParticlesChunk::Update(float dt) {
 }
 
 void ParticlesChunk::ProcessNextSimulationStep() {
-    const std::lock_guard guard(lock);
-
-    if (nextPositionsToUpdate.empty()) {
-        return;
-    }
-
-    const auto positionsToUpdate = std::move(nextPositionsToUpdate);
-
-    for (const auto& currentPos : positionsToUpdate) {
-        if (!particleManager.Exists(currentPos)) {
-            continue;
-        }
-
-        // z * (ysize * xsize) + y * (xsize) + x
-        unsigned particle = particleManager.Get(currentPos).particleType;
-        // if (particle <= 1) continue;
-
-        auto particleTypeInfo = ParticleTypeSystem::GetParticleTypeInfo(particle - 1);
-
-        auto posToTry = glm::ivec3(0);
-
-        // new
-        auto nextMove = ParticleMove::MoveState {};
-        while (true) {
-            particleTypeInfo.getNextMove(nextMove);
-
-            if (nextMove.done) break;
-
-            posToTry = currentPos + glm::ivec3(nextMove.positionToTry);
-
-            // try pos
-
-            if (posToTry.y < 0) continue;
-            posToTry = glm::clamp(posToTry, glm::ivec3(0), glm::ivec3(chunkParticleGridSize - glm::uvec3(1)));
-            // int newY = std::clamp<int>(y - 1, 0, 49);
-
-            unsigned atNewPos = particleManager.Get(posToTry).particleType;
-            if (atNewPos != 0) continue;
-
-            // We are here, we are allowed to move here
-
-            particleManager.SetType(posToTry, particle);
-            // remove
-            particleManager.SetType(currentPos, 0);
-
-            const auto posBelowTryPos = posToTry - glm::ivec3(0, 1, 0);
-            try {
-                unsigned atPosBelowTryPos = particleManager.Get(posBelowTryPos).particleType;
-                if (atPosBelowTryPos == 0) {
-                    nextPositionsToUpdate.push_back(posToTry);
-                }
-            } catch (...) {
-                // do nothing. we are out of bounds so the particle is on the floor...
-            }
-
-            // Add particle above currentPos to queue
-            const auto aboveCurrentPos = currentPos + glm::ivec3(0, 1, 0);
-            unsigned atPosAboveCurrentPos = particleManager.Get(aboveCurrentPos).particleType;
-            if (atPosAboveCurrentPos != 0) {
-                nextPositionsToUpdate.push_back(aboveCurrentPos);
-            }
-            break;
-            // if works, break
-            // else continue
-        }
-        //end
-    }
+    // const std::lock_guard guard(lock);
+    //
+    // if (nextPositionsToUpdate.empty()) {
+    //     return;
+    // }
+    //
+    // const auto positionsToUpdate = std::move(nextPositionsToUpdate);
+    //
+    // for (const auto& currentPos : positionsToUpdate) {
+    //     if (!particleManager.Exists(currentPos)) {
+    //         continue;
+    //     }
+    //
+    //     // z * (ysize * xsize) + y * (xsize) + x
+    //     unsigned particle = particleManager.Get(currentPos).particleType;
+    //     // if (particle <= 1) continue;
+    //
+    //     auto particleTypeInfo = ParticleTypeSystem::GetParticleTypeInfo(particle - 1);
+    //
+    //     auto posToTry = glm::ivec3(0);
+    //
+    //     // new
+    //     auto nextMove = ParticleMove::MoveState {};
+    //     while (true) {
+    //         particleTypeInfo.getNextMove(nextMove);
+    //
+    //         if (nextMove.done) break;
+    //
+    //         posToTry = currentPos + glm::ivec3(nextMove.positionToTry);
+    //
+    //         // try pos
+    //
+    //         if (posToTry.y < 0) continue;
+    //         posToTry = glm::clamp(posToTry, glm::ivec3(0), glm::ivec3(chunkParticleGridSize - glm::uvec3(1)));
+    //         // int newY = std::clamp<int>(y - 1, 0, 49);
+    //
+    //         unsigned atNewPos = particleManager.Get(posToTry).particleType;
+    //         if (atNewPos != 0) continue;
+    //
+    //         // We are here, we are allowed to move here
+    //
+    //         particleManager.SetType(posToTry, particle);
+    //         // remove
+    //         particleManager.SetType(currentPos, 0);
+    //
+    //         const auto posBelowTryPos = posToTry - glm::ivec3(0, 1, 0);
+    //         try {
+    //             unsigned atPosBelowTryPos = particleManager.Get(posBelowTryPos).particleType;
+    //             if (atPosBelowTryPos == 0) {
+    //                 nextPositionsToUpdate.push_back(posToTry);
+    //             }
+    //         } catch (...) {
+    //             // do nothing. we are out of bounds so the particle is on the floor...
+    //         }
+    //
+    //         // Add particle above currentPos to queue
+    //         const auto aboveCurrentPos = currentPos + glm::ivec3(0, 1, 0);
+    //         unsigned atPosAboveCurrentPos = particleManager.Get(aboveCurrentPos).particleType;
+    //         if (atPosAboveCurrentPos != 0) {
+    //             nextPositionsToUpdate.push_back(aboveCurrentPos);
+    //         }
+    //         break;
+    //         // if works, break
+    //         // else continue
+    //     }
+    //     //end
+    // }
 }
 
 void ParticlesChunk::Render(
@@ -206,11 +205,14 @@ void ParticlesChunk::Render(
     GLuint particlesColorsBuffer,
     GLuint VAO
 ) {
+    const glm::ivec3 chunkDimensions = particleDataChunk->getDimensions();
+    const int chunkCubicSize = chunkDimensions.x * chunkDimensions.y * chunkDimensions.z;
+
     glNamedBufferSubData(
         particlesBuffer,
         0,
-        sizeof(int) * particleManager.GetCubicSize(),
-        static_cast<const void*>(particleManager.GetParticleTypesData().data())
+        sizeof(int) * chunkCubicSize,
+        static_cast<const void*>(particleDataChunk->asParticleTypes3DArray().data())
     );
 
     // Bind the particles data
@@ -260,7 +262,7 @@ void ParticlesChunk::Render(
 
 bool ParticlesChunk::TryPlaceParticleAt(
     const glm::ivec3& worldParticlePosition,
-    const ParticleData::DataWrapper& particleDataWraper
+    const ParticleData::ParticleInfo& particleInfo
 )
 {
     const glm::ivec3 chunkPos = PositionConversion::ParticleGridToChunkGrid(worldParticlePosition, chunkParticleGridSize);
@@ -268,73 +270,80 @@ bool ParticlesChunk::TryPlaceParticleAt(
         return false;
     }
 
-    // Block until able to aquire lock
+    // Block until able to acquire lock
     const std::lock_guard guard(lock);
 
-    const glm::uvec3 particlePositionInChunk = glm::abs(worldParticlePosition - (chunkGridPosition * glm::ivec3(chunkParticleGridSize)));
+    if (particleInfo.particleType == 0) {
+        particleDataChunk->removeParticle(worldParticlePosition);
+        // todo: might need to remove position for update queue??
 
-    particleManager.SetType(particlePositionInChunk, particleDataWraper.particleType);
-    nextPositionsToUpdate.emplace_back(particlePositionInChunk);
+        return false;
+    }
+    particleDataChunk->addParticle(worldParticlePosition, particleInfo);
+    nextPositionsToUpdate.emplace_back(worldParticlePosition);
 
+    // fixme: ??
     return false;
 }
 
 bool ParticlesChunk::SaveChunkData()
 {
-    std::stringstream filenameForChunk;
-    filenameForChunk
-    << "chunks/"
-    << chunkGridPosition.x
-    << "-"
-    << chunkGridPosition.y
-    << "-"
-    << chunkGridPosition.z
-    << ".bin";
-
-    std::vector<std::byte> bytes(sizeof(unsigned) * particleManager.GetParticleTypesData().size());
-    std::memcpy(bytes.data(), particleManager.GetParticleTypesData().data(), sizeof(unsigned) * particleManager.GetParticleTypesData().size());
-
-    std::ofstream file(filenameForChunk.str(), std::ios::binary);
-    if (file) {
-        file.write(reinterpret_cast<const char*>(bytes.data()), bytes.size());
-    }
-    file.close();
+    // std::stringstream filenameForChunk;
+    // filenameForChunk
+    // << "chunks/"
+    // << chunkGridPosition.x
+    // << "-"
+    // << chunkGridPosition.y
+    // << "-"
+    // << chunkGridPosition.z
+    // << ".bin";
+    //
+    // std::vector<std::byte> bytes(sizeof(unsigned) * particleManager.GetParticleTypesData().size());
+    // std::memcpy(bytes.data(), particleManager.GetParticleTypesData().data(), sizeof(unsigned) * particleManager.GetParticleTypesData().size());
+    //
+    // std::ofstream file(filenameForChunk.str(), std::ios::binary);
+    // if (file) {
+    //     file.write(reinterpret_cast<const char*>(bytes.data()), bytes.size());
+    // }
+    // file.close();
 
     return true;
 }
 
 bool ParticlesChunk::LoadChunkData()
 {
-    try {
-        std::stringstream filenameForChunk;
-        filenameForChunk
-        << "chunks/"
-        << chunkGridPosition.x
-        << "-"
-        << chunkGridPosition.y
-        << "-"
-        << chunkGridPosition.z
-        << ".bin";
-
-        std::ifstream file(filenameForChunk.str(), std::ios::binary);
-
-        if (file) {
-            std::cout << "Reading: " << filenameForChunk.str() << std::endl;
-
-            file.read(
-                reinterpret_cast<char*>( const_cast<unsigned*>(particleManager.GetParticleTypesData().data()) ),
-                sizeof(unsigned) * 50 * 50 * 50
-            );
-        } else {
-            file.close();
-            return false;
-        }
-        file.close();
-
-        return true;
-    } catch (std::exception& e) {
-        return false;
-    }
+    // fixme: temp
+    return false;
+    // try {
+    //     std::stringstream filenameForChunk;
+    //     filenameForChunk
+    //     << "chunks/"
+    //     << chunkGridPosition.x
+    //     << "-"
+    //     << chunkGridPosition.y
+    //     << "-"
+    //     << chunkGridPosition.z
+    //     << ".bin";
+    //
+    //     std::ifstream file(filenameForChunk.str(), std::ios::binary);
+    //
+    //     if (file) {
+    //         std::cout << "Reading: " << filenameForChunk.str() << std::endl;
+    //
+    //         file.read(
+    //             reinterpret_cast<char*>( const_cast<unsigned*>(particleManager.GetParticleTypesData().data()) ),
+    //             sizeof(unsigned) * 50 * 50 * 50
+    //         );
+    //     } else {
+    //         file.close();
+    //         return false;
+    //     }
+    //     file.close();
+    //
+    //     return true;
+    // } catch (std::exception& e) {
+    //     return false;
+    // }
 }
 
 glm::vec3 ParticlesChunk::getChunkDistanceFrom(const glm::ivec3 &chunkPos) {

@@ -164,6 +164,9 @@ namespace ParticleSystem {
     unsigned int chunkSize { 50 };
     float stepDelay = 0.1f;
 
+    // ParticleData
+    ParticleData::Manager particleDataManager{ glm::uvec3(chunkSize) };
+
     // Chunks
     std::vector<ParticlesChunk*> particleChunks;
     std::mutex chunksLock;
@@ -233,8 +236,16 @@ void ParticleSystem::Init() {
         for (unsigned y = 0; y < 1; ++y) {
             for (unsigned z = 0; z < 2; ++z) {
                 std::cout << "Init chunk at pos " << x << " " << y << " " << z << std::endl;
+                ParticleData::Bounds bounds = {
+                    .min = glm::ivec3(glm::uvec3(chunkSize) * glm::uvec3(x, y, z)),
+                    // todo: is the -1 needed???
+                    .max = glm::ivec3(glm::uvec3(chunkSize) * glm::uvec3(x + 1, y + 1, z + 1)) - glm::ivec3(1),
+                };
+
+                ParticleData::Chunk* dataChunk = particleDataManager.getChunk(bounds.min, chunkSize);
+
                 particleChunks.push_back(
-                    new ParticlesChunk(glm::ivec3(x, y, z), glm::uvec3(chunkSize), particleScale)
+                    new ParticlesChunk(dataChunk, glm::ivec3(x, y, z), glm::uvec3(chunkSize), particleScale)
                 );
             }
         }
@@ -291,7 +302,7 @@ void ParticleSystem::Update(float dt) {
         for (const auto& chunk : particleChunks) {
             chunk->TryPlaceParticleAt(
                 lookingAtParticlePos,
-                { glm::uvec3(0), drawType, { glm::vec3(0), 0.0f } }
+                { lookingAtParticlePos, drawType, 32.0f }
             );
 
             std::unordered_map<glm::ivec3, unsigned int, ParticlesDataManager::IVec3Hash> particlesMap;
@@ -305,7 +316,7 @@ void ParticleSystem::Update(float dt) {
         for (const auto& chunk : particleChunks) {
             chunk->TryPlaceParticleAt(
                 lookingAtParticlePos,
-                { glm::uvec3(0), 0, { glm::vec3(0), 0.0f } }
+                { lookingAtParticlePos, 0,0.0f }
             );
         }
     }
@@ -364,9 +375,10 @@ void ParticleSystem::Update(float dt) {
 
         // Add missing chunks
         for (const auto& pos : requiredChunkPositions) {
-            auto* newChunk = new ParticlesChunk(pos, glm::uvec3(chunkSize), particleScale);
-
-            updatedChunks.push_back(newChunk);
+            // todo: update this
+            // auto* newChunk = new ParticlesChunk(pos, glm::uvec3(chunkSize), particleScale);
+            //
+            // updatedChunks.push_back(newChunk);
         }
 
         particleChunks = std::move(updatedChunks);

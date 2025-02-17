@@ -5,6 +5,7 @@
 
 #pragma once
 #include <mdspan>
+#include <unordered_map>
 #include <vector>
 #include <glm/vec3.hpp>
 
@@ -12,15 +13,55 @@ struct ParticleType;
 
 namespace ParticleData
 {
-    struct InternalData {
-        glm::vec3 realPosition;
+    // fixme: this probably doesnt belong here
+    struct IVec3Hash {
+        std::size_t operator()(const glm::ivec3& v) const noexcept {
+            // Combine the hash values of the three integers
+            std::size_t h1 = std::hash<int>()(v.x);
+            std::size_t h2 = std::hash<int>()(v.y);
+            std::size_t h3 = std::hash<int>()(v.z);
+            return h1 ^ (h2 << 1) ^ (h3 << 2); // Bit-shifting to reduce collisions
+        }
+    };
+
+    struct ParticleInfo {
+        glm::uvec3 position;
+        unsigned particleType;
         float temperature;
     };
 
-    struct DataWrapper {
-        glm::uvec3 position;
-        unsigned particleType;
-        const InternalData& data;
+    struct Bounds {
+        glm::ivec3 min;
+        glm::ivec3 max;
+    };
+
+    using ParticlesInfoHashMap = std::unordered_map<glm::ivec3, ParticleInfo, IVec3Hash>;
+
+    class Chunk {
+        using size_max_extents = std::extents<size_t, SIZE_MAX, SIZE_MAX, SIZE_MAX>;
+    public:
+        Chunk(const glm::uvec3& dimensions, ParticlesInfoHashMap* data)
+            : dimensions(dimensions), particlesMap(data)
+        {
+        }
+
+        std::vector<unsigned int> asParticleTypes3DArray() const;
+        ParticlesInfoHashMap asClonedMap() const;
+        void loadMap(const ParticlesInfoHashMap& _particlesMap) const;
+
+        const glm::uvec3& getDimensions() const { return dimensions; }
+        int getCubicSize() const { return dimensions.x * dimensions.y * dimensions.z; }
+
+        // Contains a non-air particle
+        bool containsParticle(const glm::ivec3& position) const;
+        ParticleInfo& getParticle(const glm::ivec3& position) const;
+        void moveParticle(const glm::ivec3& position, const glm::ivec3& newPosition) const;
+        void addParticle(const glm::ivec3& position, const ParticleInfo& particleInfo) const;
+        void removeParticle(const glm::ivec3& position) const;
+
+    private:
+        const glm::uvec3 dimensions;
+        ParticlesInfoHashMap* particlesMap;
     };
 
     class Manager {
@@ -32,15 +73,11 @@ namespace ParticleData
             if (dimensions.x == 0 || dimensions.y == 0 || dimensions.z == 0) {
                 throw std::exception("Cannot create ParticleDataManager with any dimension value being 0.");
             }
-
-            particlesTypes.resize(cubicSize, 0);
-            view_particlesTypes = std::mdspan(particlesTypes.data(), dimensions.x, dimensions.y, dimensions.z);
-
-            particlesData.resize(cubicSize);
-            view_particlesData = std::mdspan(particlesData.data(), dimensions.x, dimensions.y, dimensions.z);
         };
 
-        DataWrapper Get(const glm::uvec3& position);
+        Chunk* getChunk(const glm::ivec3& position, const unsigned int& chunkSize);
+
+        ParticleInfo& Get(const glm::uvec3& position);
 
         /*
          * Check if a non-"None" particle exists at the position.
@@ -54,8 +91,8 @@ namespace ParticleData
         void SetType(const glm::uvec3& position, unsigned particleType);
 
         /* Access the raw data if needed */
-        const std::vector<unsigned>& GetParticleTypesData() const;
-        const std::vector<InternalData>& GetParticleDataData() const;
+        // const std::vector<unsigned>& GetParticleTypesData() const;
+        // const std::vector<ParticleInfo>& GetParticleDataData() const;
 
         unsigned GetCubicSize() const;
         const glm::uvec3& GetDimensions() const;
@@ -63,15 +100,9 @@ namespace ParticleData
         const unsigned cubicSize;
         const glm::uvec3 dimensions;
 
-        using size_max_extents = std::extents<size_t, SIZE_MAX, SIZE_MAX, SIZE_MAX>;
-
-        // This is for the gpu. The int represents the particle type index
-        std::vector<unsigned> particlesTypes;
-        std::mdspan<unsigned, size_max_extents> view_particlesTypes;
-
-        // This is for the cpu. Extra data abou particles that isn't needed by the gpu
-        std::vector<InternalData> particlesData;
-        std::mdspan<InternalData, size_max_extents> view_particlesData;
+        // todo: should ParticleInfo be a pointer?
+        std::unordered_map<glm::ivec3, ParticleInfo, IVec3Hash> particlesData;
+        std::vector<Chunk*> dataChunks;
 
         bool IsPositionInBounds(const glm::uvec3& position) const;
     };

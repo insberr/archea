@@ -46,6 +46,7 @@ namespace ChunkConfig {
 class ParticlesChunk {
 public:
     ParticlesChunk(
+        ParticleData::Chunk const* particleDataChunk,
         const glm::ivec3& chunkGridPosition,
         const glm::uvec3& particleGridSize,
         float particleScale
@@ -59,8 +60,8 @@ public:
     void ProcessNextSimulationStep();
     void Render(GLFWwindow* window, GLuint shaderProgram, GLuint particlesColorsBuffer, GLuint VAO);
 
-    // If the chunk has a lock on it's data, this will block until it's done
-    bool TryPlaceParticleAt(const glm::ivec3& worldParticlePosition, const ParticleData::DataWrapper& particleDataWraper);
+    // If the chunk has a lock on its data, this will block until it's done
+    bool TryPlaceParticleAt(const glm::ivec3& worldParticlePosition, const ParticleData::ParticleInfo& particleInfo);
 
     glm::vec3 getChunkDistanceFrom(const glm::ivec3& chunkPos);
 
@@ -78,7 +79,7 @@ private:
     glm::vec3 worldChunkScale;
     glm::uvec3 chunkParticleGridSize;
 
-    ParticleData::Manager particleManager;
+    ParticleData::Chunk const* particleDataChunk;
     std::deque<glm::ivec3> nextPositionsToUpdate;
 
     GLuint particlesBuffer;
