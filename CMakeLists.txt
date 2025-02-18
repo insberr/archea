@@ -16,20 +16,6 @@ include_directories(${OPENGL_INCLUDE_DIRS} ${GLEW_INCLUDE_DIRS} ${GLFW_INCLUDE_D
 include_directories(include/imgui)
 include_directories(include/imgui/backends)
 
-# Copy shaders to build directory
-set(SOURCE_DIR "${CMAKE_SOURCE_DIR}/shaders") # Source directory to copy from
-set(DEST_DIR "${CMAKE_BINARY_DIR}/shaders") # Destination directory to copy to
-file(COPY ${SOURCE_DIR} DESTINATION ${CMAKE_BINARY_DIR}) # Copy the files during configuration
-# Copy shaders to build directory during the build process
-add_custom_command(
-        OUTPUT ${DEST_DIR}
-        COMMAND ${CMAKE_COMMAND} -E copy_directory ${SOURCE_DIR} ${DEST_DIR}
-        DEPENDS ${SOURCE_DIR}
-        COMMENT "Copying files from ${SOURCE_DIR} to ${DEST_DIR}"
-)
-# Custom target to run the custom command
-add_custom_target(copy_shaders ALL DEPENDS ${DEST_DIR})
-
 # Create EXE
 add_executable(archea
         main.cpp
@@ -80,8 +66,25 @@ add_executable(archea
         systems/ParticlesChunk.h
         systems/Shapes.h
 )
-# Run the copy_shaders commands
-add_dependencies(archea copy_shaders)
 
 # Link libraries
 target_link_libraries(archea ${OPENGL_LIBRARIES} ${GLEW_LIBRARIES} glfw glm::glm)
+
+### Copy shader files when they are changed
+# Find all shader files
+file(GLOB SHADER_FILES "${CMAKE_SOURCE_DIR}/shaders/*")
+set(COPIED_SHADERS "")
+foreach(SHADER_FILE ${SHADER_FILES})
+    get_filename_component(SHADER_NAME ${SHADER_FILE} NAME)
+    set(SHADER_OUT "${CMAKE_BINARY_DIR}/shaders/${SHADER_NAME}")
+    add_custom_command(
+            OUTPUT ${SHADER_OUT}
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different ${SHADER_FILE} ${SHADER_OUT}
+            DEPENDS ${SHADER_FILE}
+            COMMENT "Copying shader ${SHADER_NAME} if changed"
+            VERBATIM
+    )
+    list(APPEND COPIED_SHADERS ${SHADER_OUT})
+endforeach()
+add_custom_target(copy_shaders DEPENDS ${COPIED_SHADERS})
+add_dependencies(archea copy_shaders)
