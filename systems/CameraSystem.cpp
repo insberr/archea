@@ -54,6 +54,9 @@ namespace CameraSystem {
     float travelSpeed { 5.0f };
 
     bool cursorLocked { false };
+
+    GLuint shaderProgram { 0 };
+    GLuint VBO {0}, VAO {0}, EBO {0};
 }
 
 void CameraSystem::Init() {
@@ -62,6 +65,24 @@ void CameraSystem::Init() {
     projection = glm::mat4(1.0);
 
     Reset();
+
+
+    // Load the contents of the shaders
+    std::string vertexShaderSource = readShaderFile("shaders/vertex_old3.glsl");
+    std::string fragmentShaderSource = readShaderFile("shaders/plain_color.glsl");
+
+    // Make sure they arent empty
+    if (vertexShaderSource.empty() || fragmentShaderSource.empty()) {
+        return;
+    }
+
+    // Create the shader program
+    shaderProgram = createShaderProgram(vertexShaderSource, fragmentShaderSource);
+
+
+    glGenVertexArrays(1, &VAO);
+    glGenBuffers(1, &VBO);
+    glGenBuffers(1, &EBO);
 }
 
 void CameraSystem::Update(float dt) {
@@ -131,7 +152,7 @@ void CameraSystem::Update(float dt) {
 
     /* Calculate Camera Matrices */
     // Model
-    glm::translate(model, position);
+    // glm::translate(model, position);
 
     // View
     view = glm::lookAt(position, position + target, UpVector);
@@ -144,6 +165,71 @@ void CameraSystem::Update(float dt) {
     float aspectRatio = 1280.0f / 720.0f;
     projection = glm::perspective(glm::radians(45.0f), aspectRatio, 0.00001f, 100.0f);
 }
+
+constexpr float cubeVertices[] = {
+    // Front face
+    -0.5f, -0.5f,  0.5f,  // 0
+    0.5f, -0.5f,  0.5f,  // 1
+    0.5f,  0.5f,  0.5f,  // 2
+    -0.5f,  0.5f,  0.5f,  // 3
+
+    // Back face
+    -0.5f, -0.5f, -0.5f,  // 4
+    0.5f, -0.5f, -0.5f,  // 5
+    0.5f,  0.5f, -0.5f,  // 6
+    -0.5f,  0.5f, -0.5f,  // 7
+
+    // Top face
+    0.5f,  0.5f,  0.5f,  // 8
+    -0.5f,  0.5f,  0.5f,  // 9
+    -0.5f,  0.5f, -0.5f,  // 10
+    0.5f,  0.5f, -0.5f,  // 11
+
+    // Bottom face
+    -0.5f, -0.5f,  0.5f,  // 12
+    0.5f, -0.5f,  0.5f,  // 13
+    0.5f, -0.5f, -0.5f,  // 14
+    -0.5f, -0.5f, -0.5f,  // 15
+
+    // Right face
+    0.5f, -0.5f,  0.5f,  // 16
+    0.5f, -0.5f, -0.5f,  // 17
+    0.5f,  0.5f, -0.5f,  // 18
+    0.5f,  0.5f,  0.5f,  // 19
+
+    // Left face
+    -0.5f, -0.5f,  0.5f,  // 20
+    -0.5f, -0.5f, -0.5f,  // 21
+    -0.5f,  0.5f, -0.5f,  // 22
+    -0.5f,  0.5f,  0.5f   // 23
+};
+
+// Define the indices for the cube
+constexpr GLuint indices[] = {
+    // Front face
+    0, 1, 2,
+    2, 3, 0,
+
+    // Back face
+    4, 5, 6,
+    6, 7, 4,
+
+    // Top face
+    8, 9, 10,
+    10, 11, 8,
+
+    // Bottom face
+    12, 13, 14,
+    14, 15, 12,
+
+    // Right face
+    16, 17, 18,
+    18, 19, 16,
+
+    // Left face
+    20, 21, 22,
+    22, 23, 20
+};
 
 void CameraSystem::Render() {
     if (ImGui::Begin("Camera")) {
@@ -160,77 +246,6 @@ void CameraSystem::Render() {
     ImGui::End();
 
     // Temp, Render a small cube where I am looking
-    GLuint VBO {0}, VAO {0}, EBO {0};
-
-    float cubeVertices[] = {
-            // Front face
-            -0.5f, -0.5f,  0.5f,  // 0
-            0.5f, -0.5f,  0.5f,  // 1
-            0.5f,  0.5f,  0.5f,  // 2
-            -0.5f,  0.5f,  0.5f,  // 3
-
-            // Back face
-            -0.5f, -0.5f, -0.5f,  // 4
-            0.5f, -0.5f, -0.5f,  // 5
-            0.5f,  0.5f, -0.5f,  // 6
-            -0.5f,  0.5f, -0.5f,  // 7
-
-            // Top face
-            0.5f,  0.5f,  0.5f,  // 8
-            -0.5f,  0.5f,  0.5f,  // 9
-            -0.5f,  0.5f, -0.5f,  // 10
-            0.5f,  0.5f, -0.5f,  // 11
-
-            // Bottom face
-            -0.5f, -0.5f,  0.5f,  // 12
-            0.5f, -0.5f,  0.5f,  // 13
-            0.5f, -0.5f, -0.5f,  // 14
-            -0.5f, -0.5f, -0.5f,  // 15
-
-            // Right face
-            0.5f, -0.5f,  0.5f,  // 16
-            0.5f, -0.5f, -0.5f,  // 17
-            0.5f,  0.5f, -0.5f,  // 18
-            0.5f,  0.5f,  0.5f,  // 19
-
-            // Left face
-            -0.5f, -0.5f,  0.5f,  // 20
-            -0.5f, -0.5f, -0.5f,  // 21
-            -0.5f,  0.5f, -0.5f,  // 22
-            -0.5f,  0.5f,  0.5f   // 23
-    };
-
-// Define the indices for the cube
-    GLuint indices[] = {
-            // Front face
-            0, 1, 2,
-            2, 3, 0,
-
-            // Back face
-            4, 5, 6,
-            6, 7, 4,
-
-            // Top face
-            8, 9, 10,
-            10, 11, 8,
-
-            // Bottom face
-            12, 13, 14,
-            14, 15, 12,
-
-            // Right face
-            16, 17, 18,
-            18, 19, 16,
-
-            // Left face
-            20, 21, 22,
-            22, 23, 20
-    };
-
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
-    glGenBuffers(1, &EBO);
-
     glBindVertexArray(VAO);
 
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
@@ -245,19 +260,8 @@ void CameraSystem::Render() {
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 
-    // Load the contents of the shaders
-    std::string vertexShaderSource = readShaderFile("shaders/vertex_old3.glsl");
-    std::string fragmentShaderSource = readShaderFile("shaders/plain_color.glsl");
-
-    // Make sure they arent empty
-    if (vertexShaderSource.empty() || fragmentShaderSource.empty()) {
-        return;
-    }
-
-    // Create the shader program
-    GLuint shaderProgram = createShaderProgram(vertexShaderSource, fragmentShaderSource);
+    // todo: throw error if no shader program???
     if (shaderProgram == 0) return;
-
     glUseProgram(shaderProgram);
 
     // TEMP ,, do render

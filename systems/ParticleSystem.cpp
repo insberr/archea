@@ -60,7 +60,7 @@ namespace ParticleSystem {
     // bool enableOutlines { false };
     // init ParticlesChunk static values
     float particleScale { 0.4f };
-    unsigned int chunkSize { 50 };
+    unsigned int chunkSize { 64 };
     float stepDelay = 0.1f;
 
     // Chunks
@@ -143,7 +143,7 @@ void ParticleSystem::Init() {
                 return;
             }
 
-            std::this_thread::sleep_for(std::chrono::milliseconds(200));
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
             if (chunksLock.try_lock()) {
                 for (const auto& chunk : particleChunks) {
@@ -224,18 +224,20 @@ void ParticleSystem::Update(float dt) {
     std::set<glm::ivec3, IVec3Comparator> requiredChunkPositions;
     for (int x = -chunkDistance; x <= chunkDistance; ++x) {
         for (int z = -chunkDistance; z <= chunkDistance; ++z) {
-            auto temp_cameraChunkPosition = cameraChunkPosition;
+            auto requiredChunkPosition = cameraChunkPosition + glm::ivec3(x, 0, z);
+
             // Enforce y to always be 0. We don't do vertical chunks right now
-            temp_cameraChunkPosition.y = 0;
-            requiredChunkPositions.insert(cameraChunkPosition + glm::ivec3(x, 0, z));
+            requiredChunkPosition.y = 0;
+
+            requiredChunkPositions.insert(requiredChunkPosition);
         }
     }
 
     // Manage chunks in one pass
-    std::vector<ParticlesChunk*> updatedChunks;
 
-    if (chunksLock.try_lock())
-    {
+    if (chunksLock.try_lock()) {
+        std::vector<ParticlesChunk*> updatedChunks;
+
         for (auto& chunk : particleChunks) {
             auto pos = chunk->getChunkWorldPosition();
             if (requiredChunkPositions.count(pos)) {

@@ -5,6 +5,7 @@
 
 #pragma once
 #include <mutex>
+#include <queue>
 #include <GL/glew.h>
 
 #include "ParticleData.h"
@@ -78,6 +79,7 @@ private:
     glm::uvec3 chunkParticleGridSize;
 
     ParticleData::Manager particleManager;
+    std::deque<glm::ivec3> nextPositionsToUpdate;
 
     GLuint particlesBuffer;
 

@@ -10,6 +10,7 @@
 #include <fstream>
 #include <cstring>  // for memcpy
 #include <cstddef> // for std::byte
+#include <queue>
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
@@ -41,7 +42,7 @@ namespace PositionConversion
         const glm::ivec3& particlePosition,
         const glm::uvec3& standardChunkParticleGridSize
     ) {
-        return particlePosition / glm::ivec3(standardChunkParticleGridSize);
+        return glm::floor(glm::vec3(particlePosition) / glm::vec3(standardChunkParticleGridSize));
     }
 }
 
@@ -71,11 +72,26 @@ ParticlesChunk::ParticlesChunk(
     if (!LoadChunkData())
     {
         // todo: Temp, for testing
-        for (unsigned x = 10; x < 25; ++x) {
-            for (unsigned y = 5; y < 15; ++y) {
-                for (unsigned z = 10; z < 25; ++z) {
+        for (unsigned x = 10; x < 14; ++x) {
+            for (unsigned y = 5; y < 14; ++y) {
+                for (unsigned z = 10; z < 14; ++z) {
                     particleManager.SetType(glm::uvec3(x, y, z), 2);
                 }
+            }
+        }
+    }
+
+    // Add all non-air to queue for update
+    for (unsigned x = 0; x < chunkParticleGridSize.x; ++x) {
+        for (int y = 0; y < chunkParticleGridSize.y; ++y) {
+            for (unsigned z = 0; z < chunkParticleGridSize.z; ++z) {
+                const auto currentPos = glm::ivec3(x, y, z);
+
+                if (!particleManager.Exists(currentPos)) {
+                    continue;
+                }
+
+                nextPositionsToUpdate.push_back(currentPos);
             }
         }
     }
@@ -117,53 +133,70 @@ bool ParticlesChunk::Update(float dt) {
 void ParticlesChunk::ProcessNextSimulationStep() {
     const std::lock_guard guard(lock);
 
-    for (unsigned x = 0; x < chunkParticleGridSize.x; ++x) {
-        for (int y = 0; y < chunkParticleGridSize.y; ++y) {
-            for (unsigned z = 0; z < chunkParticleGridSize.z; ++z) {
-                const auto currentPos = glm::ivec3(x, y, z);
+    if (nextPositionsToUpdate.empty()) {
+        return;
+    }
 
-                if (!particleManager.Exists(currentPos)) {
-                    continue;
-                }
+    const auto positionsToUpdate = std::move(nextPositionsToUpdate);
 
-                // z * (ysize * xsize) + y * (xsize) + x
-                unsigned particle = particleManager.Get(currentPos).particleType;
-                // if (particle <= 1) continue;
-
-                auto particleTypeInfo = ParticleTypeSystem::GetParticleTypeInfo(particle - 1);
-
-                auto posToTry = glm::ivec3(0);
-
-                // new
-                auto nextMove = ParticleMove::MoveState {};
-                while (true) {
-                    particleTypeInfo.getNextMove(nextMove);
-
-                    if (nextMove.done) break;
-
-                    posToTry = currentPos + glm::ivec3(nextMove.positionToTry);
-
-                    // try pos
-
-                    if (posToTry.y < 0) continue;
-                    posToTry = glm::clamp(posToTry, glm::ivec3(0), glm::ivec3(49));
-                    // int newY = std::clamp<int>(y - 1, 0, 49);
-
-                    unsigned atNewPos = particleManager.Get(posToTry).particleType;
-                    if (atNewPos != 0) continue;
-
-                    // We are here, we are allowed to move here
-
-                    particleManager.SetType(posToTry, particle);
-                    // remove
-                    particleManager.SetType(glm::uvec3(x, y, z), 0);
-                    break;
-                    // if works, break
-                    // else continue
-                }
-                //end
-            }
+    for (const auto& currentPos : positionsToUpdate) {
+        if (!particleManager.Exists(currentPos)) {
+            continue;
         }
+
+        // z * (ysize * xsize) + y * (xsize) + x
+        unsigned particle = particleManager.Get(currentPos).particleType;
+        // if (particle <= 1) continue;
+
+        auto particleTypeInfo = ParticleTypeSystem::GetParticleTypeInfo(particle - 1);
+
+        auto posToTry = glm::ivec3(0);
+
+        // new
+        auto nextMove = ParticleMove::MoveState {};
+        while (true) {
+            particleTypeInfo.getNextMove(nextMove);
+
+            if (nextMove.done) break;
+
+            posToTry = currentPos + glm::ivec3(nextMove.positionToTry);
+
+            // try pos
+
+            if (posToTry.y < 0) continue;
+            posToTry = glm::clamp(posToTry, glm::ivec3(0), glm::ivec3(chunkParticleGridSize - glm::uvec3(1)));
+            // int newY = std::clamp<int>(y - 1, 0, 49);
+
+            unsigned atNewPos = particleManager.Get(posToTry).particleType;
+            if (atNewPos != 0) continue;
+
+            // We are here, we are allowed to move here
+
+            particleManager.SetType(posToTry, particle);
+            // remove
+            particleManager.SetType(currentPos, 0);
+
+            const auto posBelowTryPos = posToTry - glm::ivec3(0, 1, 0);
+            try {
+                unsigned atPosBelowTryPos = particleManager.Get(posBelowTryPos).particleType;
+                if (atPosBelowTryPos == 0) {
+                    nextPositionsToUpdate.push_back(posToTry);
+                }
+            } catch (...) {
+                // do nothing. we are out of bounds so the particle is on the floor...
+            }
+
+            // Add particle above currentPos to queue
+            const auto aboveCurrentPos = currentPos + glm::ivec3(0, 1, 0);
+            unsigned atPosAboveCurrentPos = particleManager.Get(aboveCurrentPos).particleType;
+            if (atPosAboveCurrentPos != 0) {
+                nextPositionsToUpdate.push_back(aboveCurrentPos);
+            }
+            break;
+            // if works, break
+            // else continue
+        }
+        //end
     }
 }
 
@@ -241,6 +274,7 @@ bool ParticlesChunk::TryPlaceParticleAt(
     const glm::uvec3 particlePositionInChunk = glm::abs(worldParticlePosition - (chunkGridPosition * glm::ivec3(chunkParticleGridSize)));
 
     particleManager.SetType(particlePositionInChunk, particleDataWraper.particleType);
+    nextPositionsToUpdate.emplace_back(particlePositionInChunk);
 
     return false;
 }

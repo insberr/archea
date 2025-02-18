@@ -82,6 +82,11 @@ int Graphics::Setup() {
 
     // Enable depth testing
     glEnable(GL_DEPTH_TEST);
+
+    // Enable blend
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+
     glClearColor(0.4f, 0.4f, 0.4f, 0.4f);
 
     return 0;
