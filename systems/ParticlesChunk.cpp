@@ -18,6 +18,7 @@
 
 #include "CameraSystem.h"
 #include "InputSystem.h"
+#include "Shapes.h"
 #include "particle_types/ParticleMove.h"
 #include "particle_types/ParticleType.h"
 #include "particle_types/ParticleTypeSystem.h"
@@ -61,7 +62,6 @@ ParticlesChunk::ParticlesChunk(
     worldPosition = glm::vec3(chunkGridPosition) * worldChunkScale;
 
     glCreateBuffers(1, &particlesBuffer);
-
     glNamedBufferStorage(
         particlesBuffer,
         sizeof(int) * particleManager.GetCubicSize(),
@@ -69,32 +69,44 @@ ParticlesChunk::ParticlesChunk(
         GL_DYNAMIC_STORAGE_BIT
     );
 
+
+    // Set up vertex data and buffers and configure vertex attributes
+    glGenVertexArrays(1, &VAO);
+    glGenBuffers(1, &VBO);
+    glGenBuffers(1, &EBO);
+
+
     if (!LoadChunkData())
     {
         // todo: Temp, for testing
         for (unsigned x = 10; x < 14; ++x) {
             for (unsigned y = 5; y < 14; ++y) {
                 for (unsigned z = 10; z < 14; ++z) {
-                    particleManager.SetType(glm::uvec3(x, y, z), 2);
+                    const auto position = glm::uvec3(x, y, z);
+                    particleManager.SetType(position, 2);
+                    nextPositionsToUpdate.push_back(position);
                 }
             }
         }
     }
 
-    // Add all non-air to queue for update
-    for (unsigned x = 0; x < chunkParticleGridSize.x; ++x) {
-        for (int y = 0; y < chunkParticleGridSize.y; ++y) {
-            for (unsigned z = 0; z < chunkParticleGridSize.z; ++z) {
-                const auto currentPos = glm::ivec3(x, y, z);
+    remesh();
 
-                if (!particleManager.Exists(currentPos)) {
-                    continue;
-                }
-
-                nextPositionsToUpdate.push_back(currentPos);
-            }
-        }
-    }
+    // todo: save/load update queue rather than adding everything
+    // // Add all non-air to queue for update
+    // for (unsigned x = 0; x < chunkParticleGridSize.x; ++x) {
+    //     for (int y = 0; y < chunkParticleGridSize.y; ++y) {
+    //         for (unsigned z = 0; z < chunkParticleGridSize.z; ++z) {
+    //             const auto currentPos = glm::ivec3(x, y, z);
+    //
+    //             if (!particleManager.Exists(currentPos)) {
+    //                 continue;
+    //             }
+    //
+    //             nextPositionsToUpdate.push_back(currentPos);
+    //         }
+    //     }
+    // }
 
     // Should probably use a thread pool and pass these in as scheduled work or something
 //    using namespace std::chrono_literals;
@@ -198,64 +210,35 @@ void ParticlesChunk::ProcessNextSimulationStep() {
         }
         //end
     }
+
+    remesh();
 }
 
 void ParticlesChunk::Render(
     GLFWwindow* window,
     GLuint shaderProgram,
-    GLuint particlesColorsBuffer,
-    GLuint VAO
+    GLuint particlesColorsBuffer
 ) {
-    glNamedBufferSubData(
-        particlesBuffer,
-        0,
-        sizeof(int) * particleManager.GetCubicSize(),
-        static_cast<const void*>(particleManager.GetParticleTypesData().data())
-    );
-
-    // Bind the particles data
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, particlesBuffer);
-    // Bind the particles color data
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, particlesColorsBuffer);
-
-    // Set the shader program
-    glUseProgram(shaderProgram);
-
-    int width, height;
-    glfwGetFramebufferSize(window, &width, &height);
-    // glUniform2f(glGetUniformLocation(shaderProgram, "Resolution"), width, height);
-    glUniform1f(glGetUniformLocation(shaderProgram, "Time"), static_cast<float>(glfwGetTime()));
-
-    auto cameraFieldOfView = CameraSystem::GetFOV();
-    auto cameraPos = CameraSystem::GetPosition();
-    auto cameraMatrix = CameraSystem::CameraMatrix();
-    // glUniform1f(glGetUniformLocation(shaderProgram, "FieldOfView"), cameraFieldOfView);
-    glUniform3f(glGetUniformLocation(shaderProgram, "CameraPosition"), cameraPos.x, cameraPos.y, cameraPos.z);
-    // glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "CameraView"), 1, GL_FALSE, glm::value_ptr(cameraMatrix));
-
-    // Pass the matrices to the shader (for vertex shader for now)
-    GLuint modelLoc = glGetUniformLocation(shaderProgram, "model");
-    GLuint viewLoc = glGetUniformLocation(shaderProgram, "view");
-    GLuint projectionLoc = glGetUniformLocation(shaderProgram, "projection");
-    auto model = glm::translate(CameraSystem::GetModel(), worldPosition);
-    auto view = CameraSystem::GetView();
-    auto projection = CameraSystem::GetProjection();
-    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-    glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-    glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
-
-    glUniform1i(glGetUniformLocation(shaderProgram, "MAX_RAY_STEPS"), ChunkConfig::maxRaySteps);
-    glUniform1f(glGetUniformLocation(shaderProgram, "ParticleScale"), particleScale);
-    glUniform1ui(glGetUniformLocation(shaderProgram, "EnableOutlines"), ChunkConfig::enableOutlines);
-    // Fixme, chunksize xyz is no longer garenteed to be the same
-    glUniform1ui(glGetUniformLocation(shaderProgram, "ChunkSize"), chunkParticleGridSize.x);
-
-    // Bind the vertex data
     glBindVertexArray(VAO);
-    // Call draw
-    glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
 
-    // glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, 0);
+    if (lock.try_lock()) {
+        glBindBuffer(GL_ARRAY_BUFFER, VBO);
+        glBufferData(GL_ARRAY_BUFFER, verticies.size() * sizeof(float), verticies.data(), GL_STATIC_DRAW);
+
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indicies.size() * sizeof(unsigned int), indicies.data(), GL_STATIC_DRAW);
+
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+        glEnableVertexAttribArray(0);
+        lock.unlock();
+    }
+
+    const GLint worldPositionLoc = glGetUniformLocation(shaderProgram, "worldPosition");
+    glUniform3f(worldPositionLoc, worldPosition.x, worldPosition.y, worldPosition.z);
+
+    glDrawElements(GL_TRIANGLES, indicies.size(), GL_UNSIGNED_INT, 0);
+
+    glBindVertexArray(0);
 }
 
 bool ParticlesChunk::TryPlaceParticleAt(
@@ -273,8 +256,11 @@ bool ParticlesChunk::TryPlaceParticleAt(
 
     const glm::uvec3 particlePositionInChunk = glm::abs(worldParticlePosition - (chunkGridPosition * glm::ivec3(chunkParticleGridSize)));
 
+    if (particleDataWraper.particleType == particleManager.Get(particlePositionInChunk).particleType) return false;
     particleManager.SetType(particlePositionInChunk, particleDataWraper.particleType);
     nextPositionsToUpdate.emplace_back(particlePositionInChunk);
+
+    remesh();
 
     return false;
 }
@@ -334,6 +320,29 @@ bool ParticlesChunk::LoadChunkData()
         return true;
     } catch (std::exception& e) {
         return false;
+    }
+}
+
+void ParticlesChunk::remesh() {
+    verticies.clear();
+    indicies.clear();
+
+    int i = 0;
+    for (const auto& [position, data] : particleManager.FastGetAll()) {
+        // todo: this should never happen
+        if (data.particleType == 0) continue;
+
+        for (int j = 0; j < 72; j += 3) {
+            verticies.push_back(Shapes::Cube::cubeVertices[j] + position.x);
+            verticies.push_back(Shapes::Cube::cubeVertices[j + 1] + position.y);
+            verticies.push_back(Shapes::Cube::cubeVertices[j + 2] + position.z);
+        }
+
+        int vertexOffset = i * 24;
+        for (unsigned int ind : Shapes::Cube::indices) {
+            indicies.push_back(ind + vertexOffset);
+        }
+        i++;
     }
 }
 

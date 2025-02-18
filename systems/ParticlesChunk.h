@@ -57,7 +57,7 @@ public:
     bool Update(float dt);
     // todo: rename this?
     void ProcessNextSimulationStep();
-    void Render(GLFWwindow* window, GLuint shaderProgram, GLuint particlesColorsBuffer, GLuint VAO);
+    void Render(GLFWwindow* window, GLuint shaderProgram, GLuint particlesColorsBuffer);
 
     // If the chunk has a lock on it's data, this will block until it's done
     bool TryPlaceParticleAt(const glm::ivec3& worldParticlePosition, const ParticleData::DataWrapper& particleDataWraper);
@@ -83,6 +83,14 @@ private:
 
     GLuint particlesBuffer;
 
+    // Rendering Things
+    GLuint VBO {0}, VAO {0}, EBO {0};
+    std::vector<float> verticies {};
+    std::vector<unsigned int> indicies {};
+
+    bool dirty { false };
+
     bool SaveChunkData();
     bool LoadChunkData();
+    void remesh();
 };

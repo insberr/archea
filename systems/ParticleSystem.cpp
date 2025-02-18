@@ -48,8 +48,6 @@ namespace ParticleSystem {
     // GLuint particlesBuffer { 0 };
     GLuint particlesColrosBuffer { 0 };
 
-    GLuint VBO {0}, VAO {0}, EBO {0};
-
     glm::ivec3 drawPos;
     glm::ivec3 lookingAtParticlePos;
     float drawDistance { 1.0f };
@@ -84,25 +82,6 @@ void ParticleSystem::Init() {
     // Create the shader program
     shaderProgram = createShaderProgram(vertexShaderSource, fragmentShaderSource);
     if (shaderProgram == 0) return;
-
-    // Set up vertex data and buffers and configure vertex attributes
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
-    glGenBuffers(1, &EBO);
-
-    glBindVertexArray(VAO);
-
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(Shapes::Cube::cubeVertices), Shapes::Cube::cubeVertices, GL_STATIC_DRAW);
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(Shapes::Cube::indices), &Shapes::Cube::indices, GL_STATIC_DRAW);
-
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
 
     glCreateBuffers(1, &particlesColrosBuffer);
     // std::vector<glm::vec4> particleColors;
@@ -143,7 +122,7 @@ void ParticleSystem::Init() {
                 return;
             }
 
-            std::this_thread::sleep_for(std::chrono::milliseconds(50));
+            std::this_thread::sleep_for(std::chrono::milliseconds(200));
 
             if (chunksLock.try_lock()) {
                 for (const auto& chunk : particleChunks) {
@@ -285,9 +264,29 @@ void ParticleSystem::Update(float dt) {
 void ParticleSystem::Render() {
     auto window = Graphics::GetWindow();
 
+    // Set the shader program
+    glUseProgram(shaderProgram);
+
+
+    auto projection = CameraSystem::GetProjection();
+    auto view = CameraSystem::GetView();
+
+    // todo: multiply these and send as one value to the GPU
+    const GLint projectionLoc = glGetUniformLocation(shaderProgram, "projection");
+    const GLint viewLoc = glGetUniformLocation(shaderProgram, "view");
+    const GLint particleScaleLoc = glGetUniformLocation(shaderProgram, "particleScale");
+
+    glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
+    glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+    glUniform1f(particleScaleLoc, particleScale);
+
+    const GLint enableOutlinesLoc = glGetUniformLocation(shaderProgram, "EnableOutlines");
+    glUniform1ui(enableOutlinesLoc, ChunkConfig::enableOutlines);
+
+
     // todo: call render on all chunks
     for (const auto& chunk : particleChunks) {
-        chunk->Render(window, shaderProgram, particlesColrosBuffer, VAO);
+        chunk->Render(window, shaderProgram, particlesColrosBuffer);
     }
 
     if (ImGui::Begin("Simulation Controls")) {

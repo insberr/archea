@@ -5,6 +5,7 @@
 
 #pragma once
 #include <mdspan>
+#include <unordered_map>
 #include <vector>
 #include <glm/vec3.hpp>
 
@@ -12,6 +13,16 @@ struct ParticleType;
 
 namespace ParticleData
 {
+    struct IVec3Hash {
+        std::size_t operator()(const glm::ivec3& v) const noexcept {
+            // Combine the hash values of the three integers
+            std::size_t h1 = std::hash<int>()(v.x);
+            std::size_t h2 = std::hash<int>()(v.y);
+            std::size_t h3 = std::hash<int>()(v.z);
+            return h1 ^ (h2 << 1) ^ (h3 << 2); // Bit-shifting to reduce collisions
+        }
+    };
+
     struct InternalData {
         glm::vec3 realPosition;
         float temperature;
@@ -41,6 +52,8 @@ namespace ParticleData
         };
 
         DataWrapper Get(const glm::uvec3& position);
+
+        std::unordered_map<glm::uvec3, DataWrapper, IVec3Hash> FastGetAll();
 
         /*
          * Check if a non-"None" particle exists at the position.
@@ -72,6 +85,8 @@ namespace ParticleData
         // This is for the cpu. Extra data abou particles that isn't needed by the gpu
         std::vector<InternalData> particlesData;
         std::mdspan<InternalData, size_max_extents> view_particlesData;
+
+        std::unordered_map<glm::uvec3, DataWrapper, IVec3Hash> hashMapParticles;
 
         bool IsPositionInBounds(const glm::uvec3& position) const;
     };

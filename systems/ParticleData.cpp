@@ -7,6 +7,7 @@
 #include <iostream>
 #include <mdspan>
 #include <array>
+#include <utility>
 
 namespace ParticleData
 {
@@ -27,6 +28,10 @@ namespace ParticleData
             // cpp-reference says the operator[] takes three (in my case) values, but really it takes a span or array
             view_particlesData[Vec3ToArray(position)]
         };
+    }
+
+    std::unordered_map<glm::uvec3, DataWrapper, IVec3Hash> Manager::FastGetAll() {
+        return hashMapParticles;
     }
 
     bool Manager::Exists(const glm::uvec3& position) const {
@@ -68,6 +73,23 @@ namespace ParticleData
         // todo: check if particleType is a valid particle type index
 
         view_particlesTypes[Vec3ToArray(position)] = particleType;
+
+        if (particleType == 0) {
+            hashMapParticles.erase(position);
+        } else {
+            try {
+                hashMapParticles.at(position).particleType = particleType;
+            } catch (const std::exception& e) {
+                hashMapParticles.insert(std::pair<glm::uvec3, DataWrapper>(position, {
+                    .position = position,
+                    .particleType = particleType,
+                    .data = {
+                        .realPosition = position,
+                        .temperature = 0.0f
+                    }
+                }));
+            }
+        }
     }
 
     const std::vector<unsigned>& Manager::GetParticleTypesData() const
