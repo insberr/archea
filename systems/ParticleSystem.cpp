@@ -285,13 +285,6 @@ void ParticleSystem::Update(float dt) {
 void ParticleSystem::Render() {
     auto window = Graphics::GetWindow();
 
-    // // TEMP testing
-    // ParticlesDataManager::Chunk chunk = particlesData.getChunk(glm::ivec3(0));
-    // for (const auto& particle : chunk.getParticlesAsMap()) {
-    //     auto pos = particle.first;
-    //     std::cout << "Particle in chunk 0,0,0 at position " << pos.x << "," << pos.y << "," << pos.z << ": " << particle.second << std::endl;
-    // }
-
     // todo: call render on all chunks
     for (const auto& chunk : particleChunks) {
         chunk->Render(window, shaderProgram, particlesColrosBuffer, VAO);
