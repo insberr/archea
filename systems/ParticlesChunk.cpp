@@ -323,7 +323,7 @@ bool ParticlesChunk::LoadChunkData()
 
             file.read(
                 reinterpret_cast<char*>( const_cast<unsigned*>(particleManager.GetParticleTypesData().data()) ),
-                sizeof(unsigned) * 50 * 50 * 50
+                sizeof(unsigned) * 64 * 64 * 64
             );
         } else {
             file.close();
