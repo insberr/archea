@@ -23,107 +23,6 @@
 #include "particle_types/ParticleTypeSystem.h"
 #include "particle_types/ParticleType.h"
 
-#include <mdspan>
-#include <array>
-#include <unordered_map>
-
-namespace ParticlesDataManager {
-    // Custom hash function for glm::ivec3
-    struct IVec3Hash {
-        std::size_t operator()(const glm::ivec3& v) const noexcept {
-            // Combine the hash values of the three integers
-            std::size_t h1 = std::hash<int>()(v.x);
-            std::size_t h2 = std::hash<int>()(v.y);
-            std::size_t h3 = std::hash<int>()(v.z);
-            return h1 ^ (h2 << 1) ^ (h3 << 2); // Bit-shifting to reduce collisions
-        }
-    };
-
-    struct Bounds {
-        glm::ivec3 min;
-        glm::ivec3 max;
-    };
-
-    class Chunk {
-        using size_max_extents = std::extents<size_t, SIZE_MAX, SIZE_MAX, SIZE_MAX>;
-        public:
-        Chunk(const unsigned int chunkSize, const Bounds& bounds, const std::unordered_map<glm::ivec3, unsigned int, IVec3Hash>& map)
-            : chunkSize(chunkSize), bounds(bounds), particlesMap(&map)
-        {
-
-        }
-
-        std::vector<unsigned int> getAllParticles() {
-            std::vector<unsigned int> particles(chunkSize * chunkSize * chunkSize);
-            std::mdspan<unsigned int, size_max_extents> particlesView = std::mdspan(particles.data(), chunkSize, chunkSize, chunkSize);
-
-            // todo: find a more efficient way to do this
-            for (int i = bounds.min.x; i <= bounds.max.x; i++) {
-                for (int j = bounds.min.y; j <= bounds.max.y; j++) {
-                    for (int k = bounds.min.z; k <= bounds.max.z; k++) {
-                        particlesView[std::array<int, 3>{i, j, k}] = particlesMap->at(glm::ivec3{i, j, k});
-                    }
-                }
-            }
-
-            return std::move(particles);
-        }
-
-        std::unordered_map<glm::ivec3, unsigned int, IVec3Hash> getParticlesAsMap() {
-            std::unordered_map<glm::ivec3, unsigned int, IVec3Hash> particles;
-
-            for (int i = bounds.min.x; i <= bounds.max.x; i++) {
-                for (int j = bounds.min.y; j <= bounds.max.y; j++) {
-                    for (int k = bounds.min.z; k <= bounds.max.z; k++) {
-                        const auto pos = glm::ivec3{i, j, k};
-                        particles.insert(std::make_pair(pos, particlesMap->at(pos)));
-                    }
-                }
-            }
-
-            return std::move(particles);
-        }
-
-    private:
-        unsigned int chunkSize;
-        Bounds bounds;
-        const std::unordered_map<glm::ivec3, unsigned int, IVec3Hash>* particlesMap;
-    };
-
-    // todo: type alias?
-    // using MyHashMap = std::unordered_map<glm::ivec3, unsigned int, IVec3Hash>;
-
-    class Particles {
-        public:
-        Particles(unsigned int chunkSize, const Bounds& bounds) :
-            chunkSize(chunkSize)
-        {
-
-        }
-        ~Particles() {}
-
-        Chunk getChunk(const glm::ivec3& position) {
-            const Chunk chunk(chunkSize, {position, position + glm::ivec3(chunkSize - 1)}, particlesMap);
-            return chunk;
-        }
-
-        // FIXME: Not a great name. Basically this is just for loading in particles
-        void insertParticles(const ::std::unordered_map<glm::ivec3, unsigned int, IVec3Hash>& particles_mapping) {
-            // FIXME: There's probably a better way to essentially combine two maps...
-            for (const auto& point : particles_mapping) {
-                auto position = point.first;
-                auto value = point.second;
-                particlesMap.insert(std::make_pair(position, value));
-            }
-        }
-
-        private:
-        std::unordered_map<glm::ivec3, unsigned int, IVec3Hash> particlesMap;
-
-        unsigned int chunkSize;
-    };
-}
-
 namespace ParticleSystem {
     /* System Function Declarations */
     int Setup();
@@ -161,19 +60,13 @@ namespace ParticleSystem {
     // bool enableOutlines { false };
     // init ParticlesChunk static values
     float particleScale { 0.4f };
-    unsigned int chunkSize { 50 };
+    unsigned int chunkSize { 64 };
     float stepDelay = 0.1f;
 
     // Chunks
     std::vector<ParticlesChunk*> particleChunks;
     std::mutex chunksLock;
     std::jthread chunksThread;
-
-
-
-    // Demo new particle data thing
-    // 3x3 of chunks basically
-    ParticlesDataManager::Particles particlesData { chunkSize, { glm::ivec3(0), glm::ivec3(chunkSize * 3)}};
 
 };
 
@@ -293,10 +186,6 @@ void ParticleSystem::Update(float dt) {
                 lookingAtParticlePos,
                 { glm::uvec3(0), drawType, { glm::vec3(0), 0.0f } }
             );
-
-            std::unordered_map<glm::ivec3, unsigned int, ParticlesDataManager::IVec3Hash> particlesMap;
-            particlesMap[lookingAtParticlePos] = drawType;
-            particlesData.insertParticles(particlesMap);
         }
     }
 
