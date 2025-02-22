@@ -281,6 +281,49 @@ bool ParticlesChunk::saveChunkData()
     // }
     // file.close();
 
+
+    // **** New Code ****
+    // std::stringstream filenameForChunk;
+    // filenameForChunk << "chunks/test.bin";
+    //
+    // glm::uvec3 dimensions{ 64, 64, 64 };
+    // glm::ivec3 grid{ 1, 1, 1 };
+    // unsigned int separator = 0xcfcfcfcf;
+    // unsigned int separatorF = 0xffffffff;
+    // glm::ivec3 position{ 3, 3, 3 };
+    //
+    // std::ofstream file(filenameForChunk.str(), std::ios::binary);
+    // if (file) {
+    //     file.write(reinterpret_cast<char*>(&dimensions), sizeof(dimensions));
+    //     file.write(reinterpret_cast<char*>(&separator), sizeof(separator));
+    //     file.write(reinterpret_cast<char*>(&grid), sizeof(grid));
+    //     file.write(reinterpret_cast<char*>(&separator), sizeof(separator));
+    //
+    //     file.write(reinterpret_cast<char*>(&separatorF), sizeof(separatorF));
+    //     file.write(reinterpret_cast<char*>(&separatorF), sizeof(separatorF));
+    //     file.write(reinterpret_cast<char*>(&separatorF), sizeof(separatorF));
+    //     file.write(reinterpret_cast<char*>(&separatorF), sizeof(separatorF));
+    //     file.write(reinterpret_cast<char*>(&position), sizeof(position));
+    //     file.write(reinterpret_cast<char*>(&separator), sizeof(separator));
+    //     file.write(reinterpret_cast<char*>(&position), sizeof(position));
+    //     file.write(reinterpret_cast<char*>(&separator), sizeof(separator));
+    //     file.write(reinterpret_cast<char*>(&position), sizeof(position));
+    //     file.write(reinterpret_cast<char*>(&separator), sizeof(separator));
+    //
+    //     file.write(reinterpret_cast<char*>(&separatorF), sizeof(separatorF));
+    //     file.write(reinterpret_cast<char*>(&separatorF), sizeof(separatorF));
+    //     file.write(reinterpret_cast<char*>(&separatorF), sizeof(separatorF));
+    //     file.write(reinterpret_cast<char*>(&separatorF), sizeof(separatorF));
+    //     unsigned particleType = 2;
+    //     file.write(reinterpret_cast<char*>(&position), sizeof(position));
+    //     file.write(reinterpret_cast<char*>(&particleType), sizeof(particleType));
+    //
+    //     particleType = 12;
+    //     file.write(reinterpret_cast<char*>(&position), sizeof(position));
+    //     file.write(reinterpret_cast<char*>(&particleType), sizeof(particleType));
+    // }
+    // file.close();
+
     return true;
 }
 
