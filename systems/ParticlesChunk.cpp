@@ -206,13 +206,15 @@ void ParticlesChunk::Render(
 
     if (lock.try_lock()) {
         glBindBuffer(GL_ARRAY_BUFFER, VBO);
-        glBufferData(GL_ARRAY_BUFFER, chunkMesh.verticies.size() * sizeof(float), chunkMesh.verticies.data(), GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, chunkMesh.vertices.size() * sizeof(float), chunkMesh.vertices.data(), GL_STATIC_DRAW);
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, chunkMesh.indicies.size() * sizeof(unsigned int), chunkMesh.indicies.data(), GL_STATIC_DRAW);
 
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), nullptr);
         glEnableVertexAttribArray(0);
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+        glEnableVertexAttribArray(1);
         lock.unlock();
     }
 
@@ -268,6 +270,8 @@ bool ParticlesChunk::saveChunkData()
     // << gridPosition.z
     // << ".bin";
     //
+    // // TODO: Create chunks folder if it does not exist
+    //
     // std::vector<std::byte> bytes(sizeof(unsigned) * particleHashMap.GetParticleTypesData().size());
     // std::memcpy(bytes.data(), particleHashMap.GetParticleTypesData().data(), sizeof(unsigned) * particleHashMap.GetParticleTypesData().size());
     //
@@ -316,7 +320,7 @@ bool ParticlesChunk::loadChunkData()
 }
 
 void ParticlesChunk::remesh() {
-    chunkMesh.verticies.clear();
+    chunkMesh.vertices.clear();
     chunkMesh.indicies.clear();
 
     int i = 0;
@@ -324,10 +328,14 @@ void ParticlesChunk::remesh() {
         // todo: this should never happen
         if (data.particleType == 0) continue;
 
-        for (int j = 0; j < 72; j += 3) {
-            chunkMesh.verticies.push_back(Shapes::Cube::cubeVertices[j] + position.x);
-            chunkMesh.verticies.push_back(Shapes::Cube::cubeVertices[j + 1] + position.y);
-            chunkMesh.verticies.push_back(Shapes::Cube::cubeVertices[j + 2] + position.z);
+        for (int j = 0; j < sizeof(Shapes::Cube::cubeVertices) / sizeof(float); j += 6) {
+            chunkMesh.vertices.push_back(Shapes::Cube::cubeVertices[j] + position.x);
+            chunkMesh.vertices.push_back(Shapes::Cube::cubeVertices[j + 1] + position.y);
+            chunkMesh.vertices.push_back(Shapes::Cube::cubeVertices[j + 2] + position.z);
+
+            chunkMesh.vertices.push_back(Shapes::Cube::cubeVertices[j + 3]);
+            chunkMesh.vertices.push_back(Shapes::Cube::cubeVertices[j + 4]);
+            chunkMesh.vertices.push_back(Shapes::Cube::cubeVertices[j + 5]);
         }
 
         int vertexOffset = i * 24;

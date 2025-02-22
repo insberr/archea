@@ -29,7 +29,7 @@ namespace ChunkConfig {
 
 // todo: move somewhere else
 struct ChunkMesh {
-    std::vector<float> verticies;
+    std::vector<float> vertices;
     std::vector<unsigned int> indicies;
 };
 

@@ -1,6 +1,7 @@
 #version 460 core
 
 layout(location = 0) in vec3 aPos;
+layout(location = 1) in vec3 aNormal;
 
 /* Camera Uniforms */
 uniform mat4 view;
@@ -15,7 +16,8 @@ out vec3 fragDirection;
 
 void main()
 {
-    gl_Position = projection * view * vec4(worldPosition * particleScale + (aPos * particleScale), 1.0);
+    vec3 world = worldPosition * particleScale + (aPos * particleScale);
+    gl_Position = projection * view * vec4(world, 1.0);
 
-    fragVertexColor = vec3(0.5) * max(0.0, -dot(     mat3(transpose(view)) * vec3(0, 0, -1)     , vec3(0, 1, 0)));
+    fragVertexColor = vec3(0.8, 0.5, 0.01) * max(0.0, dot(normalize(-vec3(view[3]) - world), aNormal));
 }
