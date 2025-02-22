@@ -9,6 +9,6 @@ uniform vec3 Color;
 out vec4 FragColor;
 
 void main() {
-    gl_FragDepth = 0.0;
-    FragColor = vec4(Color, 0.0);
+    // gl_FragDepth = 0.0;
+    FragColor = vec4(Color, 1.0);
 }

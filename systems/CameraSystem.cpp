@@ -163,7 +163,7 @@ void CameraSystem::Update(float dt) {
 
     // Projection
     float aspectRatio = 1280.0f / 720.0f;
-    projection = glm::perspective(glm::radians(45.0f), aspectRatio, 0.00001f, 100.0f);
+    projection = glm::perspective(glm::radians(45.0f), aspectRatio, 0.001f, 100.0f);
 }
 
 constexpr float cubeVertices[] = {
