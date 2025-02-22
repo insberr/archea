@@ -57,7 +57,7 @@ namespace ParticleSystem {
     // int maxRaySteps { 400 };
     // bool enableOutlines { false };
     // init ParticlesChunk static values
-    float particleScale { 0.4f };
+    float particleScale { 1.0f };
     unsigned int chunkSize { 64 };
     float stepDelay = 0.1f;
 
@@ -98,15 +98,14 @@ void ParticleSystem::Init() {
         GL_DYNAMIC_STORAGE_BIT
     );
 
-    ChunkConfig::enableOutlines = false;
-    ChunkConfig::maxRaySteps = 300;
+    ChunkConfig::EnableOutlines = false;
 
     for (unsigned x = 0; x < 2; ++x) {
         for (unsigned y = 0; y < 1; ++y) {
             for (unsigned z = 0; z < 2; ++z) {
                 std::cout << "Init chunk at pos " << x << " " << y << " " << z << std::endl;
                 particleChunks.push_back(
-                    new ParticlesChunk(glm::ivec3(x, y, z), glm::uvec3(chunkSize), particleScale)
+                    new ParticlesChunk(glm::ivec3(x, y, z), glm::uvec3(chunkSize))
                 );
             }
         }
@@ -124,13 +123,12 @@ void ParticleSystem::Init() {
 
             std::this_thread::sleep_for(std::chrono::milliseconds(200));
 
-            if (chunksLock.try_lock()) {
-                for (const auto& chunk : particleChunks) {
-                    // std::cout << chunk << std::endl;
-                    chunk->ProcessNextSimulationStep();
-                }
-                chunksLock.unlock();
+            chunksLock.lock();
+            for (const auto& chunk : particleChunks) {
+                // std::cout << chunk << std::endl;
+                chunk->ProcessNextSimulationStep();
             }
+            chunksLock.unlock();
         }
     });
 
@@ -161,9 +159,9 @@ void ParticleSystem::Update(float dt) {
         // particleDataManager.SetType(drawPos, drawType);
         // todo: this is not really efficient
         for (const auto& chunk : particleChunks) {
-            chunk->TryPlaceParticleAt(
+            chunk->tryPlaceParticleAt(
                 lookingAtParticlePos,
-                { glm::uvec3(0), drawType, { glm::vec3(0), 0.0f } }
+                { drawType, 0.0f }
             );
         }
     }
@@ -171,9 +169,9 @@ void ParticleSystem::Update(float dt) {
     if (InputSystem::IsMouseButtonHeld(GLFW_MOUSE_BUTTON_RIGHT)) {
         // particleDataManager.SetType(drawPos, 0);
         for (const auto& chunk : particleChunks) {
-            chunk->TryPlaceParticleAt(
+            chunk->tryPlaceParticleAt(
                 lookingAtParticlePos,
-                { glm::uvec3(0), 0, { glm::vec3(0), 0.0f } }
+                { 0, 0.0f }
             );
         }
     }
@@ -218,7 +216,7 @@ void ParticleSystem::Update(float dt) {
         std::vector<ParticlesChunk*> updatedChunks;
 
         for (auto& chunk : particleChunks) {
-            auto pos = chunk->getChunkWorldPosition();
+            auto pos = chunk->getGridPosition();
             if (requiredChunkPositions.count(pos)) {
                 // Keep chunk if it's within range
                 updatedChunks.push_back(chunk);
@@ -232,7 +230,7 @@ void ParticleSystem::Update(float dt) {
 
         // Add missing chunks
         for (const auto& pos : requiredChunkPositions) {
-            auto* newChunk = new ParticlesChunk(pos, glm::uvec3(chunkSize), particleScale);
+            auto* newChunk = new ParticlesChunk(pos, glm::uvec3(chunkSize));
 
             updatedChunks.push_back(newChunk);
         }
@@ -281,7 +279,7 @@ void ParticleSystem::Render() {
     glUniform1f(particleScaleLoc, particleScale);
 
     const GLint enableOutlinesLoc = glGetUniformLocation(shaderProgram, "EnableOutlines");
-    glUniform1ui(enableOutlinesLoc, ChunkConfig::enableOutlines);
+    glUniform1ui(enableOutlinesLoc, ChunkConfig::EnableOutlines);
 
 
     // todo: call render on all chunks
@@ -291,9 +289,8 @@ void ParticleSystem::Render() {
 
     if (ImGui::Begin("Simulation Controls")) {
         ImGui::SliderFloat("Simulation Step Speed", &stepDelay, 0.0f, 1.0f);
-        ImGui::SliderInt("Max Ray Steps", &ChunkConfig::maxRaySteps, 0, 1000);
         ImGui::SliderFloat("Particle Scale", &particleScale, 0.001f, 5.0f, "%.8f");
-        ImGui::Checkbox("Show Particle Outlines", &ChunkConfig::enableOutlines);
+        ImGui::Checkbox("Show Particle Outlines", &ChunkConfig::EnableOutlines);
         ImGui::Text("Chunk Size (Currently Disabled) %i", chunkSize);
         // if (ImGui::SliderInt("Chunk Size", reinterpret_cast<int *>(&chunkSize), 10, 300)) {
         //     if (chunkSize > 0) {

@@ -4,123 +4,39 @@
 
 #include "ParticleData.h"
 
-#include <iostream>
-#include <mdspan>
-#include <array>
-#include <utility>
-
 namespace ParticleData
 {
-    // Convert a uvec3 to an array
-    static std::array<unsigned, 3> Vec3ToArray(const glm::uvec3& position)
-    {
-        return std::array{ position.z, position.y, position.x };
+    ParticleInformation& ParticleHashMap::get(const glm::ivec3& position) {
+        return hashMap[position];
     }
 
-    DataWrapper Manager::Get(const glm::uvec3& position) {
-        if (!IsPositionInBounds(position)) {
-            throw std::exception("Position is out of bounds of ParticleDataManager dimensions.");
-        }
+    ParticleHashMap::unordered_map& ParticleHashMap::getAll() {
+        return hashMap;
+    }
 
-        return {
-            position,
-            view_particlesTypes[Vec3ToArray(position)],
-            // cpp-reference says the operator[] takes three (in my case) values, but really it takes a span or array
-            view_particlesData[Vec3ToArray(position)]
+    void ParticleHashMap::add(const glm::ivec3& position, const ParticleInformation& particle) {
+        hashMap[position] = particle;
+    }
+    void ParticleHashMap::add(const glm::ivec3& position, const unsigned& particleType) {
+        hashMap[position] = {
+            .particleType = particleType,
+            .temperature = 32.0f
         };
     }
 
-    std::unordered_map<glm::uvec3, DataWrapper, IVec3Hash> Manager::FastGetAll() {
-        return hashMapParticles;
+    void ParticleHashMap::remove(const glm::ivec3& position) {
+        hashMap.erase(position);
     }
 
-    bool Manager::Exists(const glm::uvec3& position) const {
-        // Out of bounds, return false
-        if (!IsPositionInBounds(position)) return false;
-
-        if (view_particlesTypes[Vec3ToArray(position)] == 0) return false;
-
-        return true;
+    bool ParticleHashMap::exists(const glm::ivec3& position) const {
+        return hashMap.contains(position);
     }
 
-    void Manager::Swap(const glm::uvec3& position1, const glm::uvec3& position2) {
-        if (!IsPositionInBounds(position1) || !IsPositionInBounds(position2)) {
-            throw std::exception("Position 1 or 2 is out of bounds of ParticleDataManager dimensions.");
-        }
+    void ParticleHashMap::swap(const glm::ivec3& position1, const glm::ivec3& position2) {
+        const auto position1_copy = get(position1);
+        const auto position2_copy = get(position2);
 
-        // Get both Types
-        const unsigned position1Type = view_particlesTypes[Vec3ToArray(position1)];
-        const unsigned position2Type = view_particlesTypes[Vec3ToArray(position2)];
-
-        // Get both Data
-        const InternalData position1Data = view_particlesData[Vec3ToArray(position1)];
-        const InternalData position2Data = view_particlesData[Vec3ToArray(position2)];
-
-        // Swap
-        view_particlesTypes[Vec3ToArray(position1)] = position2Type;
-        view_particlesTypes[Vec3ToArray(position2)] = position1Type;
-
-        view_particlesData[Vec3ToArray(position1)] = position2Data;
-        view_particlesData[Vec3ToArray(position2)] = position1Data;
-    }
-
-    void Manager::SetType(const glm::uvec3& position, unsigned particleType)
-    {
-        if (!IsPositionInBounds(position)) {
-            throw std::exception("Position is out of bounds of ParticleDataManager dimensions.");
-        }
-
-        // todo: check if particleType is a valid particle type index
-
-        view_particlesTypes[Vec3ToArray(position)] = particleType;
-
-        if (particleType == 0) {
-            hashMapParticles.erase(position);
-        } else {
-            try {
-                hashMapParticles.at(position).particleType = particleType;
-            } catch (const std::exception& e) {
-                hashMapParticles.insert(std::pair<glm::uvec3, DataWrapper>(position, {
-                    .position = position,
-                    .particleType = particleType,
-                    .data = {
-                        .realPosition = position,
-                        .temperature = 0.0f
-                    }
-                }));
-            }
-        }
-    }
-
-    const std::vector<unsigned>& Manager::GetParticleTypesData() const
-    {
-        return particlesTypes;
-    }
-
-    const std::vector<InternalData>& Manager::GetParticleDataData() const
-    {
-        return particlesData;
-    }
-
-    unsigned Manager::GetCubicSize() const
-    {
-        return cubicSize;
-    }
-
-    const glm::uvec3& Manager::GetDimensions() const
-    {
-        return dimensions;
-    }
-
-    bool Manager::IsPositionInBounds(const glm::uvec3& position) const {
-        if (
-            position.x > dimensions.x ||
-            position.y > dimensions.y ||
-            position.z > dimensions.z
-        ) {
-            return false;
-        }
-
-        return true;
+        get(position1) = position2_copy;
+        get(position2) = position1_copy;
     }
 }

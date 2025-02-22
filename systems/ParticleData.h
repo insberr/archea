@@ -4,90 +4,47 @@
 
 
 #pragma once
-#include <mdspan>
 #include <unordered_map>
-#include <vector>
 #include <glm/vec3.hpp>
+
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/hash.hpp>
 
 struct ParticleType;
 
 namespace ParticleData
 {
-    struct IVec3Hash {
-        std::size_t operator()(const glm::ivec3& v) const noexcept {
-            // Combine the hash values of the three integers
-            std::size_t h1 = std::hash<int>()(v.x);
-            std::size_t h2 = std::hash<int>()(v.y);
-            std::size_t h3 = std::hash<int>()(v.z);
-            return h1 ^ (h2 << 1) ^ (h3 << 2); // Bit-shifting to reduce collisions
-        }
-    };
+    // struct IVec3Hash {
+    //     std::size_t operator()(const glm::ivec3& v) const noexcept {
+    //         // Combine the hash values of the three integers
+    //         std::size_t h1 = std::hash<int>()(v.x);
+    //         std::size_t h2 = std::hash<int>()(v.y);
+    //         std::size_t h3 = std::hash<int>()(v.z);
+    //         return h1 ^ (h2 << 1) ^ (h3 << 2); // Bit-shifting to reduce collisions
+    //     }
+    // };
 
-    struct InternalData {
-        glm::vec3 realPosition;
+    struct ParticleInformation {
+        unsigned particleType;
         float temperature;
     };
 
-    struct DataWrapper {
-        glm::uvec3 position;
-        unsigned particleType;
-        const InternalData& data;
-    };
 
-    class Manager {
-    public:
-        explicit Manager(const glm::uvec3& dimensions) :
-            cubicSize(dimensions.x * dimensions.y * dimensions.z),
-            dimensions(dimensions)
-        {
-            if (dimensions.x == 0 || dimensions.y == 0 || dimensions.z == 0) {
-                throw std::exception("Cannot create ParticleDataManager with any dimension value being 0.");
-            }
+    struct ParticleHashMap {
+        using unordered_map = std::unordered_map<glm::ivec3, ParticleInformation>;
 
-            particlesTypes.resize(cubicSize, 0);
-            view_particlesTypes = std::mdspan(particlesTypes.data(), dimensions.x, dimensions.y, dimensions.z);
+        unordered_map hashMap;
 
-            particlesData.resize(cubicSize);
-            view_particlesData = std::mdspan(particlesData.data(), dimensions.x, dimensions.y, dimensions.z);
-        };
+        ParticleInformation& get(const glm::ivec3& position);
+        unordered_map& getAll();
 
-        DataWrapper Get(const glm::uvec3& position);
+        void add(const glm::ivec3& position, const ParticleInformation& particle);
+        void add(const glm::ivec3& position, const unsigned& particleType);
 
-        std::unordered_map<glm::uvec3, DataWrapper, IVec3Hash> FastGetAll();
+        void remove(const glm::ivec3& position);
 
-        /*
-         * Check if a non-"None" particle exists at the position.
-         * If out of bounds, returns false.
-         */
-        bool Exists(const glm::uvec3& position) const;
+        bool exists(const glm::ivec3& position) const;
 
-        // Swap two particles
-        void Swap(const glm::uvec3& position1, const glm::uvec3& position2);
-
-        void SetType(const glm::uvec3& position, unsigned particleType);
-
-        /* Access the raw data if needed */
-        const std::vector<unsigned>& GetParticleTypesData() const;
-        const std::vector<InternalData>& GetParticleDataData() const;
-
-        unsigned GetCubicSize() const;
-        const glm::uvec3& GetDimensions() const;
-    private:
-        const unsigned cubicSize;
-        const glm::uvec3 dimensions;
-
-        using size_max_extents = std::extents<size_t, SIZE_MAX, SIZE_MAX, SIZE_MAX>;
-
-        // This is for the gpu. The int represents the particle type index
-        std::vector<unsigned> particlesTypes;
-        std::mdspan<unsigned, size_max_extents> view_particlesTypes;
-
-        // This is for the cpu. Extra data abou particles that isn't needed by the gpu
-        std::vector<InternalData> particlesData;
-        std::mdspan<InternalData, size_max_extents> view_particlesData;
-
-        std::unordered_map<glm::uvec3, DataWrapper, IVec3Hash> hashMapParticles;
-
-        bool IsPositionInBounds(const glm::uvec3& position) const;
+        void swap(const glm::ivec3& position1, const glm::ivec3& position2);
     };
 }

@@ -49,26 +49,12 @@ namespace PositionConversion
 
 ParticlesChunk::ParticlesChunk(
     const glm::ivec3& chunkGridPosition,
-    const glm::uvec3& particleGridSize,
-    float particleScale
-) : particleScale(particleScale),
-    worldPosition(),
-    chunkGridPosition(chunkGridPosition),
-    worldChunkScale(),
-    chunkParticleGridSize(particleGridSize),
-    particleManager(particleGridSize)
+    const glm::uvec3& dimensions
+) : worldPosition(),
+    gridPosition(chunkGridPosition),
+    dimensions(dimensions)
 {
-    worldChunkScale = glm::vec3(particleGridSize) * particleScale;
-    worldPosition = glm::vec3(chunkGridPosition) * worldChunkScale;
-
-    glCreateBuffers(1, &particlesBuffer);
-    glNamedBufferStorage(
-        particlesBuffer,
-        sizeof(int) * particleManager.GetCubicSize(),
-        static_cast<const void*>(particleManager.GetParticleTypesData().data()),
-        GL_DYNAMIC_STORAGE_BIT
-    );
-
+    worldPosition = glm::vec3(chunkGridPosition) * static_cast<float>(dimensions.x); // TODO : VERY BAD
 
     // Set up vertex data and buffers and configure vertex attributes
     glGenVertexArrays(1, &VAO);
@@ -76,15 +62,15 @@ ParticlesChunk::ParticlesChunk(
     glGenBuffers(1, &EBO);
 
 
-    if (!LoadChunkData())
+    if (!loadChunkData())
     {
         // todo: Temp, for testing
         for (unsigned x = 10; x < 14; ++x) {
             for (unsigned y = 5; y < 14; ++y) {
                 for (unsigned z = 10; z < 14; ++z) {
                     const auto position = glm::uvec3(x, y, z);
-                    particleManager.SetType(position, 2);
-                    nextPositionsToUpdate.push_back(position);
+                    particleHashMap.add(position, 2);
+                    nextPositionsToUpdate.emplace_back(position);
                 }
             }
         }
@@ -127,19 +113,17 @@ ParticlesChunk::ParticlesChunk(
 
 ParticlesChunk::~ParticlesChunk() {
     const std::lock_guard guard(lock);
-    SaveChunkData();
+    saveChunkData();
 }
 
-bool ParticlesChunk::Update(float dt) {
-    if (dt == 0.0f) return true;
+void ParticlesChunk::Update(float dt) {
+    if (dt == 0.0f) return;
 
     // todo: use this to load/unload chunks
     // const glm::ivec3 currentChunk = PositionConversion::WorldPositionToChunkPosition(CameraSystem::GetPosition(), chunkParticleGridSize);
     // if (glm::distance(glm::vec3(currentChunk), glm::vec3(chunkGridPosition)) >= 2.0f) {
     //     // Do something
     // }
-
-    return true;
 }
 
 void ParticlesChunk::ProcessNextSimulationStep() {
@@ -152,12 +136,12 @@ void ParticlesChunk::ProcessNextSimulationStep() {
     const auto positionsToUpdate = std::move(nextPositionsToUpdate);
 
     for (const auto& currentPos : positionsToUpdate) {
-        if (!particleManager.Exists(currentPos)) {
+        if (!particleHashMap.exists(currentPos)) {
             continue;
         }
 
         // z * (ysize * xsize) + y * (xsize) + x
-        unsigned particle = particleManager.Get(currentPos).particleType;
+        unsigned particle = particleHashMap.get(currentPos).particleType;
         // if (particle <= 1) continue;
 
         auto particleTypeInfo = ParticleTypeSystem::GetParticleTypeInfo(particle - 1);
@@ -176,21 +160,20 @@ void ParticlesChunk::ProcessNextSimulationStep() {
             // try pos
 
             if (posToTry.y < 0) continue;
-            posToTry = glm::clamp(posToTry, glm::ivec3(0), glm::ivec3(chunkParticleGridSize - glm::uvec3(1)));
+            posToTry = glm::clamp(posToTry, glm::ivec3(0), glm::ivec3(dimensions - glm::uvec3(1)));
             // int newY = std::clamp<int>(y - 1, 0, 49);
 
-            unsigned atNewPos = particleManager.Get(posToTry).particleType;
+            unsigned atNewPos = particleHashMap.get(posToTry).particleType;
             if (atNewPos != 0) continue;
 
             // We are here, we are allowed to move here
 
-            particleManager.SetType(posToTry, particle);
-            // remove
-            particleManager.SetType(currentPos, 0);
+            particleHashMap.add(posToTry, particleHashMap.get(currentPos));
+            particleHashMap.remove(currentPos);
 
             const auto posBelowTryPos = posToTry - glm::ivec3(0, 1, 0);
             try {
-                unsigned atPosBelowTryPos = particleManager.Get(posBelowTryPos).particleType;
+                unsigned atPosBelowTryPos = particleHashMap.get(posBelowTryPos).particleType;
                 if (atPosBelowTryPos == 0) {
                     nextPositionsToUpdate.push_back(posToTry);
                 }
@@ -200,7 +183,7 @@ void ParticlesChunk::ProcessNextSimulationStep() {
 
             // Add particle above currentPos to queue
             const auto aboveCurrentPos = currentPos + glm::ivec3(0, 1, 0);
-            unsigned atPosAboveCurrentPos = particleManager.Get(aboveCurrentPos).particleType;
+            unsigned atPosAboveCurrentPos = particleHashMap.get(aboveCurrentPos).particleType;
             if (atPosAboveCurrentPos != 0) {
                 nextPositionsToUpdate.push_back(aboveCurrentPos);
             }
@@ -223,12 +206,12 @@ void ParticlesChunk::Render(
 
     if (lock.try_lock()) {
         glBindBuffer(GL_ARRAY_BUFFER, VBO);
-        glBufferData(GL_ARRAY_BUFFER, verticies.size() * sizeof(float), verticies.data(), GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, chunkMesh.verticies.size() * sizeof(float), chunkMesh.verticies.data(), GL_STATIC_DRAW);
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indicies.size() * sizeof(unsigned int), indicies.data(), GL_STATIC_DRAW);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, chunkMesh.indicies.size() * sizeof(unsigned int), chunkMesh.indicies.data(), GL_STATIC_DRAW);
 
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
         glEnableVertexAttribArray(0);
         lock.unlock();
     }
@@ -236,28 +219,29 @@ void ParticlesChunk::Render(
     const GLint worldPositionLoc = glGetUniformLocation(shaderProgram, "worldPosition");
     glUniform3f(worldPositionLoc, worldPosition.x, worldPosition.y, worldPosition.z);
 
-    glDrawElements(GL_TRIANGLES, indicies.size(), GL_UNSIGNED_INT, 0);
+    glDrawElements(GL_TRIANGLES, chunkMesh.indicies.size(), GL_UNSIGNED_INT, 0);
 
     glBindVertexArray(0);
 }
 
-bool ParticlesChunk::TryPlaceParticleAt(
+bool ParticlesChunk::tryPlaceParticleAt(
     const glm::ivec3& worldParticlePosition,
-    const ParticleData::DataWrapper& particleDataWraper
+    const ParticleData::ParticleInformation& particleInformation
 )
 {
-    const glm::ivec3 chunkPos = PositionConversion::ParticleGridToChunkGrid(worldParticlePosition, chunkParticleGridSize);
-    if (chunkPos != chunkGridPosition) {
+    const glm::ivec3 chunkPos = PositionConversion::ParticleGridToChunkGrid(worldParticlePosition, dimensions);
+    if (chunkPos != gridPosition) {
         return false;
     }
 
-    // Block until able to aquire lock
+    // Block until able to acquire lock
     const std::lock_guard guard(lock);
 
-    const glm::uvec3 particlePositionInChunk = glm::abs(worldParticlePosition - (chunkGridPosition * glm::ivec3(chunkParticleGridSize)));
+    const glm::uvec3 particlePositionInChunk = glm::abs(worldParticlePosition - (gridPosition * glm::ivec3(dimensions)));
 
-    if (particleDataWraper.particleType == particleManager.Get(particlePositionInChunk).particleType) return false;
-    particleManager.SetType(particlePositionInChunk, particleDataWraper.particleType);
+    auto& particle = particleHashMap.get(particlePositionInChunk);
+    if (particleInformation.particleType == particle.particleType) return false;
+    particle.particleType = particleInformation.particleType;
     nextPositionsToUpdate.emplace_back(particlePositionInChunk);
 
     remesh();
@@ -265,91 +249,91 @@ bool ParticlesChunk::TryPlaceParticleAt(
     return false;
 }
 
-bool ParticlesChunk::SaveChunkData()
+glm::ivec3 ParticlesChunk::getGridPosition() const {
+    return gridPosition;
+}
+glm::ivec3 ParticlesChunk::getWorldPosition() const {
+    return worldPosition;
+}
+
+bool ParticlesChunk::saveChunkData()
 {
-    std::stringstream filenameForChunk;
-    filenameForChunk
-    << "chunks/"
-    << chunkGridPosition.x
-    << "-"
-    << chunkGridPosition.y
-    << "-"
-    << chunkGridPosition.z
-    << ".bin";
-
-    std::vector<std::byte> bytes(sizeof(unsigned) * particleManager.GetParticleTypesData().size());
-    std::memcpy(bytes.data(), particleManager.GetParticleTypesData().data(), sizeof(unsigned) * particleManager.GetParticleTypesData().size());
-
-    std::ofstream file(filenameForChunk.str(), std::ios::binary);
-    if (file) {
-        file.write(reinterpret_cast<const char*>(bytes.data()), bytes.size());
-    }
-    file.close();
+    // std::stringstream filenameForChunk;
+    // filenameForChunk
+    // << "chunks/"
+    // << gridPosition.x
+    // << "-"
+    // << gridPosition.y
+    // << "-"
+    // << gridPosition.z
+    // << ".bin";
+    //
+    // std::vector<std::byte> bytes(sizeof(unsigned) * particleHashMap.GetParticleTypesData().size());
+    // std::memcpy(bytes.data(), particleHashMap.GetParticleTypesData().data(), sizeof(unsigned) * particleHashMap.GetParticleTypesData().size());
+    //
+    // std::ofstream file(filenameForChunk.str(), std::ios::binary);
+    // if (file) {
+    //     file.write(reinterpret_cast<const char*>(bytes.data()), bytes.size());
+    // }
+    // file.close();
 
     return true;
 }
 
-bool ParticlesChunk::LoadChunkData()
+bool ParticlesChunk::loadChunkData()
 {
-    try {
-        std::stringstream filenameForChunk;
-        filenameForChunk
-        << "chunks/"
-        << chunkGridPosition.x
-        << "-"
-        << chunkGridPosition.y
-        << "-"
-        << chunkGridPosition.z
-        << ".bin";
-
-        std::ifstream file(filenameForChunk.str(), std::ios::binary);
-
-        if (file) {
-            std::cout << "Reading: " << filenameForChunk.str() << std::endl;
-
-            file.read(
-                reinterpret_cast<char*>( const_cast<unsigned*>(particleManager.GetParticleTypesData().data()) ),
-                sizeof(unsigned) * 64 * 64 * 64
-            );
-        } else {
-            file.close();
-            return false;
-        }
-        file.close();
-
-        return true;
-    } catch (std::exception& e) {
-        return false;
-    }
+    return false;
+    // try {
+    //     std::stringstream filenameForChunk;
+    //     filenameForChunk
+    //     << "chunks/"
+    //     << chunkGridPosition.x
+    //     << "-"
+    //     << chunkGridPosition.y
+    //     << "-"
+    //     << chunkGridPosition.z
+    //     << ".bin";
+    //
+    //     std::ifstream file(filenameForChunk.str(), std::ios::binary);
+    //
+    //     if (file) {
+    //         std::cout << "Reading: " << filenameForChunk.str() << std::endl;
+    //
+    //         file.read(
+    //             reinterpret_cast<char*>( const_cast<unsigned*>(particleHashMap.GetParticleTypesData().data()) ),
+    //             sizeof(unsigned) * 64 * 64 * 64
+    //         );
+    //     } else {
+    //         file.close();
+    //         return false;
+    //     }
+    //     file.close();
+    //
+    //     return true;
+    // } catch (std::exception& e) {
+    //     return false;
+    // }
 }
 
 void ParticlesChunk::remesh() {
-    verticies.clear();
-    indicies.clear();
+    chunkMesh.verticies.clear();
+    chunkMesh.indicies.clear();
 
     int i = 0;
-    for (const auto& [position, data] : particleManager.FastGetAll()) {
+    for (const auto& [position, data] : particleHashMap.getAll()) {
         // todo: this should never happen
         if (data.particleType == 0) continue;
 
         for (int j = 0; j < 72; j += 3) {
-            verticies.push_back(Shapes::Cube::cubeVertices[j] + position.x);
-            verticies.push_back(Shapes::Cube::cubeVertices[j + 1] + position.y);
-            verticies.push_back(Shapes::Cube::cubeVertices[j + 2] + position.z);
+            chunkMesh.verticies.push_back(Shapes::Cube::cubeVertices[j] + position.x);
+            chunkMesh.verticies.push_back(Shapes::Cube::cubeVertices[j + 1] + position.y);
+            chunkMesh.verticies.push_back(Shapes::Cube::cubeVertices[j + 2] + position.z);
         }
 
         int vertexOffset = i * 24;
         for (unsigned int ind : Shapes::Cube::indices) {
-            indicies.push_back(ind + vertexOffset);
+            chunkMesh.indicies.push_back(ind + vertexOffset);
         }
         i++;
     }
-}
-
-glm::vec3 ParticlesChunk::getChunkDistanceFrom(const glm::ivec3 &chunkPos) {
-    return chunkPos - this->chunkGridPosition;
-}
-
-glm::ivec3 ParticlesChunk::getChunkWorldPosition() {
-    return this->chunkGridPosition;
 }

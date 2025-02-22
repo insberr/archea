@@ -11,23 +11,7 @@
 #include "ParticleData.h"
 #include <glm/glm.hpp>
 
-#include "ImGuiSystem.h"
 #include "InputSystem.h"
-
-/*
- * What is a chunk responsible for doing?
- * A chunk keeps track of the particles within it: this means each chunk will have a ParticleData::Manager
- * A chunk is responsible for rendering the particles within it.
- * - It is not responsible for render order, or weather it should be rendered.
- * - Chunks should only render something when they are told to
- * A chunk must update the next state of particles when it is told to do so
- * A chunk is responsible for saving particle data on destruction
- * A chunk is responsible for loading particle data associated with it's position upon creation
- * Chunks need to be thread safe. They must be able to function within their own thread.
- * Reasons chunks would need to access another chunk:
- * - A particle moves outside of the chunk
- * ! Access to other chunks could be problematic for thread safety
- */
 
 namespace PositionConversion
 {
@@ -39,58 +23,56 @@ namespace PositionConversion
 }
 
 namespace ChunkConfig {
-    static int maxRaySteps = 300;
-    static bool enableOutlines = false;
+    static bool EnableOutlines = false;
+    static float ParticleScale = 1.0f;
 }
+
+// todo: move somewhere else
+struct ChunkMesh {
+    std::vector<float> verticies;
+    std::vector<unsigned int> indicies;
+};
 
 class ParticlesChunk {
 public:
     ParticlesChunk(
         const glm::ivec3& chunkGridPosition,
-        const glm::uvec3& particleGridSize,
-        float particleScale
+        const glm::uvec3& dimensions
     );
 
     ~ParticlesChunk();
 
-    // Update must have a really small workload
-    bool Update(float dt);
-    // todo: rename this?
-    void ProcessNextSimulationStep();
+    void Update(float dt);
     void Render(GLFWwindow* window, GLuint shaderProgram, GLuint particlesColorsBuffer);
 
-    // If the chunk has a lock on it's data, this will block until it's done
-    bool TryPlaceParticleAt(const glm::ivec3& worldParticlePosition, const ParticleData::DataWrapper& particleDataWraper);
+    void ProcessNextSimulationStep();
 
-    glm::vec3 getChunkDistanceFrom(const glm::ivec3& chunkPos);
+    // If the chunk has a lock on its data, this will block until it's done
+    bool tryPlaceParticleAt(const glm::ivec3& worldParticlePosition, const ParticleData::ParticleInformation& particleInformation);
 
-    glm::ivec3 getChunkWorldPosition();
+    glm::ivec3 getGridPosition() const;
+    glm::ivec3 getWorldPosition() const;
 private:
-    std::mutex lock; // I think this is right?
-
-    std::jthread simulationThread;
-
-    float particleScale;
-
+    // Spacial Information
     glm::vec3 worldPosition;
-    glm::ivec3 chunkGridPosition;
+    glm::ivec3 gridPosition;
+    // glm::vec3 worldChunkScale;
+    // todo: make const
+    glm::uvec3 dimensions;
 
-    glm::vec3 worldChunkScale;
-    glm::uvec3 chunkParticleGridSize;
+    // Data
+    ParticleData::ParticleHashMap particleHashMap;
 
-    ParticleData::Manager particleManager;
+    // Simulation and Processing
+    std::mutex lock;
+
     std::deque<glm::ivec3> nextPositionsToUpdate;
 
-    GLuint particlesBuffer;
-
-    // Rendering Things
+    // Rendering
     GLuint VBO {0}, VAO {0}, EBO {0};
-    std::vector<float> verticies {};
-    std::vector<unsigned int> indicies {};
+    ChunkMesh chunkMesh { {}, {} };
 
-    bool dirty { false };
-
-    bool SaveChunkData();
-    bool LoadChunkData();
+    bool saveChunkData();
+    bool loadChunkData();
     void remesh();
 };

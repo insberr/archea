@@ -15,7 +15,7 @@ out vec3 fragDirection;
 
 void main()
 {
-    gl_Position = projection * view * vec4(worldPosition + (aPos * particleScale), 1.0);
+    gl_Position = projection * view * vec4(worldPosition * particleScale + (aPos * particleScale), 1.0);
 
-    fragVertexColor = vec3(0);
+    fragVertexColor = vec3(0.5) * max(0.0, -dot(     mat3(transpose(view)) * vec3(0, 0, -1)     , vec3(0, 1, 0)));
 }
