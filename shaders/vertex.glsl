@@ -14,7 +14,7 @@ out vec3 fragVertexColor;
 
 void main()
 {
-    vec3 world = worldPosition * particleScale + (aPos * particleScale);
+    vec3 world = (worldPosition + vec3(0.5)) * particleScale + (aPos * particleScale);
     gl_Position = projection * view * vec4(world, 1.0);
 
     // Extract camera position from the view matrix

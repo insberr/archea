@@ -135,6 +135,21 @@ void ParticleSystem::Init() {
     std::cout << chunksThread.get_id() << std::endl;
 }
 
+// TODO: Todo move this somewhere else
+#include <cmath>
+int div_euclid(float a, float b) {
+
+    int q = static_cast<int>(a / b); //.trunc();
+    if (fmod(a, b) < 0.0f) {
+        if (b > 0.0f) {
+            return q - 1;
+        } else {
+            return q + 1;
+        };
+    }
+    return q;
+}
+
 void ParticleSystem::Update(float dt) {
     if (dt == 0.0f) return;
 
@@ -145,7 +160,7 @@ void ParticleSystem::Update(float dt) {
     std::pair<double, double> mouseScroll = InputSystem::MouseScroll();
 
     drawDistance += static_cast<float>(mouseScroll.second);
-    drawDistance = std::clamp(drawDistance, 0.0f, 100.0f);
+    drawDistance = std::clamp(drawDistance, 1.0f, 100.0f);
 
     const glm::vec3 camPos = CameraSystem::GetPosition();
     const glm::vec3 camTarget = CameraSystem::GetTarget();
@@ -153,7 +168,10 @@ void ParticleSystem::Update(float dt) {
     const glm::vec3 lookingAt = camPos + (camTarget * drawDistance);
 
     // todo: it might be good to store the converted particle coordinate camPos and camTarget positions
-    lookingAtParticlePos = lookingAt / particleScale;
+    // lookingAtParticlePos = lookingAt / particleScale;
+    lookingAtParticlePos.x = div_euclid(lookingAt.x, particleScale);
+    lookingAtParticlePos.y = div_euclid(lookingAt.y, particleScale);
+    lookingAtParticlePos.z = div_euclid(lookingAt.z, particleScale);
 
     if (InputSystem::IsMouseButtonHeld(GLFW_MOUSE_BUTTON_LEFT)) {
         // particleDataManager.SetType(drawPos, drawType);
