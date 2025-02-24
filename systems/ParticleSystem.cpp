@@ -48,8 +48,6 @@ namespace ParticleSystem {
     // GLuint particlesBuffer { 0 };
     GLuint particlesColrosBuffer { 0 };
 
-    GLuint VBO {0}, VAO {0}, EBO {0};
-
     glm::ivec3 drawPos;
     glm::ivec3 lookingAtParticlePos;
     float drawDistance { 1.0f };
@@ -59,7 +57,7 @@ namespace ParticleSystem {
     // int maxRaySteps { 400 };
     // bool enableOutlines { false };
     // init ParticlesChunk static values
-    float particleScale { 0.4f };
+    float particleScale { 1.0f };
     unsigned int chunkSize { 64 };
     float stepDelay = 0.1f;
 
@@ -85,25 +83,6 @@ void ParticleSystem::Init() {
     shaderProgram = createShaderProgram(vertexShaderSource, fragmentShaderSource);
     if (shaderProgram == 0) return;
 
-    // Set up vertex data and buffers and configure vertex attributes
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
-    glGenBuffers(1, &EBO);
-
-    glBindVertexArray(VAO);
-
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(Shapes::Cube::cubeVertices), Shapes::Cube::cubeVertices, GL_STATIC_DRAW);
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(Shapes::Cube::indices), &Shapes::Cube::indices, GL_STATIC_DRAW);
-
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
-
     glCreateBuffers(1, &particlesColrosBuffer);
     // std::vector<glm::vec4> particleColors;
     // add colors
@@ -119,15 +98,14 @@ void ParticleSystem::Init() {
         GL_DYNAMIC_STORAGE_BIT
     );
 
-    ChunkConfig::enableOutlines = false;
-    ChunkConfig::maxRaySteps = 300;
+    ChunkConfig::EnableOutlines = false;
 
     for (unsigned x = 0; x < 2; ++x) {
         for (unsigned y = 0; y < 1; ++y) {
             for (unsigned z = 0; z < 2; ++z) {
                 std::cout << "Init chunk at pos " << x << " " << y << " " << z << std::endl;
                 particleChunks.push_back(
-                    new ParticlesChunk(glm::ivec3(x, y, z), glm::uvec3(chunkSize), particleScale)
+                    new ParticlesChunk(glm::ivec3(x, y, z), glm::uvec3(chunkSize))
                 );
             }
         }
@@ -143,19 +121,33 @@ void ParticleSystem::Init() {
                 return;
             }
 
-            std::this_thread::sleep_for(std::chrono::milliseconds(50));
+            std::this_thread::sleep_for(std::chrono::milliseconds(200));
 
-            if (chunksLock.try_lock()) {
-                for (const auto& chunk : particleChunks) {
-                    // std::cout << chunk << std::endl;
-                    chunk->ProcessNextSimulationStep();
-                }
-                chunksLock.unlock();
+            chunksLock.lock();
+            for (const auto& chunk : particleChunks) {
+                // std::cout << chunk << std::endl;
+                chunk->ProcessNextSimulationStep();
             }
+            chunksLock.unlock();
         }
     });
 
     std::cout << chunksThread.get_id() << std::endl;
+}
+
+// TODO: Todo move this somewhere else
+#include <cmath>
+int div_euclid(float a, float b) {
+
+    int q = static_cast<int>(a / b); //.trunc();
+    if (fmod(a, b) < 0.0f) {
+        if (b > 0.0f) {
+            return q - 1;
+        } else {
+            return q + 1;
+        };
+    }
+    return q;
 }
 
 void ParticleSystem::Update(float dt) {
@@ -168,7 +160,7 @@ void ParticleSystem::Update(float dt) {
     std::pair<double, double> mouseScroll = InputSystem::MouseScroll();
 
     drawDistance += static_cast<float>(mouseScroll.second);
-    drawDistance = std::clamp(drawDistance, 0.0f, 100.0f);
+    drawDistance = std::clamp(drawDistance, 1.0f, 100.0f);
 
     const glm::vec3 camPos = CameraSystem::GetPosition();
     const glm::vec3 camTarget = CameraSystem::GetTarget();
@@ -176,15 +168,18 @@ void ParticleSystem::Update(float dt) {
     const glm::vec3 lookingAt = camPos + (camTarget * drawDistance);
 
     // todo: it might be good to store the converted particle coordinate camPos and camTarget positions
-    lookingAtParticlePos = lookingAt / particleScale;
+    // lookingAtParticlePos = lookingAt / particleScale;
+    lookingAtParticlePos.x = div_euclid(lookingAt.x, particleScale);
+    lookingAtParticlePos.y = div_euclid(lookingAt.y, particleScale);
+    lookingAtParticlePos.z = div_euclid(lookingAt.z, particleScale);
 
     if (InputSystem::IsMouseButtonHeld(GLFW_MOUSE_BUTTON_LEFT)) {
         // particleDataManager.SetType(drawPos, drawType);
         // todo: this is not really efficient
         for (const auto& chunk : particleChunks) {
-            chunk->TryPlaceParticleAt(
+            chunk->tryPlaceParticleAt(
                 lookingAtParticlePos,
-                { glm::uvec3(0), drawType, { glm::vec3(0), 0.0f } }
+                { drawType, 0.0f }
             );
         }
     }
@@ -192,9 +187,9 @@ void ParticleSystem::Update(float dt) {
     if (InputSystem::IsMouseButtonHeld(GLFW_MOUSE_BUTTON_RIGHT)) {
         // particleDataManager.SetType(drawPos, 0);
         for (const auto& chunk : particleChunks) {
-            chunk->TryPlaceParticleAt(
+            chunk->tryPlaceParticleAt(
                 lookingAtParticlePos,
-                { glm::uvec3(0), 0, { glm::vec3(0), 0.0f } }
+                { 0, 0.0f }
             );
         }
     }
@@ -239,7 +234,7 @@ void ParticleSystem::Update(float dt) {
         std::vector<ParticlesChunk*> updatedChunks;
 
         for (auto& chunk : particleChunks) {
-            auto pos = chunk->getChunkWorldPosition();
+            auto pos = chunk->getGridPosition();
             if (requiredChunkPositions.count(pos)) {
                 // Keep chunk if it's within range
                 updatedChunks.push_back(chunk);
@@ -253,7 +248,7 @@ void ParticleSystem::Update(float dt) {
 
         // Add missing chunks
         for (const auto& pos : requiredChunkPositions) {
-            auto* newChunk = new ParticlesChunk(pos, glm::uvec3(chunkSize), particleScale);
+            auto* newChunk = new ParticlesChunk(pos, glm::uvec3(chunkSize));
 
             updatedChunks.push_back(newChunk);
         }
@@ -285,16 +280,35 @@ void ParticleSystem::Update(float dt) {
 void ParticleSystem::Render() {
     auto window = Graphics::GetWindow();
 
+    // Set the shader program
+    glUseProgram(shaderProgram);
+
+
+    auto projection = CameraSystem::GetProjection();
+    auto view = CameraSystem::GetView();
+
+    // todo: multiply these and send as one value to the GPU
+    const GLint projectionLoc = glGetUniformLocation(shaderProgram, "projection");
+    const GLint viewLoc = glGetUniformLocation(shaderProgram, "view");
+    const GLint particleScaleLoc = glGetUniformLocation(shaderProgram, "particleScale");
+
+    glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
+    glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+    glUniform1f(particleScaleLoc, particleScale);
+
+    const GLint enableOutlinesLoc = glGetUniformLocation(shaderProgram, "EnableOutlines");
+    glUniform1ui(enableOutlinesLoc, ChunkConfig::EnableOutlines);
+
+
     // todo: call render on all chunks
     for (const auto& chunk : particleChunks) {
-        chunk->Render(window, shaderProgram, particlesColrosBuffer, VAO);
+        chunk->Render(window, shaderProgram, particlesColrosBuffer);
     }
 
     if (ImGui::Begin("Simulation Controls")) {
         ImGui::SliderFloat("Simulation Step Speed", &stepDelay, 0.0f, 1.0f);
-        ImGui::SliderInt("Max Ray Steps", &ChunkConfig::maxRaySteps, 0, 1000);
         ImGui::SliderFloat("Particle Scale", &particleScale, 0.001f, 5.0f, "%.8f");
-        ImGui::Checkbox("Show Particle Outlines", &ChunkConfig::enableOutlines);
+        ImGui::Checkbox("Show Particle Outlines", &ChunkConfig::EnableOutlines);
         ImGui::Text("Chunk Size (Currently Disabled) %i", chunkSize);
         // if (ImGui::SliderInt("Chunk Size", reinterpret_cast<int *>(&chunkSize), 10, 300)) {
         //     if (chunkSize > 0) {

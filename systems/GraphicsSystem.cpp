@@ -87,7 +87,7 @@ int Graphics::Setup() {
     glEnable(GL_BLEND);
     glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
-    glClearColor(0.4f, 0.4f, 0.4f, 0.4f);
+    glClearColor(0.4f, 0.4f, 0.4f, 1.0);
 
     return 0;
 }

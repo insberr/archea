@@ -11,6 +11,7 @@
 #include "InputSystem.h"
 #include "ImGuiSystem.h"
 #include "GraphicsSystem.h"
+#include "Shapes.h"
 #include "../shaders.h"
 
 namespace CameraSystem {
@@ -102,10 +103,10 @@ void CameraSystem::Update(float dt) {
     }
 
     if (InputSystem::IsKeyHeld(GLFW_KEY_W)) {
-        Translate(glm::vec3(0.0f, 0.0f, dt));
+        Translate(glm::vec3(0.0f, 0.0f, -dt));
     }
     if (InputSystem::IsKeyHeld(GLFW_KEY_S)) {
-        Translate(glm::vec3(0.0f, 0.0f, -dt));
+        Translate(glm::vec3(0.0f, 0.0f, dt));
     }
     if (InputSystem::IsKeyHeld(GLFW_KEY_A)) {
         Translate(glm::vec3(-dt, 0.0f, 0.0f));
@@ -129,114 +130,37 @@ void CameraSystem::Update(float dt) {
         auto [mouseX, mouseY] = InputSystem::MousePosition();
         auto [lastX, lastY] = InputSystem::MousePositionLast();
 
-        float xoffset = static_cast<float>(mouseX - lastX);
-        float yoffset = static_cast<float>(mouseY - lastY);
+        float xOffset = static_cast<float>(mouseX - lastX);
+        float yOffset = static_cast<float>(lastY - mouseY);
 
-        xoffset *= sensitivity;
-        yoffset *= sensitivity;
-
-        yaw += xoffset;
-        pitch += yoffset;
+        yaw += xOffset * sensitivity;
+        pitch += yOffset * sensitivity;
 
         // Clamp pitch to avoid flipping
-        if (pitch > 89.0f) pitch = 89.0f;
-        if (pitch < -89.0f) pitch = -89.0f;
+        pitch = glm::clamp(pitch, -89.0f, 89.0f);
     }
 
-    // Forward base vector
-    auto forwardBaseVector = glm::vec3(0.0f, 0.0f, 1.0f);
-    glm::mat4 rotationMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(yaw), glm::vec3(0.0f, 1.0f, 0.0f)); // Yaw rotation around Y-axis
-    rotationMatrix = glm::rotate(rotationMatrix, glm::radians(pitch), glm::vec3(1.0f, 0.0f, 0.0f)); // Pitch rotation around X-axis
-    target = rotationMatrix * glm::vec4(forwardBaseVector, 0.0f);
-
-
-    /* Calculate Camera Matrices */
-    // Model
-    // glm::translate(model, position);
+    // Calculate the front vector
+    glm::vec3 front;
+    front.x = cos(glm::radians(pitch)) * cos(glm::radians(yaw));
+    front.y = sin(glm::radians(pitch));
+    front.z = cos(glm::radians(pitch)) * sin(glm::radians(yaw));
+    target = glm::normalize(front);
 
     // View
     view = glm::lookAt(position, position + target, UpVector);
-    // view = glm::mat4(glm::quatLookAtLH(target, UpVector));
-    // Flip the y and z axes
-    glm::mat4 flipX = glm::scale(glm::mat4(1.0f), glm::vec3(-1.0f, 1.0f, 1.0f));
-    view = flipX * view;
 
     // Projection
     float aspectRatio = 1280.0f / 720.0f;
-    projection = glm::perspective(glm::radians(45.0f), aspectRatio, 0.00001f, 100.0f);
+    projection = glm::perspective(glm::radians(fieldOfView), aspectRatio, 0.1f, 100.0f);
 }
-
-constexpr float cubeVertices[] = {
-    // Front face
-    -0.5f, -0.5f,  0.5f,  // 0
-    0.5f, -0.5f,  0.5f,  // 1
-    0.5f,  0.5f,  0.5f,  // 2
-    -0.5f,  0.5f,  0.5f,  // 3
-
-    // Back face
-    -0.5f, -0.5f, -0.5f,  // 4
-    0.5f, -0.5f, -0.5f,  // 5
-    0.5f,  0.5f, -0.5f,  // 6
-    -0.5f,  0.5f, -0.5f,  // 7
-
-    // Top face
-    0.5f,  0.5f,  0.5f,  // 8
-    -0.5f,  0.5f,  0.5f,  // 9
-    -0.5f,  0.5f, -0.5f,  // 10
-    0.5f,  0.5f, -0.5f,  // 11
-
-    // Bottom face
-    -0.5f, -0.5f,  0.5f,  // 12
-    0.5f, -0.5f,  0.5f,  // 13
-    0.5f, -0.5f, -0.5f,  // 14
-    -0.5f, -0.5f, -0.5f,  // 15
-
-    // Right face
-    0.5f, -0.5f,  0.5f,  // 16
-    0.5f, -0.5f, -0.5f,  // 17
-    0.5f,  0.5f, -0.5f,  // 18
-    0.5f,  0.5f,  0.5f,  // 19
-
-    // Left face
-    -0.5f, -0.5f,  0.5f,  // 20
-    -0.5f, -0.5f, -0.5f,  // 21
-    -0.5f,  0.5f, -0.5f,  // 22
-    -0.5f,  0.5f,  0.5f   // 23
-};
-
-// Define the indices for the cube
-constexpr GLuint indices[] = {
-    // Front face
-    0, 1, 2,
-    2, 3, 0,
-
-    // Back face
-    4, 5, 6,
-    6, 7, 4,
-
-    // Top face
-    8, 9, 10,
-    10, 11, 8,
-
-    // Bottom face
-    12, 13, 14,
-    14, 15, 12,
-
-    // Right face
-    16, 17, 18,
-    18, 19, 16,
-
-    // Left face
-    20, 21, 22,
-    22, 23, 20
-};
 
 void CameraSystem::Render() {
     if (ImGui::Begin("Camera")) {
         ImGui::Text("Position %.2f %.2f %.2f", position.x, position.y, position.z);
         ImGui::Text("Look Direction %.2f %.2f %.2f", target.x, target.y, target.z);
         ImGui::Text("Pitch Yaw %.2f %.2f", pitch, yaw);
-        ImGui::SliderFloat("Field Of View", &fieldOfView, 0.0f, 5.0f, "%.4f");
+        ImGui::SliderFloat("Field Of View", &fieldOfView, 0.0f, 45.0f, "%.4f");
         ImGui::SliderFloat("Movement Speed", &travelSpeed, 0.0f, 20.0f, "%.4f");
 
         if (ImGui::Button("Reset")) {
@@ -249,13 +173,15 @@ void CameraSystem::Render() {
     glBindVertexArray(VAO);
 
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices), cubeVertices, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(Shapes::Cube::cubeVertices), Shapes::Cube::cubeVertices, GL_STATIC_DRAW);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), &indices, GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(Shapes::Cube::indices), &Shapes::Cube::indices, GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
@@ -289,7 +215,7 @@ void CameraSystem::Render() {
     // Bind the vertex data
     glBindVertexArray(VAO);
     // Call draw
-    glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+    glDrawElements(GL_TRIANGLES, sizeof(Shapes::Cube::indices), GL_UNSIGNED_INT, 0);
 }
 
 void CameraSystem::Exit() {}
@@ -303,11 +229,11 @@ glm::vec3 CameraSystem::GetTarget() {
 }
 
 void CameraSystem::Reset() {
-    position = glm::vec3(4.0f, 4.0f, -10.0f);
-    target = glm::vec3(0.2f, -0.11f, 0.97f);
-    fieldOfView = 1.0f;
-    yaw = 11.40f;
-    pitch = 6.30f;
+    position = glm::vec3(4.0f, 4.0f, 10.0f);
+    target = glm::vec3(4.0f, 4.0f, 5.0f);
+    fieldOfView = 45.0f;
+    yaw = -90.0f;
+    pitch = 0.0f;
     sensitivity = 0.3f;
     travelSpeed = 5.0f;
 }
@@ -318,18 +244,19 @@ glm::mat4 CameraSystem::CameraMatrix() {
 }
 
 void CameraSystem::Translate(glm::vec3 translation) {
-    // Roll pitch yaw matrix
-    // Yaw rotation around Y-axis
-    glm::mat4 rotationMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(yaw), glm::vec3(0.0f, 1.0f, 0.0f));
-    // Pitch rotation around X-axis
-    // Don't do this because I want vertical movement to be controlled by shift and space
-    // rotationMatrix = glm::rotate(rotationMatrix, glm::radians(pitch), glm::vec3(1.0f, 0.0f, 0.0f));
+    // Separate vertical movement so it is not affected by rotation
+    glm::vec3 vertical(0.0f, translation.y, 0.0f);
 
-    auto scale = glm::scale(glm::mat4(1.0f), glm::vec3(travelSpeed));
+    // Compute the horizontal forward vector from the current target (ignoring y).
+    glm::vec3 forward = glm::normalize(glm::vec3(target.x, 0.0f, target.z));
 
-    auto transform = (rotationMatrix * scale) * glm::vec4(translation, 0.0f);
+    // Calculate the right vector using the world up.
+    glm::vec3 right = glm::normalize(glm::cross(forward, UpVector));
 
-    position += glm::vec3(transform);
+    // To map this correctly, invert the z value when combining:
+    glm::vec3 horizontal = translation.x * right - translation.z * forward;
+
+    position += travelSpeed * (horizontal + vertical);
 }
 
 float CameraSystem::GetFOV() {
