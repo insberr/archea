@@ -7,7 +7,7 @@
 namespace ParticleData
 {
     ParticleInformation& ParticleHashMap::get(const glm::ivec3& position) {
-        return hashMap[position];
+        return hashMap.at(position);
     }
 
     ParticleHashMap::unordered_map& ParticleHashMap::getAll() {

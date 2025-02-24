@@ -8,8 +8,7 @@
 #include <iostream>
 #include <sstream>
 #include <fstream>
-#include <cstring>  // for memcpy
-#include <cstddef> // for std::byte
+#include <filesystem>
 #include <queue>
 
 #include <GL/glew.h>
@@ -163,28 +162,21 @@ void ParticlesChunk::ProcessNextSimulationStep() {
             posToTry = glm::clamp(posToTry, glm::ivec3(0), glm::ivec3(dimensions - glm::uvec3(1)));
             // int newY = std::clamp<int>(y - 1, 0, 49);
 
-            unsigned atNewPos = particleHashMap.get(posToTry).particleType;
-            if (atNewPos != 0) continue;
+            if (particleHashMap.exists(posToTry)) continue;
 
             // We are here, we are allowed to move here
 
-            particleHashMap.add(posToTry, particleHashMap.get(currentPos));
+            ParticleData::ParticleInformation info = particleHashMap.get(currentPos);
+            particleHashMap.add(posToTry, info);
             particleHashMap.remove(currentPos);
 
             const auto posBelowTryPos = posToTry - glm::ivec3(0, 1, 0);
-            try {
-                unsigned atPosBelowTryPos = particleHashMap.get(posBelowTryPos).particleType;
-                if (atPosBelowTryPos == 0) {
-                    nextPositionsToUpdate.push_back(posToTry);
-                }
-            } catch (...) {
-                // do nothing. we are out of bounds so the particle is on the floor...
+            if (!particleHashMap.exists(posBelowTryPos)) {
+                nextPositionsToUpdate.push_back(posToTry);
             }
-
             // Add particle above currentPos to queue
             const auto aboveCurrentPos = currentPos + glm::ivec3(0, 1, 0);
-            unsigned atPosAboveCurrentPos = particleHashMap.get(aboveCurrentPos).particleType;
-            if (atPosAboveCurrentPos != 0) {
+            if (particleHashMap.exists(aboveCurrentPos)) {
                 nextPositionsToUpdate.push_back(aboveCurrentPos);
             }
             break;
@@ -238,9 +230,18 @@ bool ParticlesChunk::tryPlaceParticleAt(
 
     const glm::uvec3 particlePositionInChunk = glm::abs(worldParticlePosition - (gridPosition * glm::ivec3(dimensions)));
 
-    auto& particle = particleHashMap.get(particlePositionInChunk);
-    if (particleInformation.particleType == particle.particleType) return false;
-    particle.particleType = particleInformation.particleType;
+    if (particleInformation.particleType == 0) {
+        particleHashMap.remove(particlePositionInChunk);
+        // todo: might be good to remove from nextPositionsToUpdate too
+        remesh();
+        return false;
+    }
+
+    if (particleHashMap.exists(particlePositionInChunk)) {
+        particleHashMap.get(particlePositionInChunk) = particleInformation;
+    } else {
+        particleHashMap.add(particlePositionInChunk, particleInformation);
+    }
     nextPositionsToUpdate.emplace_back(particlePositionInChunk);
 
     remesh();
@@ -255,108 +256,113 @@ glm::ivec3 ParticlesChunk::getWorldPosition() const {
     return worldPosition;
 }
 
+// TODO: Move this somewhere else and rename it to something better
+const unsigned separator = 0xffffffff;
+
 bool ParticlesChunk::saveChunkData()
 {
-    // std::stringstream filenameForChunk;
-    // filenameForChunk
-    // << "chunks/"
-    // << gridPosition.x
-    // << "-"
-    // << gridPosition.y
-    // << "-"
-    // << gridPosition.z
-    // << ".bin";
-    //
-    // // TODO: Create chunks folder if it does not exist
-    //
-    // std::vector<std::byte> bytes(sizeof(unsigned) * particleHashMap.GetParticleTypesData().size());
-    // std::memcpy(bytes.data(), particleHashMap.GetParticleTypesData().data(), sizeof(unsigned) * particleHashMap.GetParticleTypesData().size());
-    //
-    // std::ofstream file(filenameForChunk.str(), std::ios::binary);
-    // if (file) {
-    //     file.write(reinterpret_cast<const char*>(bytes.data()), bytes.size());
-    // }
-    // file.close();
+    namespace fs = std::filesystem;
 
+    std::stringstream filenameForChunk;
+    filenameForChunk
+    << "chunks/"
+    << gridPosition.x
+    << "-"
+    << gridPosition.y
+    << "-"
+    << gridPosition.z
+    << ".bin";
 
-    // **** New Code ****
-    // std::stringstream filenameForChunk;
-    // filenameForChunk << "chunks/test.bin";
-    //
-    // glm::uvec3 dimensions{ 64, 64, 64 };
-    // glm::ivec3 grid{ 1, 1, 1 };
-    // unsigned int separator = 0xcfcfcfcf;
-    // unsigned int separatorF = 0xffffffff;
-    // glm::ivec3 position{ 3, 3, 3 };
-    //
-    // std::ofstream file(filenameForChunk.str(), std::ios::binary);
-    // if (file) {
-    //     file.write(reinterpret_cast<char*>(&dimensions), sizeof(dimensions));
-    //     file.write(reinterpret_cast<char*>(&separator), sizeof(separator));
-    //     file.write(reinterpret_cast<char*>(&grid), sizeof(grid));
-    //     file.write(reinterpret_cast<char*>(&separator), sizeof(separator));
-    //
-    //     file.write(reinterpret_cast<char*>(&separatorF), sizeof(separatorF));
-    //     file.write(reinterpret_cast<char*>(&separatorF), sizeof(separatorF));
-    //     file.write(reinterpret_cast<char*>(&separatorF), sizeof(separatorF));
-    //     file.write(reinterpret_cast<char*>(&separatorF), sizeof(separatorF));
-    //     file.write(reinterpret_cast<char*>(&position), sizeof(position));
-    //     file.write(reinterpret_cast<char*>(&separator), sizeof(separator));
-    //     file.write(reinterpret_cast<char*>(&position), sizeof(position));
-    //     file.write(reinterpret_cast<char*>(&separator), sizeof(separator));
-    //     file.write(reinterpret_cast<char*>(&position), sizeof(position));
-    //     file.write(reinterpret_cast<char*>(&separator), sizeof(separator));
-    //
-    //     file.write(reinterpret_cast<char*>(&separatorF), sizeof(separatorF));
-    //     file.write(reinterpret_cast<char*>(&separatorF), sizeof(separatorF));
-    //     file.write(reinterpret_cast<char*>(&separatorF), sizeof(separatorF));
-    //     file.write(reinterpret_cast<char*>(&separatorF), sizeof(separatorF));
-    //     unsigned particleType = 2;
-    //     file.write(reinterpret_cast<char*>(&position), sizeof(position));
-    //     file.write(reinterpret_cast<char*>(&particleType), sizeof(particleType));
-    //
-    //     particleType = 12;
-    //     file.write(reinterpret_cast<char*>(&position), sizeof(position));
-    //     file.write(reinterpret_cast<char*>(&particleType), sizeof(particleType));
-    // }
-    // file.close();
+    fs::path path(filenameForChunk.str());
+    fs::create_directories(path.parent_path());
+
+    std::ofstream file(filenameForChunk.str(), std::ios::binary);
+    if (file) {
+        file.write(reinterpret_cast<char*>(&dimensions), sizeof(dimensions));
+        file.write(reinterpret_cast<const char*>(&separator), sizeof(separator));
+
+        file.write(reinterpret_cast<char*>(&gridPosition), sizeof(gridPosition));
+        file.write(reinterpret_cast<const char*>(&separator), sizeof(separator));
+
+        file.write(reinterpret_cast<const char*>(&separator), sizeof(separator));
+        file.write(reinterpret_cast<const char*>(&separator), sizeof(separator));
+        file.write(reinterpret_cast<const char*>(&separator), sizeof(separator));
+        file.write(reinterpret_cast<const char*>(&separator), sizeof(separator));
+        for (glm::ivec3 posInDeque : nextPositionsToUpdate) {
+            file.write(reinterpret_cast<char*>(&posInDeque), sizeof(glm::ivec3));
+            file.write(reinterpret_cast<const char*>(&separator), sizeof(separator));
+        }
+
+        file.write(reinterpret_cast<const char*>(&separator), sizeof(separator));
+        file.write(reinterpret_cast<const char*>(&separator), sizeof(separator));
+        file.write(reinterpret_cast<const char*>(&separator), sizeof(separator));
+        file.write(reinterpret_cast<const char*>(&separator), sizeof(separator));
+        for (auto [position, particleInfo] : particleHashMap.getAll()) {
+            file.write(reinterpret_cast<const char*>(&position), sizeof(glm::ivec3));
+            file.write(reinterpret_cast<char*>(&particleInfo.particleType), sizeof(unsigned));
+        }
+    }
+    file.close();
 
     return true;
 }
 
 bool ParticlesChunk::loadChunkData()
 {
-    return false;
-    // try {
-    //     std::stringstream filenameForChunk;
-    //     filenameForChunk
-    //     << "chunks/"
-    //     << chunkGridPosition.x
-    //     << "-"
-    //     << chunkGridPosition.y
-    //     << "-"
-    //     << chunkGridPosition.z
-    //     << ".bin";
-    //
-    //     std::ifstream file(filenameForChunk.str(), std::ios::binary);
-    //
-    //     if (file) {
-    //         std::cout << "Reading: " << filenameForChunk.str() << std::endl;
-    //
-    //         file.read(
-    //             reinterpret_cast<char*>( const_cast<unsigned*>(particleHashMap.GetParticleTypesData().data()) ),
-    //             sizeof(unsigned) * 64 * 64 * 64
-    //         );
-    //     } else {
-    //         file.close();
-    //         return false;
-    //     }
-    //     file.close();
-    //
-    //     return true;
-    // } catch (std::exception& e) {
-    //     return false;
-    // }
+    try {
+        std::stringstream filenameForChunk;
+        filenameForChunk
+        << "chunks/"
+        << gridPosition.x
+        << "-"
+        << gridPosition.y
+        << "-"
+        << gridPosition.z
+        << ".bin";
+
+        std::ifstream file(filenameForChunk.str(), std::ios::binary);
+
+        if (file) {
+            std::cout << "Reading: " << filenameForChunk.str() << std::endl;
+
+            file.read(reinterpret_cast<char*>(&dimensions), sizeof(dimensions));
+            file.seekg(sizeof(separator), std::ios::cur);
+
+            file.read(reinterpret_cast<char*>(&gridPosition), sizeof(gridPosition));
+            file.seekg(sizeof(separator), std::ios::cur);
+
+            file.seekg(sizeof(separator) * 4, std::ios::cur);
+
+            // Read an ivec3 and a separator until an ivec3 of separator
+            while (!file.eof()) {
+                glm::ivec3 positionInDeque;
+
+                file.read(reinterpret_cast<char*>(&positionInDeque), sizeof(positionInDeque));
+                file.seekg(sizeof(separator), std::ios::cur);
+
+                if (positionInDeque == glm::ivec3(glm::uvec3(separator))) break;
+                nextPositionsToUpdate.emplace_back(positionInDeque);
+            }
+
+            while (!file.eof()) {
+                glm::ivec3 particlePosition;
+                ParticleData::ParticleInformation particleInformation { 0, 32.0f };
+
+                file.read(reinterpret_cast<char*>(&particlePosition), sizeof(particlePosition));
+                file.read(reinterpret_cast<char*>(&particleInformation.particleType), sizeof(particleInformation.particleType));
+
+                particleHashMap.add(particlePosition, particleInformation);
+            }
+        } else {
+            file.close();
+            return false;
+        }
+        file.close();
+        return true; // todo: TEMP: return true;
+
+    } catch (std::exception& e) {
+        return false;
+    }
 }
 
 void ParticlesChunk::remesh() {
