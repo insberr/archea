@@ -10,6 +10,6 @@ uniform mat4 projection;
 out vec3 fragVertexColor;
 
 void main() {
-    gl_Position = projection * view * model * vec4(aPos, 1.0); // * vec4((aPos + vec3(0.5)) * 10.0, 1.0);
+    gl_Position = projection * view * model * vec4(aPos, 1.0);
     fragVertexColor = aNormal;
 }
