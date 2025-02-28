@@ -3,10 +3,22 @@ Archea is a 3D Falling Sand Simulation I am developing because I am bored and lo
 I also needed an excuse to learn graphics programming and to make a custom game engine.
 This project has been a bit of a challenge so far and has been through multiple rewrites. See [Journey Of Archea](#journey-of-archea)
 
-You can watch my streams of making this project on [YouTube here](https://www.youtube.com/playlist?list=PLegENDHYPkX28wjNpFBd16ikRTgV8ekCf).  
+You can watch me work on this project live on [Twitch](https://twitch.tv/insberr).  
+You can watch the stream VODs on my [YouTube](https://www.youtube.com/playlist?list=PLegENDHYPkX28wjNpFBd16ikRTgV8ekCf).  
 If you don't feel like watching the streams (I don't blame you, they are long), you can watch my [dev log videos instead](https://www.youtube.com/playlist?list=PLegENDHYPkX0YnBPZnPjTTeSgQtDirN8P)
 
 ## Development Setup
+Clone the repository. Use `--recurse-submodules` when cloning to fetch submodules
+```shell
+git clone --recurse-submodules https://github.com/insberr/archea
+```
+
+If you forgot to clone with `--recurse-submodules`, you can fetch submodules by:
+```shell
+git submodule init
+git submodule update
+```
+
 Make sure to follow the specific OS instructions.
 
 (SOON) ~~For VSCode, there should be a run and debug configuration already provided.~~
@@ -42,12 +54,6 @@ TODO
 
 ### Compile for Linux on Windows
 TODO: Maybe just use WSL?
-
-## Things To Note And To Do
-- Ray marching: Might be good to know the camera position and then the ray step should step the distance from the camera to the scene cube.
-  This might help performance? Also, should discard rays that will never intersect with the scene.
-- Dynamic lighting. Allow particles to produce light?
-- I need to fix the depth buffer
 
 ## Wording
 1. Particle - Refers to a voxel which is simulated (i.e. sand, water)
