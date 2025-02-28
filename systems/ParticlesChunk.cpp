@@ -202,10 +202,12 @@ void ParticlesChunk::Render(
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, chunkMesh.indicies.size() * sizeof(unsigned int), chunkMesh.indicies.data(), GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), nullptr);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 7 * sizeof(float), nullptr);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
+    glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (void*)(6 * sizeof(float)));
+    glEnableVertexAttribArray(2);
 
     const GLint worldPositionLoc = glGetUniformLocation(shaderProgram, "worldPosition");
     glUniform3f(worldPositionLoc, worldPosition.x, worldPosition.y, worldPosition.z);
@@ -381,6 +383,8 @@ void ParticlesChunk::remesh() {
             newChunkMesh.vertices.push_back(Shapes::Cube::cubeVertices[j + 3]);
             newChunkMesh.vertices.push_back(Shapes::Cube::cubeVertices[j + 4]);
             newChunkMesh.vertices.push_back(Shapes::Cube::cubeVertices[j + 5]);
+
+            newChunkMesh.vertices.push_back(data.particleType - 1);
         }
 
         int vertexOffset = i * 24;

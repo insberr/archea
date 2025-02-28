@@ -50,16 +50,17 @@ namespace ParticleSystem {
 
     glm::ivec3 drawPos;
     glm::ivec3 lookingAtParticlePos;
-    float drawDistance { 1.0f };
+    float drawDistance { 5.0f };
     unsigned drawType = 2;
 
     // Settings
     // int maxRaySteps { 400 };
     // bool enableOutlines { false };
     // init ParticlesChunk static values
-    float particleScale { 1.0f };
+    float particleScale { 0.5f };
     unsigned int chunkSize { 64 };
-    float stepDelay = 0.1f;
+    int simulationStepInterval { 200 };
+    float simulationStepDelta { 1.0f };
 
     // Chunks
     std::vector<ParticlesChunk*> particleChunks;
@@ -71,8 +72,8 @@ namespace ParticleSystem {
 int ParticleSystem::Setup() { return 0; }
 void ParticleSystem::Init() {
     // Load the contents of the shaders
-    std::string vertexShaderSource = readShaderFile("shaders/vertex.glsl");
-    std::string fragmentShaderSource = readShaderFile("shaders/fragment.glsl");
+    std::string vertexShaderSource = readShaderFile("shaders/vertex_chunk.glsl");
+    std::string fragmentShaderSource = readShaderFile("shaders/fragment_chunk.glsl");
 
     // Make sure they arent empty
     if (vertexShaderSource.empty() || fragmentShaderSource.empty()) {
@@ -84,12 +85,6 @@ void ParticleSystem::Init() {
     if (shaderProgram == 0) return;
 
     glCreateBuffers(1, &particlesColrosBuffer);
-    // std::vector<glm::vec4> particleColors;
-    // add colors
-    // particleColors.push_back(glm::vec4(255, 0, 0, 50) / 255.0f); // debug/draw
-    // particleColors.push_back(glm::vec4(200, 150, 10, 255) / 255.0f); // sand
-    // particleColors.push_back(glm::vec4(13, 136, 188, 100) / 255.0f); // water
-    // particleColors.push_back(glm::vec4(239, 103, 23, 255) / 255.0f); // lava
     auto particleColors = ParticleTypeSystem::GetParticleColorIndexesForShader();
     glNamedBufferStorage(
         particlesColrosBuffer,
@@ -97,8 +92,9 @@ void ParticleSystem::Init() {
         (const void*)particleColors.data(),
         GL_DYNAMIC_STORAGE_BIT
     );
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, particlesColrosBuffer);
 
-    ChunkConfig::EnableOutlines = false;
+    // ChunkConfig::EnableOutlines = false;
 
     for (unsigned x = 0; x < 2; ++x) {
         for (unsigned y = 0; y < 1; ++y) {
@@ -121,14 +117,18 @@ void ParticleSystem::Init() {
                 return;
             }
 
-            std::this_thread::sleep_for(std::chrono::milliseconds(200));
+            std::this_thread::sleep_for(std::chrono::milliseconds(simulationStepInterval));
 
+            std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
             chunksLock.lock();
             for (const auto& chunk : particleChunks) {
                 // std::cout << chunk << std::endl;
                 chunk->ProcessNextSimulationStep();
             }
             chunksLock.unlock();
+            std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+            std::chrono::duration<float> duration = end - start;
+            simulationStepDelta = duration.count();
         }
     });
 
@@ -296,38 +296,35 @@ void ParticleSystem::Render() {
     glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
     glUniform1f(particleScaleLoc, particleScale);
 
-    const GLint enableOutlinesLoc = glGetUniformLocation(shaderProgram, "EnableOutlines");
-    glUniform1ui(enableOutlinesLoc, ChunkConfig::EnableOutlines);
+    // const GLint enableOutlinesLoc = glGetUniformLocation(shaderProgram, "EnableOutlines");
+    // glUniform1ui(enableOutlinesLoc, ChunkConfig::EnableOutlines);
 
-
-    // todo: call render on all chunks
     for (const auto& chunk : particleChunks) {
         chunk->Render(window, shaderProgram, particlesColrosBuffer);
     }
 
     if (ImGui::Begin("Simulation Controls")) {
-        ImGui::SliderFloat("Simulation Step Speed", &stepDelay, 0.0f, 1.0f);
+        ImGui::SliderInt("Simulation Step Interval", &simulationStepInterval, 0, 500);
         ImGui::SliderFloat("Particle Scale", &particleScale, 0.001f, 5.0f, "%.8f");
-        ImGui::Checkbox("Show Particle Outlines", &ChunkConfig::EnableOutlines);
-        ImGui::Text("Chunk Size (Currently Disabled) %i", chunkSize);
-        // if (ImGui::SliderInt("Chunk Size", reinterpret_cast<int *>(&chunkSize), 10, 300)) {
-        //     if (chunkSize > 0) {
-        //         // Todo: add ability to resize?
-        //         // particles.resize(chunkSize * chunkSize * chunkSize);
-        //     }
-        // }
+        // ImGui::Checkbox("Show Particle Outlines", &ChunkConfig::EnableOutlines);
     }
     ImGui::End();
 
-    if (ImGui::Begin("Drawing Controls (not working right now)"))
+    if (ImGui::Begin("Simulation Stats")) {
+        ImGui::Text("Chunk Size %i", chunkSize);
+        ImGui::Text("Simulation Step Delta %f", simulationStepDelta);
+        ImGui::Text("Simulation Step Time Calculated %f", simulationStepInterval * simulationStepDelta);
+    }
+    ImGui::End();
+
+    if (ImGui::Begin("Drawing Controls"))
     {
         ImGui::Text("Drawing is based on where you are looking");
         ImGui::Text("Hold Left Mouse Button to draw");
         ImGui::Text("Hold Right Mouse Button to erase");
 
-        ImGui::Text("Drawing Position (In Chunk) %i %i %i", drawPos.x, drawPos.y, drawPos.z);
-        ImGui::Text("Drawing Position (In World) %i %i %i", lookingAtParticlePos.x, lookingAtParticlePos.y, lookingAtParticlePos.z);
-        ImGui::SliderInt("Draw Type", reinterpret_cast<int *>(&drawType), 0, ParticleTypeSystem::GetParticleTypeCount(), ParticleTypeSystem::GetParticleTypeInfo(drawType - 1).nameId);
+        ImGui::Text("Drawing Position %i %i %i", lookingAtParticlePos.x, lookingAtParticlePos.y, lookingAtParticlePos.z);
+        ImGui::SliderInt("Draw Type", reinterpret_cast<int *>(&drawType), 1, ParticleTypeSystem::GetParticleTypeCount(), ParticleTypeSystem::GetParticleTypeInfo(drawType - 1).nameId);
     }
     ImGui::End();
 }

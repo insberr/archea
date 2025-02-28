@@ -23,7 +23,7 @@ namespace PositionConversion
 }
 
 namespace ChunkConfig {
-    static bool EnableOutlines = false;
+    // static bool EnableOutlines = false;
     static float ParticleScale = 1.0f;
 }
 

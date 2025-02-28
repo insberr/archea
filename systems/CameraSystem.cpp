@@ -69,8 +69,8 @@ void CameraSystem::Init() {
 
 
     // Load the contents of the shaders
-    std::string vertexShaderSource = readShaderFile("shaders/vertex_old3.glsl");
-    std::string fragmentShaderSource = readShaderFile("shaders/plain_color.glsl");
+    std::string vertexShaderSource = readShaderFile("shaders/vertex_normal_cube.glsl");
+    std::string fragmentShaderSource = readShaderFile("shaders/fragment_normal_cube.glsl");
 
     // Make sure they arent empty
     if (vertexShaderSource.empty() || fragmentShaderSource.empty()) {
@@ -121,7 +121,9 @@ void CameraSystem::Update(float dt) {
         Translate(glm::vec3(0.0f, -dt, 0.0f));
     }
     if (InputSystem::IsKeyHeld(GLFW_KEY_LEFT_CONTROL)) {
-        travelSpeed = 10.0f;
+        travelSpeed = 40.0f;
+    } else {
+        travelSpeed = 20.0f;
     }
 
     // Dont update look position
@@ -151,6 +153,7 @@ void CameraSystem::Update(float dt) {
     view = glm::lookAt(position, position + target, UpVector);
 
     // Projection
+    // TODO: Use window size dynamically
     float aspectRatio = 1280.0f / 720.0f;
     projection = glm::perspective(glm::radians(fieldOfView), aspectRatio, 0.1f, 100.0f);
 }
@@ -160,8 +163,10 @@ void CameraSystem::Render() {
         ImGui::Text("Position %.2f %.2f %.2f", position.x, position.y, position.z);
         ImGui::Text("Look Direction %.2f %.2f %.2f", target.x, target.y, target.z);
         ImGui::Text("Pitch Yaw %.2f %.2f", pitch, yaw);
-        ImGui::SliderFloat("Field Of View", &fieldOfView, 0.0f, 45.0f, "%.4f");
-        ImGui::SliderFloat("Movement Speed", &travelSpeed, 0.0f, 20.0f, "%.4f");
+
+        ImGui::SliderFloat("Field Of View", &fieldOfView, 0.0f, 90.0f, "%.4f");
+        ImGui::SliderFloat("Sensitivity %.2f", &sensitivity, 0.0001f, 1.0f, "%.4f");
+        ImGui::SliderFloat("Movement Speed", &travelSpeed, 0.0f, 50.0f, "%.4f");
 
         if (ImGui::Button("Reset")) {
             Reset();
@@ -203,14 +208,13 @@ void CameraSystem::Render() {
             GetModel(),
             position + target
         ),
-        glm::vec3(0.05f)
+        glm::vec3(0.03f)
     );
     auto view = GetView();
     auto projection = GetProjection();
     glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
     glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
     glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
-    glUniform3f(glGetUniformLocation(shaderProgram, "Color"), 0.7f, 0.3f, 0.4f);
 
     // Bind the vertex data
     glBindVertexArray(VAO);
@@ -229,13 +233,13 @@ glm::vec3 CameraSystem::GetTarget() {
 }
 
 void CameraSystem::Reset() {
-    position = glm::vec3(4.0f, 4.0f, 10.0f);
-    target = glm::vec3(4.0f, 4.0f, 5.0f);
-    fieldOfView = 45.0f;
+    position = glm::vec3(0.0f, 0.0f, 0.0f);
+    // target = glm::vec3(0.0f, 0.0f, 5.0f);
+    fieldOfView = 60.0f;
     yaw = -90.0f;
     pitch = 0.0f;
     sensitivity = 0.3f;
-    travelSpeed = 5.0f;
+    travelSpeed = 20.0f;
 }
 
 glm::mat4 CameraSystem::CameraMatrix() {

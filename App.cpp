@@ -53,7 +53,7 @@ int App::Run() {
         // Start Imgui Frame
         ImGuiSystem::StartFrame();
 
-        ImGui::ShowDemoWindow(); // Show demo window! :)
+        // ImGui::ShowDemoWindow(); // Show demo window! :)
         if (ImGui::Begin("Stats")) {
             ImGui::Text("FPS %.2f", ImGui::GetIO().Framerate);
             ImGui::Text("Delta %.4f", dt);
