@@ -20,6 +20,8 @@ namespace CameraSystem {
     glm::vec3 GetPosition();
     glm::vec3 GetTarget();
 
+    void set(const glm::vec3& position, const glm::vec3& target);
+
     glm::mat4 CameraMatrix();
 
     void Reset();

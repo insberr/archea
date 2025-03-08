@@ -9,5 +9,6 @@ namespace ParticleSystem {
     System AsSystem();
 
     /* Implementation Here */
-
+    static float particleScale { 0.5f };
+    static unsigned int chunkSize { 64 };
 }

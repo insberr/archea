@@ -19,6 +19,7 @@
 #include "ImGuiSystem.h"
 #include "ParticleData.h"
 #include "ParticlesChunk.h"
+#include "Player.h"
 #include "Shapes.h"
 #include "particle_types/ParticleTypeSystem.h"
 #include "particle_types/ParticleType.h"
@@ -48,17 +49,10 @@ namespace ParticleSystem {
     // GLuint particlesBuffer { 0 };
     GLuint particlesColrosBuffer { 0 };
 
-    glm::ivec3 drawPos;
-    glm::ivec3 lookingAtParticlePos;
-    float drawDistance { 5.0f };
-    unsigned drawType = 2;
-
     // Settings
     // int maxRaySteps { 400 };
     // bool enableOutlines { false };
     // init ParticlesChunk static values
-    float particleScale { 0.5f };
-    unsigned int chunkSize { 64 };
     int simulationStepInterval { 200 };
     float simulationStepDelta { 1.0f };
 
@@ -67,10 +61,14 @@ namespace ParticleSystem {
     std::mutex chunksLock;
     std::jthread chunksThread;
 
+    Player player {};
+
 };
 
 int ParticleSystem::Setup() { return 0; }
 void ParticleSystem::Init() {
+    player.initGraphics();
+
     // Load the contents of the shaders
     std::string vertexShaderSource = readShaderFile("shaders/vertex_chunk.glsl");
     std::string fragmentShaderSource = readShaderFile("shaders/fragment_chunk.glsl");
@@ -135,74 +133,11 @@ void ParticleSystem::Init() {
     std::cout << chunksThread.get_id() << std::endl;
 }
 
-// TODO: Todo move this somewhere else
-#include <cmath>
-int div_euclid(float a, float b) {
-
-    int q = static_cast<int>(a / b); //.trunc();
-    if (fmod(a, b) < 0.0f) {
-        if (b > 0.0f) {
-            return q - 1;
-        } else {
-            return q + 1;
-        };
-    }
-    return q;
-}
-
 void ParticleSystem::Update(float dt) {
     if (dt == 0.0f) return;
 
-    // if (particleDataManager.Get(drawPos).particleType <= 1) {
-    //     particleDataManager.SetType(drawPos, 0);
-    // }
-
-    std::pair<double, double> mouseScroll = InputSystem::MouseScroll();
-
-    drawDistance += static_cast<float>(mouseScroll.second);
-    drawDistance = std::clamp(drawDistance, 1.0f, 100.0f);
-
-    const glm::vec3 camPos = CameraSystem::GetPosition();
-    const glm::vec3 camTarget = CameraSystem::GetTarget();
-
-    const glm::vec3 lookingAt = camPos + (camTarget * drawDistance);
-
-    // todo: it might be good to store the converted particle coordinate camPos and camTarget positions
-    // lookingAtParticlePos = lookingAt / particleScale;
-    lookingAtParticlePos.x = div_euclid(lookingAt.x, particleScale);
-    lookingAtParticlePos.y = div_euclid(lookingAt.y, particleScale);
-    lookingAtParticlePos.z = div_euclid(lookingAt.z, particleScale);
-
-    if (InputSystem::IsMouseButtonHeld(GLFW_MOUSE_BUTTON_LEFT)) {
-        // particleDataManager.SetType(drawPos, drawType);
-        // todo: this is not really efficient
-        for (const auto& chunk : particleChunks) {
-            chunk->tryPlaceParticleAt(
-                lookingAtParticlePos,
-                { drawType, 0.0f }
-            );
-        }
-    }
-
-    if (InputSystem::IsMouseButtonHeld(GLFW_MOUSE_BUTTON_RIGHT)) {
-        // particleDataManager.SetType(drawPos, 0);
-        for (const auto& chunk : particleChunks) {
-            chunk->tryPlaceParticleAt(
-                lookingAtParticlePos,
-                { 0, 0.0f }
-            );
-        }
-    }
-
-    // drawPos = glm::clamp(
-    //     glm::ivec3(lookingAtParticlePos),
-    //     glm::ivec3(0),
-    //     glm::ivec3(particleDataManager.GetDimensions()) - 1
-    // );
-    //
-    // if (particleDataManager.Get(drawPos).particleType == 0) {
-    //     particleDataManager.SetType(drawPos, 1);
-    // }
+    // TODO: FIXME: It's not great having to pass this to the player update function
+    player.update(dt, particleChunks);
 
     auto cameraChunkPosition = PositionConversion::WorldPositionToChunkPosition(CameraSystem::GetPosition() / particleScale, glm::uvec3(chunkSize));
     // std::cout << "Camera is in chunk " << cameraChunkPosition.x << " " << cameraChunkPosition.y << " " << cameraChunkPosition.z << std::endl;
@@ -280,6 +215,8 @@ void ParticleSystem::Update(float dt) {
 void ParticleSystem::Render() {
     auto window = Graphics::GetWindow();
 
+    player.render();
+
     // Set the shader program
     glUseProgram(shaderProgram);
 
@@ -314,17 +251,6 @@ void ParticleSystem::Render() {
         ImGui::Text("Chunk Size %i", chunkSize);
         ImGui::Text("Simulation Step Delta %f", simulationStepDelta);
         ImGui::Text("Simulation Step Time Calculated %f", simulationStepInterval * simulationStepDelta);
-    }
-    ImGui::End();
-
-    if (ImGui::Begin("Drawing Controls"))
-    {
-        ImGui::Text("Drawing is based on where you are looking");
-        ImGui::Text("Hold Left Mouse Button to draw");
-        ImGui::Text("Hold Right Mouse Button to erase");
-
-        ImGui::Text("Drawing Position %i %i %i", lookingAtParticlePos.x, lookingAtParticlePos.y, lookingAtParticlePos.z);
-        ImGui::SliderInt("Draw Type", reinterpret_cast<int *>(&drawType), 1, ParticleTypeSystem::GetParticleTypeCount(), ParticleTypeSystem::GetParticleTypeInfo(drawType - 1).nameId);
     }
     ImGui::End();
 }
