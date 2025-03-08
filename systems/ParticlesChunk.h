@@ -71,6 +71,7 @@ private:
     // Rendering
     GLuint VBO {0}, VAO {0}, EBO {0};
     ChunkMesh chunkMesh { {}, {} };
+    std::atomic<bool> meshDirty = false;
 
     bool saveChunkData();
     bool loadChunkData();
