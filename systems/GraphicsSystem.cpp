@@ -6,6 +6,8 @@
 
 #include <iostream>
 
+#include "CameraSystem.h"
+
 // Private values
 namespace Graphics {
     /* System Function Declarations */
@@ -118,4 +120,5 @@ void Graphics::errorCallback(int error, const char *description) {
 
 void Graphics::framebufferSizeCallback(GLFWwindow* wind, int width, int height) {
     glViewport(0, 0, width, height);
+    CameraSystem::setAspectRatio(static_cast<float>(width) / static_cast<float>(height));
 }
