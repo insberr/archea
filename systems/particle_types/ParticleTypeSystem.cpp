@@ -7,7 +7,10 @@
 
 #include "DebugParticle_Type.h"
 #include "ErrorParticle_Type.h"
+#include "LavaParticleType.h"
 #include "SandParticle_Type.h"
+#include "SteamParticleType.h"
+#include "StoneParticleType.h"
 #include "WaterParticle_Type.h"
 
 namespace ParticleTypeSystem {
@@ -40,8 +43,12 @@ namespace ParticleTypeSystem {
 int ParticleTypeSystem::Setup() {
     AddParticleType(ErrorParticle);
     AddParticleType(DebugParticle);
+
     AddParticleType(SandParticle);
     AddParticleType(WaterParticle);
+    AddParticleType(LavaParticle);
+    AddParticleType(StoneParticle);
+    AddParticleType(SteamParticle);
 
     return 0;
 }
