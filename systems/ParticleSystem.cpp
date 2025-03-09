@@ -13,6 +13,7 @@
 #include <iostream>
 #include <glm/gtc/type_ptr.hpp>
 #include <set>
+#include <thread>
 
 #include "InputSystem.h"
 #include "CameraSystem.h"
