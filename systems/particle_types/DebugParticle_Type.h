@@ -9,7 +9,7 @@
 const ParticleType DebugParticle = {
     .nameId = "Debug",
     .state = State::Gas,
-    .color = { 255, 0, 0, 50 },
+    .color = { 131, 50, 168, 50 },
     .temperature = 0.0f,
     .getNextMove = ParticleMove::predefined::none,
 };

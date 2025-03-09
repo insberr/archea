@@ -113,7 +113,7 @@ void Player::render() {
         ImGui::Text("Hold Right Mouse Button to erase");
 
         ImGui::Text("Drawing Position %i %i %i", lookingAtParticlePos.x, lookingAtParticlePos.y, lookingAtParticlePos.z);
-        ImGui::SliderInt("Draw Type", reinterpret_cast<int *>(&drawType), 1, ParticleTypeSystem::GetParticleTypeCount(), ParticleTypeSystem::GetParticleTypeInfo(drawType - 1).nameId);
+        ImGui::SliderInt("Draw Type", reinterpret_cast<int *>(&drawType), 1, ParticleTypeSystem::GetParticleTypeCount(), ParticleTypeSystem::GetParticleTypeInfo(drawType).nameId);
     }
     ImGui::End();
 }
@@ -248,10 +248,10 @@ void Player::drawGhostCube() {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(Shapes::Cube::indices), &Shapes::Cube::indices, GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
-    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    // glEnableVertexAttribArray(1);
+    // glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
@@ -268,7 +268,7 @@ void Player::drawGhostCube() {
 
     auto view = CameraSystem::GetView();
     auto projection = CameraSystem::GetProjection();
-    glUniform1ui(particleTypeLoc, drawType - 1);
+    glUniform1ui(particleTypeLoc, drawType);
     glUniform1f(particleScaleLoc, ParticleSystem::particleScale);
     glUniform3f(positionLoc, lookingAtParticlePos.x, lookingAtParticlePos.y, lookingAtParticlePos.z);
     glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));

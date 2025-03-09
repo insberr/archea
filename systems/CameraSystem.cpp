@@ -97,7 +97,7 @@ void CameraSystem::updateViewMatrix() {
 }
 
 void CameraSystem::updateProjectionMatrix() {
-    projection = glm::perspective(glm::radians(fieldOfView), aspectRatio, 0.1f, 100.0f);
+    projection = glm::infinitePerspective(glm::radians(fieldOfView), aspectRatio, 0.1f);
 }
 
 void CameraSystem::set(const glm::vec3& newPosition, const glm::vec3& newTarget) {

@@ -65,7 +65,7 @@ ParticlesChunk::ParticlesChunk(
     {
         // todo: Temp, for testing
         for (unsigned x = 10; x < 14; ++x) {
-            for (unsigned y = 5; y < 14; ++y) {
+            for (unsigned y = 0; y < 14; ++y) {
                 for (unsigned z = 10; z < 14; ++z) {
                     const auto position = glm::uvec3(x, y, z);
                     particleHashMap.add(position, 2);
@@ -143,7 +143,7 @@ void ParticlesChunk::ProcessNextSimulationStep() {
         unsigned particle = particleHashMap.get(currentPos).particleType;
         // if (particle <= 1) continue;
 
-        auto particleTypeInfo = ParticleTypeSystem::GetParticleTypeInfo(particle - 1);
+        auto particleTypeInfo = ParticleTypeSystem::GetParticleTypeInfo(particle);
 
         auto posToTry = glm::ivec3(0);
 
@@ -375,28 +375,55 @@ bool ParticlesChunk::loadChunkData()
 void ParticlesChunk::remesh() {
     ChunkMesh newChunkMesh;
 
-    int i = 0;
+    int indicesSum = 0;
     for (const auto& [position, data] : particleHashMap.getAll()) {
         // todo: this should never happen
-        if (data.particleType == 0) continue;
-
-        for (int j = 0; j < sizeof(Shapes::Cube::cubeVertices) / sizeof(float); j += 6) {
-            newChunkMesh.vertices.push_back(Shapes::Cube::cubeVertices[j] + position.x);
-            newChunkMesh.vertices.push_back(Shapes::Cube::cubeVertices[j + 1] + position.y);
-            newChunkMesh.vertices.push_back(Shapes::Cube::cubeVertices[j + 2] + position.z);
-
-            newChunkMesh.vertices.push_back(Shapes::Cube::cubeVertices[j + 3]);
-            newChunkMesh.vertices.push_back(Shapes::Cube::cubeVertices[j + 4]);
-            newChunkMesh.vertices.push_back(Shapes::Cube::cubeVertices[j + 5]);
-
-            newChunkMesh.vertices.push_back(data.particleType - 1);
+        if (data.particleType == 0) {
+            std::cout << "ParticlesChunk::remesh: particleType is 0" << std::endl;
+            //continue;
         }
 
-        int vertexOffset = i * 24;
-        for (unsigned int ind : Shapes::Cube::indices) {
-            newChunkMesh.indicies.push_back(ind + vertexOffset);
+        int facesDrawn = 0;
+        for (int face = 0; face < 6; ++face) {
+            int normalOffset = face * 3;
+
+            const glm::ivec3 positionNextToFace = position + glm::ivec3(
+                Shapes::Cube::cubeNormals[normalOffset],
+                Shapes::Cube::cubeNormals[normalOffset + 1],
+                Shapes::Cube::cubeNormals[normalOffset + 2]
+            );
+
+            bool faceCulled = false;
+            if (particleHashMap.exists(positionNextToFace)) {
+                faceCulled = true;
+                continue;
+            }
+
+            // Add the vertices
+            const int verticesOffset = face * 12;
+            for (int vertex = 0; vertex < 12; vertex += 3) {
+                const int v = verticesOffset + vertex;
+                newChunkMesh.vertices.push_back(Shapes::Cube::cubeVertices[v] + position.x);
+                newChunkMesh.vertices.push_back(Shapes::Cube::cubeVertices[v + 1] + position.y);
+                newChunkMesh.vertices.push_back(Shapes::Cube::cubeVertices[v + 2] + position.z);
+
+                newChunkMesh.vertices.push_back(Shapes::Cube::cubeNormals[normalOffset]);
+                newChunkMesh.vertices.push_back(Shapes::Cube::cubeNormals[normalOffset + 1]);
+                newChunkMesh.vertices.push_back(Shapes::Cube::cubeNormals[normalOffset + 2]);
+
+                newChunkMesh.vertices.push_back(data.particleType);
+            }
+
+            // Add indices
+            int indicesOffset = indicesSum;
+            int indicesFaceOffset = facesDrawn * 6;
+            for (int ind = 0; ind < 6; ++ind) {
+                newChunkMesh.indicies.push_back(Shapes::Cube::indices[indicesFaceOffset + ind] + indicesOffset);
+            }
+
+            facesDrawn++;
         }
-        i++;
+        indicesSum += facesDrawn * 4;
     }
 
     chunkMesh = newChunkMesh;
