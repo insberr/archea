@@ -64,9 +64,9 @@ ParticlesChunk::ParticlesChunk(
     if (!loadChunkData())
     {
         // todo: Temp, for testing
-        for (unsigned x = 10; x < 14; ++x) {
-            for (unsigned y = 5; y < 14; ++y) {
-                for (unsigned z = 10; z < 14; ++z) {
+        for (unsigned x = 0; x < 64; ++x) {
+            for (unsigned y = 0; y < 6; ++y) {
+                for (unsigned z = 0; z < 64; ++z) {
                     const auto position = glm::uvec3(x, y, z);
                     particleHashMap.add(position, 2);
                     nextPositionsToUpdate.emplace_back(position);
@@ -143,7 +143,7 @@ void ParticlesChunk::ProcessNextSimulationStep() {
         unsigned particle = particleHashMap.get(currentPos).particleType;
         // if (particle <= 1) continue;
 
-        auto particleTypeInfo = ParticleTypeSystem::GetParticleTypeInfo(particle - 1);
+        auto particleTypeInfo = ParticleTypeSystem::GetParticleTypeInfo(particle);
 
         auto posToTry = glm::ivec3(0);
 
@@ -196,18 +196,23 @@ void ParticlesChunk::Render(
 ) {
     glBindVertexArray(VAO);
 
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, chunkMesh.vertices.size() * sizeof(float), chunkMesh.vertices.data(), GL_STATIC_DRAW);
+    if (meshDirty.load()) {
+        glBindBuffer(GL_ARRAY_BUFFER, VBO);
+        glBufferData(GL_ARRAY_BUFFER, chunkMesh.vertices.size() * sizeof(float), chunkMesh.vertices.data(), GL_STATIC_DRAW);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, chunkMesh.indicies.size() * sizeof(unsigned int), chunkMesh.indicies.data(), GL_STATIC_DRAW);
+        meshDirty.store(false);
+    } else {
+        glBindBuffer(GL_ARRAY_BUFFER, VBO);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    }
 
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, chunkMesh.indicies.size() * sizeof(unsigned int), chunkMesh.indicies.data(), GL_STATIC_DRAW);
-
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 7 * sizeof(float), nullptr);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (void*)(3 * sizeof(float)));
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 7 * sizeof(float), nullptr);
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (void*)(6 * sizeof(float)));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(2);
+    glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (void*)(6 * sizeof(float)));
 
     const GLint worldPositionLoc = glGetUniformLocation(shaderProgram, "worldPosition");
     glUniform3f(worldPositionLoc, worldPosition.x, worldPosition.y, worldPosition.z);
@@ -370,29 +375,57 @@ bool ParticlesChunk::loadChunkData()
 void ParticlesChunk::remesh() {
     ChunkMesh newChunkMesh;
 
-    int i = 0;
+    int indicesSum = 0;
     for (const auto& [position, data] : particleHashMap.getAll()) {
         // todo: this should never happen
-        if (data.particleType == 0) continue;
-
-        for (int j = 0; j < sizeof(Shapes::Cube::cubeVertices) / sizeof(float); j += 6) {
-            newChunkMesh.vertices.push_back(Shapes::Cube::cubeVertices[j] + position.x);
-            newChunkMesh.vertices.push_back(Shapes::Cube::cubeVertices[j + 1] + position.y);
-            newChunkMesh.vertices.push_back(Shapes::Cube::cubeVertices[j + 2] + position.z);
-
-            newChunkMesh.vertices.push_back(Shapes::Cube::cubeVertices[j + 3]);
-            newChunkMesh.vertices.push_back(Shapes::Cube::cubeVertices[j + 4]);
-            newChunkMesh.vertices.push_back(Shapes::Cube::cubeVertices[j + 5]);
-
-            newChunkMesh.vertices.push_back(data.particleType - 1);
+        if (data.particleType == 0) {
+            // std::cout << "ParticlesChunk::remesh: particleType is 0" << std::endl;
+            //continue;
         }
 
-        int vertexOffset = i * 24;
-        for (unsigned int ind : Shapes::Cube::indices) {
-            newChunkMesh.indicies.push_back(ind + vertexOffset);
+        int facesDrawn = 0;
+        for (int face = 0; face < 6; ++face) {
+            int normalOffset = face * 3;
+
+            const glm::ivec3 positionNextToFace = position + glm::ivec3(
+                Shapes::Cube::cubeNormals[normalOffset],
+                Shapes::Cube::cubeNormals[normalOffset + 1],
+                Shapes::Cube::cubeNormals[normalOffset + 2]
+            );
+
+            bool faceCulled = false;
+            if (particleHashMap.exists(positionNextToFace)) {
+                faceCulled = true;
+                continue;
+            }
+
+            // Add the vertices
+            const int verticesOffset = face * 12;
+            for (int vertex = 0; vertex < 12; vertex += 3) {
+                const int v = verticesOffset + vertex;
+                newChunkMesh.vertices.push_back(Shapes::Cube::cubeVertices[v] + position.x);
+                newChunkMesh.vertices.push_back(Shapes::Cube::cubeVertices[v + 1] + position.y);
+                newChunkMesh.vertices.push_back(Shapes::Cube::cubeVertices[v + 2] + position.z);
+
+                newChunkMesh.vertices.push_back(Shapes::Cube::cubeNormals[normalOffset]);
+                newChunkMesh.vertices.push_back(Shapes::Cube::cubeNormals[normalOffset + 1]);
+                newChunkMesh.vertices.push_back(Shapes::Cube::cubeNormals[normalOffset + 2]);
+
+                newChunkMesh.vertices.push_back(data.particleType);
+            }
+
+            // Add indices
+            int indicesOffset = indicesSum;
+            int indicesFaceOffset = facesDrawn * 6;
+            for (int ind = 0; ind < 6; ++ind) {
+                newChunkMesh.indicies.push_back(Shapes::Cube::indices[indicesFaceOffset + ind] + indicesOffset);
+            }
+
+            facesDrawn++;
         }
-        i++;
+        indicesSum += facesDrawn * 4;
     }
 
     chunkMesh = newChunkMesh;
+    meshDirty.store(true);
 }

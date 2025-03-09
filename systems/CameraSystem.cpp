@@ -47,6 +47,7 @@ namespace CameraSystem {
     glm::vec3 position;
     glm::vec3 target;
     float fieldOfView { 0.7f };
+    float aspectRatio { 16.0f / 9.0f };
 
     glm::mat4 view;
     glm::mat4 projection;
@@ -96,9 +97,7 @@ void CameraSystem::updateViewMatrix() {
 }
 
 void CameraSystem::updateProjectionMatrix() {
-    // TODO: Use window size dynamically
-    float aspectRatio = 1280.0f / 720.0f;
-    projection = glm::perspective(glm::radians(fieldOfView), aspectRatio, 0.1f, 100.0f);
+    projection = glm::infinitePerspective(glm::radians(fieldOfView), aspectRatio, 0.1f);
 }
 
 void CameraSystem::set(const glm::vec3& newPosition, const glm::vec3& newTarget) {
@@ -106,6 +105,11 @@ void CameraSystem::set(const glm::vec3& newPosition, const glm::vec3& newTarget)
     target = newTarget;
 
     updateViewMatrix();
+}
+
+void CameraSystem::setAspectRatio(float newAspectRatio) {
+    aspectRatio = newAspectRatio;
+    updateProjectionMatrix();
 }
 
 glm::mat4 CameraSystem::CameraMatrix() {

@@ -6,6 +6,7 @@
 #include <algorithm>
 
 #include "DebugParticle_Type.h"
+#include "ErrorParticle_Type.h"
 #include "SandParticle_Type.h"
 #include "WaterParticle_Type.h"
 
@@ -37,6 +38,7 @@ namespace ParticleTypeSystem {
 }
 
 int ParticleTypeSystem::Setup() {
+    AddParticleType(ErrorParticle);
     AddParticleType(DebugParticle);
     AddParticleType(SandParticle);
     AddParticleType(WaterParticle);

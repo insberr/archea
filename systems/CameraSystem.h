@@ -21,6 +21,7 @@ namespace CameraSystem {
     glm::vec3 GetTarget();
 
     void set(const glm::vec3& position, const glm::vec3& target);
+    void setAspectRatio(float newAspectRatio);
 
     glm::mat4 CameraMatrix();
 

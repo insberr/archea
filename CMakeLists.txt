@@ -67,6 +67,7 @@ add_executable(archea
         systems/Shapes.h
         systems/Player.cpp
         systems/Player.h
+        systems/particle_types/ErrorParticle_Type.h
 )
 
 # Link libraries

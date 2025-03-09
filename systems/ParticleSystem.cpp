@@ -13,6 +13,7 @@
 #include <iostream>
 #include <glm/gtc/type_ptr.hpp>
 #include <set>
+#include <thread>
 
 #include "InputSystem.h"
 #include "CameraSystem.h"
@@ -141,7 +142,7 @@ void ParticleSystem::Update(float dt) {
 
     auto cameraChunkPosition = PositionConversion::WorldPositionToChunkPosition(CameraSystem::GetPosition() / particleScale, glm::uvec3(chunkSize));
     // std::cout << "Camera is in chunk " << cameraChunkPosition.x << " " << cameraChunkPosition.y << " " << cameraChunkPosition.z << std::endl;
-    const int chunkDistance = 2; // Distance to load chunks around the player
+    const int chunkDistance = 5; // Distance to load chunks around the player
 
     struct IVec3Comparator {
         bool operator()(const glm::ivec3& a, const glm::ivec3& b) const {
