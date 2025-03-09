@@ -379,7 +379,7 @@ void ParticlesChunk::remesh() {
     for (const auto& [position, data] : particleHashMap.getAll()) {
         // todo: this should never happen
         if (data.particleType == 0) {
-            std::cout << "ParticlesChunk::remesh: particleType is 0" << std::endl;
+            // std::cout << "ParticlesChunk::remesh: particleType is 0" << std::endl;
             //continue;
         }
 
