@@ -21,9 +21,11 @@ out vec4 Color;
 
 void main()
 {
-    FragPos = worldPosition + aPos;
+    vec3 world = (worldPosition + vec3(0.5)) * particleScale + (aPos * particleScale);
+
+    FragPos = world;
     Normal = aNormal;
     Color = colors[int(aParticleType)];
 
-    gl_Position = projection * view * vec4(worldPosition + aPos, 1.0);
+    gl_Position = projection * view * vec4(FragPos, 1.0);
 }

@@ -64,9 +64,9 @@ ParticlesChunk::ParticlesChunk(
     if (!loadChunkData())
     {
         // todo: Temp, for testing
-        for (unsigned x = 10; x < 14; ++x) {
-            for (unsigned y = 0; y < 14; ++y) {
-                for (unsigned z = 10; z < 14; ++z) {
+        for (unsigned x = 0; x < 64; ++x) {
+            for (unsigned y = 0; y < 6; ++y) {
+                for (unsigned z = 0; z < 64; ++z) {
                     const auto position = glm::uvec3(x, y, z);
                     particleHashMap.add(position, 2);
                     nextPositionsToUpdate.emplace_back(position);
