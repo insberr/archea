@@ -12,10 +12,10 @@ const vec3 lightColor = vec3(1.0);
 
 void main()
 {
-    vec3 lightPos = vec3(0, 10, 0);
+    vec3 lightPos = vec3(100, 70, 50);
 
     // ambient
-    float ambientStrength = 0.3;
+    float ambientStrength = 0.5;
     vec3 ambient = ambientStrength * lightColor;
 
     // diffuse
