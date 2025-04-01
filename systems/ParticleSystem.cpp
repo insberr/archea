@@ -58,7 +58,7 @@ namespace ParticleSystem {
     // int maxRaySteps { 400 };
     // bool enableOutlines { false };
     // init ParticlesChunk static values
-    int simulationStepInterval { 200 };
+    int simulationStepInterval { 10 };
     float simulationStepDelta { 1.0f };
 
     // Chunks

@@ -20,7 +20,8 @@ namespace ParticleData
     void ParticleHashMap::add(const glm::ivec3& position, const unsigned& particleType) {
         hashMap[position] = {
             .particleType = particleType,
-            .temperature = 32.0f
+            .temperature = 32.0f,
+            .velocity = glm::ivec3(0, -1, 0),
         };
     }
 

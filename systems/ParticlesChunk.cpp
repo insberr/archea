@@ -73,6 +73,16 @@ ParticlesChunk::ParticlesChunk(
                 }
             }
         }
+
+        // for (unsigned x = 10; x < 25; ++x) {
+        //     for (unsigned y = 10; y < 25; ++y) {
+        //         for (unsigned z = 10; z < 25; ++z) {
+        //             const auto position = glm::uvec3(x, y, z);
+        //             particleHashMap.add(position, 2);
+        //             nextPositionsToUpdate.emplace(position);
+        //         }
+        //     }
+        // }
     }
 
     particleHashMap.add(glm::ivec3(0), 1);
@@ -144,100 +154,73 @@ void ParticlesChunk::ProcessNextSimulationStep(std::unordered_map<glm::ivec3, Pa
             continue;
         }
 
-        // z * (ysize * xsize) + y * (xsize) + x
-        ParticleData::ParticleInformation& particle = particleHashMap.get(currentPos);
-        // if (particle <= 1) continue;
+        ParticleData::ParticleInformation& particleInformation = particleHashMap.get(currentPos);
+        ParticleType& particleTypeInfo = ParticleTypeSystem::GetParticleTypeInfo(particleInformation.particleType);
 
-        ParticleType& particleTypeInfo = ParticleTypeSystem::GetParticleTypeInfo(particle.particleType);
+        const glm::ivec3 nextPos = currentPos + particleInformation.velocity;
 
-        auto nextMove = ParticleMove::MoveState {};
-        while (true) {
-            glm::ivec3 posToTry;
+        if (nextPos.y <= 0) continue;
 
-            particleTypeInfo.getNextMove(nextMove);
-
-            if (nextMove.done) break;
-
-            posToTry = currentPos + glm::ivec3(nextMove.positionToTry);
-
-            // try pos
-
-            // if (posToTry.y < 0) continue;
-
-            // posToTry = glm::clamp(posToTry, glm::ivec3(0), glm::ivec3(dimensions - glm::uvec3(1)));
-            // int newY = std::clamp<int>(y - 1, 0, 49);
-            glm::ivec3 boundsCmp = glm::ivec3(dimensions - glm::uvec3(1)) - posToTry;
-
-            glm::ivec3 chunkPosInside = gridPosition;
-            glm::uvec3 posToTryInNewChunk = posToTry;
-
-            if (boundsCmp.x < 0) {
-                chunkPosInside.x += 1;
-                posToTryInNewChunk.x -= dimensions.x;
-            } else if (boundsCmp.x >= dimensions.x) {
-                chunkPosInside.x -= 1;
-                posToTryInNewChunk.x += dimensions.x;
+        if (particleHashMap.exists(nextPos)) {
+            if (particleInformation.velocity == glm::ivec3(0, -1, 0)) {
+                particleInformation.velocity = glm::ivec3(-1, -1, 0);
+            } else if (particleInformation.velocity == glm::ivec3(-1, -1, 0)) {
+                particleInformation.velocity = glm::ivec3(1, -1, 0);
+            } else if (particleInformation.velocity == glm::ivec3(1, -1, 0)) {
+                particleInformation.velocity = glm::ivec3(0, -1, -1);
+            } else if (particleInformation.velocity == glm::ivec3(0, -1, -1)) {
+                particleInformation.velocity = glm::ivec3(0, -1, 1);
+            } else if (particleInformation.velocity == glm::ivec3(0, -1, 1)) {
+                if (particleTypeInfo.state == Solid) {
+                    if (particleInformation.velocity == glm::ivec3(0, -1, 1)) {
+                        particleInformation.velocity = glm::ivec3(0, -1, 0);
+                        continue;
+                    }
+                } else if (particleTypeInfo.state == Liquid) {
+                    if (particleInformation.velocity == glm::ivec3(0, -1, 1)) {
+                        particleInformation.velocity = glm::ivec3(-1, 0, 0);
+                    } else if (particleInformation.velocity == glm::ivec3(-1, 0, 0)) {
+                        particleInformation.velocity = glm::ivec3(1, 0, 0);
+                    } else if (particleInformation.velocity == glm::ivec3(1, 0, 0)) {
+                        particleInformation.velocity = glm::ivec3(0, 0, -1);
+                    }else if (particleInformation.velocity == glm::ivec3(0, 0, -1)) {
+                        particleInformation.velocity = glm::ivec3(0, 0, 1);
+                    } else if (particleInformation.velocity == glm::ivec3(0, 0, 1)) {
+                        particleInformation.velocity = glm::ivec3(0, -1, 0);
+                        continue;
+                    }
+                }
             }
+            nextPositionsToUpdate.emplace(currentPos);
+            continue;
+        }
 
-            if (boundsCmp.y < 0) {
-                chunkPosInside.y += 1;
-                posToTryInNewChunk.y -= dimensions.y;
-            } else if (boundsCmp.y >= dimensions.y) {
-                chunkPosInside.y -= 1;
-                posToTryInNewChunk.y += dimensions.y;
-            }
+        if (particleInformation.velocity.y >= 0) {
+            const glm::ivec3 nextPosWithGravity = nextPos + glm::ivec3(0, -1, 0);
+            if (!particleHashMap.exists(nextPosWithGravity)) {
+                // particleInformation.velocity.y = particleInformation.velocity.y + -1;
+                particleHashMap.add(nextPosWithGravity, particleInformation);
+                particleHashMap.remove(currentPos);
+                nextPositionsToUpdate.emplace(nextPosWithGravity);
 
-            if (boundsCmp.z < 0) {
-                chunkPosInside.z += 1;
-                posToTryInNewChunk.z -= dimensions.z;
-            } else if (boundsCmp.z >= dimensions.z) {
-                chunkPosInside.z -= 1;
-                posToTryInNewChunk.z += dimensions.z;
-            }
-
-            if (chunkPosInside != gridPosition) {
-                if (!particlesChunks.contains(chunkPosInside)) {
-                    continue;
+                const glm::ivec3 posAboveCurrent = currentPos + glm::ivec3(0, 1, 0);
+                if (particleHashMap.exists(posAboveCurrent)) {
+                    nextPositionsToUpdate.emplace(posAboveCurrent);
                 }
 
-                const bool moved = particlesChunks.at(chunkPosInside)->tryMoveParticleTo(
-                    posToTryInNewChunk,
-                    particleHashMap.get(currentPos)
-                );
-
-                // if we moved, remove from us and break
-                if (moved) {
-                    particleHashMap.remove(currentPos);
-                    break;
-                }
-
-                // if we didn't, continue
                 continue;
             }
-
-
-            if (particleHashMap.exists(posToTry)) continue;
-
-            // We are here, we are allowed to move here
-
-            ParticleData::ParticleInformation info = particleHashMap.get(currentPos);
-            particleHashMap.add(posToTry, info);
-            particleHashMap.remove(currentPos);
-
-            const auto posBelowTryPos = posToTry - glm::ivec3(0, 1, 0);
-            if (!particleHashMap.exists(posBelowTryPos)) {
-                nextPositionsToUpdate.insert(posToTry);
-            }
-            // Add particle above currentPos to queue
-            const auto aboveCurrentPos = currentPos + glm::ivec3(0, 1, 0);
-            if (particleHashMap.exists(aboveCurrentPos)) {
-                nextPositionsToUpdate.insert(aboveCurrentPos);
-            }
-            break;
-            // if works, break
-            // else continue
         }
-        //end
+
+        particleInformation.velocity = glm::ivec3(0, -1, 0);
+        particleHashMap.add(nextPos, particleInformation);
+        particleHashMap.remove(currentPos);
+        nextPositionsToUpdate.emplace(nextPos);
+
+        const glm::ivec3 posAboveCurrent = currentPos + glm::ivec3(0, 1, 0);
+        if (particleHashMap.exists(posAboveCurrent)) {
+            nextPositionsToUpdate.emplace(posAboveCurrent);
+        }
     }
 
     particlesDirty.store(true);
@@ -434,7 +417,7 @@ bool ParticlesChunk::loadChunkData()
 
             while (!file.eof()) {
                 glm::ivec3 particlePosition;
-                ParticleData::ParticleInformation particleInformation { 0, 32.0f };
+                ParticleData::ParticleInformation particleInformation { 0, 32.0f, glm::ivec3(0, -1 ,0) };
 
                 file.read(reinterpret_cast<char*>(&particlePosition), sizeof(particlePosition));
                 file.read(reinterpret_cast<char*>(&particleInformation.particleType), sizeof(particleInformation.particleType));

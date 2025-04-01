@@ -27,6 +27,7 @@ namespace ParticleData
     struct ParticleInformation {
         unsigned particleType;
         float temperature;
+        glm::ivec3 velocity;
     };
 
 
