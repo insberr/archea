@@ -25,15 +25,15 @@ public:
 
     void initGraphics();
 
-    void update(float dt, const std::vector<ParticlesChunk*>& particleChunks);
+    void update(float dt, const std::unordered_map<glm::ivec3, ParticlesChunk*>& particleChunks);
     void render();
 
     glm::vec3 getPosition();
 
 private:
     void updatePhysics(float dt);
-    void handleParticlePlacing(float dt, const std::vector<ParticlesChunk*>& particleChunks);
-    void drawGhostCube();
+    void handleParticlePlacing(float dt, const std::unordered_map<glm::ivec3, ParticlesChunk*>& particleChunks);
+    void drawGhostCube() const;
 
     glm::vec3 position;
     glm::vec3 front;

@@ -14,6 +14,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <set>
 #include <thread>
+#include <ranges>
 
 #include "InputSystem.h"
 #include "CameraSystem.h"
@@ -24,6 +25,9 @@
 #include "Shapes.h"
 #include "particle_types/ParticleTypeSystem.h"
 #include "particle_types/ParticleType.h"
+// Enable glm vector hashing
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/hash.hpp>
 
 namespace ParticleSystem {
     /* System Function Declarations */
@@ -58,7 +62,9 @@ namespace ParticleSystem {
     float simulationStepDelta { 1.0f };
 
     // Chunks
-    std::vector<ParticlesChunk*> particleChunks;
+    using unordered_map = std::unordered_map<glm::ivec3, ParticlesChunk*>;
+    unordered_map particleChunks {};
+
     std::mutex chunksLock;
     std::jthread chunksThread;
 
@@ -96,12 +102,13 @@ void ParticleSystem::Init() {
     // ChunkConfig::EnableOutlines = false;
 
     for (unsigned x = 0; x < 2; ++x) {
-        for (unsigned y = 0; y < 1; ++y) {
+        for (unsigned y = 0; y < 2; ++y) {
             for (unsigned z = 0; z < 2; ++z) {
+                const glm::ivec3 chunkPos = glm::ivec3(x, y, z);
+
                 std::cout << "Init chunk at pos " << x << " " << y << " " << z << std::endl;
-                particleChunks.push_back(
-                    new ParticlesChunk(glm::ivec3(x, y, z), glm::uvec3(chunkSize))
-                );
+
+                particleChunks[chunkPos] = new ParticlesChunk(glm::ivec3(x, y, z), glm::uvec3(chunkSize));
             }
         }
     }
@@ -120,9 +127,12 @@ void ParticleSystem::Init() {
 
             std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
             chunksLock.lock();
-            for (const auto& chunk : particleChunks) {
+            for (const auto& chunk : std::views::values(particleChunks)) {
                 // std::cout << chunk << std::endl;
-                chunk->ProcessNextSimulationStep();
+                chunk->ProcessNextSimulationStep(particleChunks);
+            }
+            for (const auto& chunk : std::views::values(particleChunks)) {
+                chunk->ProcessPostSimulationStep();
             }
             chunksLock.unlock();
             std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
@@ -154,28 +164,29 @@ void ParticleSystem::Update(float dt) {
     // Determine the required chunk positions around the camera
     std::set<glm::ivec3, IVec3Comparator> requiredChunkPositions;
     for (int x = -chunkDistance; x <= chunkDistance; ++x) {
-        for (int z = -chunkDistance; z <= chunkDistance; ++z) {
-            auto requiredChunkPosition = cameraChunkPosition + glm::ivec3(x, 0, z);
+        for (int y = 0; y < 2; ++y) {
+            for (int z = -chunkDistance; z <= chunkDistance; ++z) {
+                auto requiredChunkPosition = cameraChunkPosition + glm::ivec3(x, 0, z);
 
-            // Enforce y to always be 0. We don't do vertical chunks right now
-            requiredChunkPosition.y = 0;
+                // // Enforce y to always be 0. We don't do vertical chunks right now
+                requiredChunkPosition.y = y;
 
-            requiredChunkPositions.insert(requiredChunkPosition);
+                requiredChunkPositions.insert(requiredChunkPosition);
+            }
         }
     }
 
     // Manage chunks in one pass
 
     if (chunksLock.try_lock()) {
-        std::vector<ParticlesChunk*> updatedChunks;
+        unordered_map updatedChunks {};
 
-        for (auto& chunk : particleChunks) {
-            auto pos = chunk->getGridPosition();
-            if (requiredChunkPositions.count(pos)) {
+        for (auto& [chunkPosition, chunk] : particleChunks) {
+            if (requiredChunkPositions.count(chunkPosition)) {
                 // Keep chunk if it's within range
-                updatedChunks.push_back(chunk);
+                updatedChunks[chunkPosition] = chunk;
                 // Remove from required set
-                requiredChunkPositions.erase(pos);
+                requiredChunkPositions.erase(chunkPosition);
             } else {
                 // Remove chunks outside range
                 delete chunk;
@@ -184,9 +195,7 @@ void ParticleSystem::Update(float dt) {
 
         // Add missing chunks
         for (const auto& pos : requiredChunkPositions) {
-            auto* newChunk = new ParticlesChunk(pos, glm::uvec3(chunkSize));
-
-            updatedChunks.push_back(newChunk);
+            updatedChunks[pos] = new ParticlesChunk(pos, glm::uvec3(chunkSize));
         }
 
         particleChunks = std::move(updatedChunks);
@@ -237,9 +246,27 @@ void ParticleSystem::Render() {
     // const GLint enableOutlinesLoc = glGetUniformLocation(shaderProgram, "EnableOutlines");
     // glUniform1ui(enableOutlinesLoc, ChunkConfig::EnableOutlines);
 
-    for (const auto& chunk : particleChunks) {
+    for (const auto& chunk : std::views::values(particleChunks)) {
         chunk->Render(window, shaderProgram, particlesColrosBuffer);
     }
+
+    if (ImGui::Begin("Rendering Controls")) {
+        if (ImGui::Button("Reload Chunk Shaders")) {
+            // Load the contents of the shaders
+            std::string vertexShaderSource = readShaderFile("../shaders/vertex_chunk.glsl");
+            std::string fragmentShaderSource = readShaderFile("../shaders/fragment_chunk.glsl");
+
+            // Make sure they arent empty
+            if (vertexShaderSource.empty() || fragmentShaderSource.empty()) {
+                return;
+            }
+
+            // Create the shader program
+            shaderProgram = createShaderProgram(vertexShaderSource, fragmentShaderSource);
+            if (shaderProgram == 0) return;
+        }
+    }
+    ImGui::End();
 
     if (ImGui::Begin("Simulation Controls")) {
         ImGui::SliderInt("Simulation Step Interval", &simulationStepInterval, 0, 500);
@@ -261,7 +288,11 @@ void ParticleSystem::Exit() {
     chunksThread.join();
 }
 void ParticleSystem::Done() {
-    for (const auto& chunk : particleChunks) {
+    for (auto& [chunkPosition, chunk] : particleChunks) {
+        if (chunk == nullptr) {
+            throw std::invalid_argument("Chunk is null during deconstruction. There should not ever be a null chunk");
+            continue;
+        }
         delete chunk;
     }
 }

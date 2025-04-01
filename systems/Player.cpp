@@ -68,9 +68,15 @@ void Player::initGraphics() {
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
     glGenBuffers(1, &EBO);
+
+    glBindVertexArray(VAO);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(Shapes::Cube::cubeVertices), Shapes::Cube::cubeVertices, GL_STATIC_DRAW);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(Shapes::Cube::indices), &Shapes::Cube::indices, GL_STATIC_DRAW);
 }
 
-void Player::update(float dt, const std::vector<ParticlesChunk*>& particleChunks) {
+void Player::update(float dt, const std::unordered_map<glm::ivec3, ParticlesChunk*>& particleChunks) {
     if (dt == 0.0f) return;
 
     // Update physics
@@ -163,28 +169,30 @@ void Player::updatePhysics(float dt) {
 
     glm::vec3 acceleration(0);
 
-    if (InputSystem::IsKeyHeld(GLFW_KEY_W)) {
-        acceleration = glm::vec3(0, 0, -dt);
-    }
-    if (InputSystem::IsKeyHeld(GLFW_KEY_S)) {
-        acceleration = glm::vec3(0.0f, 0.0f, dt);
-    }
-    if (InputSystem::IsKeyHeld(GLFW_KEY_A)) {
-        acceleration = glm::vec3(-dt, 0.0f, 0.0f);
-    }
-    if (InputSystem::IsKeyHeld(GLFW_KEY_D)) {
-        acceleration = glm::vec3(dt, 0.0f, 0.0f);
-    }
-    if (InputSystem::IsKeyHeld(GLFW_KEY_SPACE)) {
-        acceleration = glm::vec3(0.0f, dt, 0.0f);
-    }
-    if (InputSystem::IsKeyHeld(GLFW_KEY_LEFT_SHIFT)) {
-        acceleration = glm::vec3(0.0f, -dt, 0.0f);
-    }
-    if (InputSystem::IsKeyHeld(GLFW_KEY_LEFT_CONTROL)) {
-        movementSpeed = 40.0f;
-    } else {
-        movementSpeed = 20.0f;
+    if (cursorLocked) {
+        if (InputSystem::IsKeyHeld(GLFW_KEY_W)) {
+            acceleration += glm::vec3(0, 0, -dt);
+        }
+        if (InputSystem::IsKeyHeld(GLFW_KEY_S)) {
+            acceleration += glm::vec3(0.0f, 0.0f, dt);
+        }
+        if (InputSystem::IsKeyHeld(GLFW_KEY_A)) {
+            acceleration += glm::vec3(-dt, 0.0f, 0.0f);
+        }
+        if (InputSystem::IsKeyHeld(GLFW_KEY_D)) {
+            acceleration += glm::vec3(dt, 0.0f, 0.0f);
+        }
+        if (InputSystem::IsKeyHeld(GLFW_KEY_SPACE)) {
+            acceleration += glm::vec3(0.0f, dt, 0.0f);
+        }
+        if (InputSystem::IsKeyHeld(GLFW_KEY_LEFT_SHIFT)) {
+            acceleration += glm::vec3(0.0f, -dt, 0.0f);
+        }
+        if (InputSystem::IsKeyHeld(GLFW_KEY_LEFT_CONTROL)) {
+            movementSpeed = 40.0f;
+        } else {
+            movementSpeed = 20.0f;
+        }
     }
 
     // Separate vertical movement so it is not affected by rotation
@@ -200,7 +208,7 @@ void Player::updatePhysics(float dt) {
     position += acceleration * movementSpeed;
 }
 
-void Player::handleParticlePlacing(float dt, const std::vector<ParticlesChunk*>& particleChunks) {
+void Player::handleParticlePlacing(float dt, const std::unordered_map<glm::ivec3, ParticlesChunk*>& particleChunks) {
     std::pair<double, double> mouseScroll = InputSystem::MouseScroll();
 
     drawDistance += static_cast<float>(mouseScroll.second);
@@ -217,54 +225,40 @@ void Player::handleParticlePlacing(float dt, const std::vector<ParticlesChunk*>&
     lookingAtParticlePos.y = div_euclid(lookingAt.y, ParticleSystem::particleScale);
     lookingAtParticlePos.z = div_euclid(lookingAt.z, ParticleSystem::particleScale);
 
+    const glm::ivec3 drawingChunkPos = PositionConversion::ParticleGridToChunkGrid(
+        lookingAtParticlePos,
+        glm::uvec3(ParticleSystem::chunkSize)
+    );
+
     if (InputSystem::IsMouseButtonHeld(GLFW_MOUSE_BUTTON_LEFT)) {
-        // particleDataManager.SetType(drawPos, drawType);
-        // todo: this is not really efficient
-        for (const auto& chunk : particleChunks) {
-            chunk->tryPlaceParticleAt(
-                lookingAtParticlePos,
-                { drawType, 0.0f }
+        if (particleChunks.contains(drawingChunkPos)) {
+            particleChunks.at(drawingChunkPos)->tryPlaceParticleAt(
+                lookingAtParticlePos, { drawType, 0.0f }
             );
         }
     }
 
     if (InputSystem::IsMouseButtonHeld(GLFW_MOUSE_BUTTON_RIGHT)) {
-        // particleDataManager.SetType(drawPos, 0);
-        for (const auto& chunk : particleChunks) {
-            chunk->tryPlaceParticleAt(
-                lookingAtParticlePos,
-                { 0, 0.0f }
+        if (particleChunks.contains(drawingChunkPos)) {
+            particleChunks.at(drawingChunkPos)->tryPlaceParticleAt(
+                lookingAtParticlePos, { 0, 0.0f }
             );
         }
     }
 }
 
-void Player::drawGhostCube() {
+void Player::drawGhostCube() const {
     glBindVertexArray(VAO);
-
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(Shapes::Cube::cubeVertices), Shapes::Cube::cubeVertices, GL_STATIC_DRAW);
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(Shapes::Cube::indices), &Shapes::Cube::indices, GL_STATIC_DRAW);
-
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-    // glEnableVertexAttribArray(1);
-    // glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
-
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
 
     // todo: throw error if no shader program???
     if (shaderProgram == 0) return;
     glUseProgram(shaderProgram);
 
-    GLuint particleTypeLoc = glGetUniformLocation(shaderProgram, "particleType");
-    GLuint positionLoc = glGetUniformLocation(shaderProgram, "position");
-    GLuint particleScaleLoc = glGetUniformLocation(shaderProgram, "particleScale");
-    GLuint viewLoc = glGetUniformLocation(shaderProgram, "view");
-    GLuint projectionLoc = glGetUniformLocation(shaderProgram, "projection");
+    const GLint particleTypeLoc = glGetUniformLocation(shaderProgram, "particleType");
+    const GLint positionLoc = glGetUniformLocation(shaderProgram, "position");
+    const GLint particleScaleLoc = glGetUniformLocation(shaderProgram, "particleScale");
+    const GLint viewLoc = glGetUniformLocation(shaderProgram, "view");
+    const GLint projectionLoc = glGetUniformLocation(shaderProgram, "projection");
 
     auto view = CameraSystem::GetView();
     auto projection = CameraSystem::GetProjection();
@@ -274,8 +268,14 @@ void Player::drawGhostCube() {
     glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
     glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
-    // Bind the vertex data
-    glBindVertexArray(VAO);
-    // Call draw
-    glDrawElements(GL_TRIANGLES, sizeof(Shapes::Cube::indices), GL_UNSIGNED_INT, 0);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), static_cast<void*>(nullptr));
+
+    glDrawElements(GL_TRIANGLES, sizeof(Shapes::Cube::indices), GL_UNSIGNED_INT, nullptr);
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
 }

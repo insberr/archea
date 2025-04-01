@@ -6,6 +6,7 @@
 #pragma once
 #include <mutex>
 #include <queue>
+#include <unordered_set>
 #include <GL/glew.h>
 
 #include "ParticleData.h"
@@ -45,10 +46,12 @@ public:
     void Update(float dt);
     void Render(GLFWwindow* window, GLuint shaderProgram, GLuint particlesColorsBuffer);
 
-    void ProcessNextSimulationStep();
+    void ProcessNextSimulationStep(std::unordered_map<glm::ivec3, ParticlesChunk*>& particlesChunks);
+    void ProcessPostSimulationStep();
 
+    bool tryMoveParticleTo(const glm::uvec3& positionToMoveTo, const ParticleData::ParticleInformation& particleInformation);
     // If the chunk has a lock on its data, this will block until it's done
-    bool tryPlaceParticleAt(const glm::ivec3& worldParticlePosition, const ParticleData::ParticleInformation& particleInformation);
+    void tryPlaceParticleAt(const glm::ivec3& worldParticlePosition, const ParticleData::ParticleInformation& particleInformation);
 
     glm::ivec3 getGridPosition() const;
     glm::ivec3 getWorldPosition() const;
@@ -62,11 +65,13 @@ private:
 
     // Data
     ParticleData::ParticleHashMap particleHashMap;
+    std::atomic<bool> particlesDirty = false;
 
     // Simulation and Processing
     std::mutex lock;
 
-    std::deque<glm::ivec3> nextPositionsToUpdate;
+    std::unordered_set<glm::ivec3> nextPositionsToUpdate;
+    std::unordered_set<glm::ivec3> futureNextPositionsToUpdate;
 
     // Rendering
     GLuint VBO {0}, VAO {0}, EBO {0};

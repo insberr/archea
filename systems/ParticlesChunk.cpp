@@ -61,19 +61,24 @@ ParticlesChunk::ParticlesChunk(
     glGenBuffers(1, &EBO);
 
 
-    if (!loadChunkData())
+    if (!loadChunkData() && chunkGridPosition.y == 0)
     {
         // todo: Temp, for testing
         for (unsigned x = 0; x < 64; ++x) {
-            for (unsigned y = 0; y < 6; ++y) {
+            for (unsigned y = 0; y < 1; ++y) {
                 for (unsigned z = 0; z < 64; ++z) {
                     const auto position = glm::uvec3(x, y, z);
                     particleHashMap.add(position, 2);
-                    nextPositionsToUpdate.emplace_back(position);
+                    // nextPositionsToUpdate.emplace_back(position);
                 }
             }
         }
     }
+
+    particleHashMap.add(glm::ivec3(0), 1);
+    particleHashMap.add(glm::ivec3(0, 0, 1), 1);
+    particleHashMap.add(glm::ivec3(0, 1, 0), 1);
+    particleHashMap.add(glm::ivec3(1, 0, 0), 1);
 
     remesh();
 
@@ -125,7 +130,7 @@ void ParticlesChunk::Update(float dt) {
     // }
 }
 
-void ParticlesChunk::ProcessNextSimulationStep() {
+void ParticlesChunk::ProcessNextSimulationStep(std::unordered_map<glm::ivec3, ParticlesChunk*>& particlesChunks) {
     const std::lock_guard guard(lock);
 
     if (nextPositionsToUpdate.empty()) {
@@ -140,16 +145,15 @@ void ParticlesChunk::ProcessNextSimulationStep() {
         }
 
         // z * (ysize * xsize) + y * (xsize) + x
-        unsigned particle = particleHashMap.get(currentPos).particleType;
+        ParticleData::ParticleInformation& particle = particleHashMap.get(currentPos);
         // if (particle <= 1) continue;
 
-        auto particleTypeInfo = ParticleTypeSystem::GetParticleTypeInfo(particle);
+        ParticleType& particleTypeInfo = ParticleTypeSystem::GetParticleTypeInfo(particle.particleType);
 
-        auto posToTry = glm::ivec3(0);
-
-        // new
         auto nextMove = ParticleMove::MoveState {};
         while (true) {
+            glm::ivec3 posToTry;
+
             particleTypeInfo.getNextMove(nextMove);
 
             if (nextMove.done) break;
@@ -158,9 +162,59 @@ void ParticlesChunk::ProcessNextSimulationStep() {
 
             // try pos
 
-            if (posToTry.y < 0) continue;
-            posToTry = glm::clamp(posToTry, glm::ivec3(0), glm::ivec3(dimensions - glm::uvec3(1)));
+            // if (posToTry.y < 0) continue;
+
+            // posToTry = glm::clamp(posToTry, glm::ivec3(0), glm::ivec3(dimensions - glm::uvec3(1)));
             // int newY = std::clamp<int>(y - 1, 0, 49);
+            glm::ivec3 boundsCmp = glm::ivec3(dimensions - glm::uvec3(1)) - posToTry;
+
+            glm::ivec3 chunkPosInside = gridPosition;
+            glm::uvec3 posToTryInNewChunk = posToTry;
+
+            if (boundsCmp.x < 0) {
+                chunkPosInside.x += 1;
+                posToTryInNewChunk.x -= dimensions.x;
+            } else if (boundsCmp.x >= dimensions.x) {
+                chunkPosInside.x -= 1;
+                posToTryInNewChunk.x += dimensions.x;
+            }
+
+            if (boundsCmp.y < 0) {
+                chunkPosInside.y += 1;
+                posToTryInNewChunk.y -= dimensions.y;
+            } else if (boundsCmp.y >= dimensions.y) {
+                chunkPosInside.y -= 1;
+                posToTryInNewChunk.y += dimensions.y;
+            }
+
+            if (boundsCmp.z < 0) {
+                chunkPosInside.z += 1;
+                posToTryInNewChunk.z -= dimensions.z;
+            } else if (boundsCmp.z >= dimensions.z) {
+                chunkPosInside.z -= 1;
+                posToTryInNewChunk.z += dimensions.z;
+            }
+
+            if (chunkPosInside != gridPosition) {
+                if (!particlesChunks.contains(chunkPosInside)) {
+                    continue;
+                }
+
+                const bool moved = particlesChunks.at(chunkPosInside)->tryMoveParticleTo(
+                    posToTryInNewChunk,
+                    particleHashMap.get(currentPos)
+                );
+
+                // if we moved, remove from us and break
+                if (moved) {
+                    particleHashMap.remove(currentPos);
+                    break;
+                }
+
+                // if we didn't, continue
+                continue;
+            }
+
 
             if (particleHashMap.exists(posToTry)) continue;
 
@@ -172,12 +226,12 @@ void ParticlesChunk::ProcessNextSimulationStep() {
 
             const auto posBelowTryPos = posToTry - glm::ivec3(0, 1, 0);
             if (!particleHashMap.exists(posBelowTryPos)) {
-                nextPositionsToUpdate.push_back(posToTry);
+                nextPositionsToUpdate.insert(posToTry);
             }
             // Add particle above currentPos to queue
             const auto aboveCurrentPos = currentPos + glm::ivec3(0, 1, 0);
             if (particleHashMap.exists(aboveCurrentPos)) {
-                nextPositionsToUpdate.push_back(aboveCurrentPos);
+                nextPositionsToUpdate.insert(aboveCurrentPos);
             }
             break;
             // if works, break
@@ -186,7 +240,33 @@ void ParticlesChunk::ProcessNextSimulationStep() {
         //end
     }
 
-    remesh();
+    particlesDirty.store(true);
+}
+
+void ParticlesChunk::ProcessPostSimulationStep() {
+    nextPositionsToUpdate.merge(futureNextPositionsToUpdate);
+    futureNextPositionsToUpdate.clear();
+
+    if (particlesDirty.load()) {
+        remesh();
+        particlesDirty.store(false);
+    }
+}
+
+bool ParticlesChunk::tryMoveParticleTo(
+    const glm::uvec3& positionToMoveTo,
+    const ParticleData::ParticleInformation& particleInformation
+) {
+    if (particleHashMap.exists(positionToMoveTo)) {
+        return false;
+    }
+
+    particleHashMap.add(positionToMoveTo, particleInformation);
+    futureNextPositionsToUpdate.insert(positionToMoveTo);
+
+    particlesDirty.store(true);
+
+    return true;
 }
 
 void ParticlesChunk::Render(
@@ -222,16 +302,11 @@ void ParticlesChunk::Render(
     glBindVertexArray(0);
 }
 
-bool ParticlesChunk::tryPlaceParticleAt(
+void ParticlesChunk::tryPlaceParticleAt(
     const glm::ivec3& worldParticlePosition,
     const ParticleData::ParticleInformation& particleInformation
 )
 {
-    const glm::ivec3 chunkPos = PositionConversion::ParticleGridToChunkGrid(worldParticlePosition, dimensions);
-    if (chunkPos != gridPosition) {
-        return false;
-    }
-
     // Block until able to acquire lock
     const std::lock_guard guard(lock);
 
@@ -240,20 +315,26 @@ bool ParticlesChunk::tryPlaceParticleAt(
     if (particleInformation.particleType == 0) {
         particleHashMap.remove(particlePositionInChunk);
         // todo: might be good to remove from nextPositionsToUpdate too
-        remesh();
-        return false;
+        particlesDirty.store(true);
+        return;
     }
 
+    bool doRemesh = false;
     if (particleHashMap.exists(particlePositionInChunk)) {
-        particleHashMap.get(particlePositionInChunk) = particleInformation;
+        ParticleData::ParticleInformation& particle = particleHashMap.get(particlePositionInChunk);
+        if (particle.particleType != particleInformation.particleType) {
+            doRemesh = true;
+        }
+        particle = particleInformation;
     } else {
         particleHashMap.add(particlePositionInChunk, particleInformation);
+        doRemesh = true;
     }
-    nextPositionsToUpdate.emplace_back(particlePositionInChunk);
+    nextPositionsToUpdate.emplace(particlePositionInChunk);
 
-    remesh();
-
-    return false;
+    if (doRemesh) {
+        particlesDirty.store(true);
+    }
 }
 
 glm::ivec3 ParticlesChunk::getGridPosition() const {
@@ -330,7 +411,7 @@ bool ParticlesChunk::loadChunkData()
         std::ifstream file(filenameForChunk.str(), std::ios::binary);
 
         if (file) {
-            std::cout << "Reading: " << filenameForChunk.str() << std::endl;
+            // std::cout << "Reading: " << filenameForChunk.str() << std::endl;
 
             file.read(reinterpret_cast<char*>(&dimensions), sizeof(dimensions));
             file.seekg(sizeof(separator), std::ios::cur);
@@ -348,7 +429,7 @@ bool ParticlesChunk::loadChunkData()
                 file.seekg(sizeof(separator), std::ios::cur);
 
                 if (positionInDeque == glm::ivec3(glm::uvec3(separator))) break;
-                nextPositionsToUpdate.emplace_back(positionInDeque);
+                nextPositionsToUpdate.emplace(positionInDeque);
             }
 
             while (!file.eof()) {
@@ -357,6 +438,7 @@ bool ParticlesChunk::loadChunkData()
 
                 file.read(reinterpret_cast<char*>(&particlePosition), sizeof(particlePosition));
                 file.read(reinterpret_cast<char*>(&particleInformation.particleType), sizeof(particleInformation.particleType));
+                file.peek();
 
                 particleHashMap.add(particlePosition, particleInformation);
             }

@@ -68,6 +68,9 @@ add_executable(archea
         systems/Player.cpp
         systems/Player.h
         systems/particle_types/ErrorParticle_Type.h
+        systems/particle_types/StoneParticleType.h
+        systems/particle_types/SteamParticleType.h
+        systems/particle_types/LavaParticleType.h
 )
 
 # Link libraries

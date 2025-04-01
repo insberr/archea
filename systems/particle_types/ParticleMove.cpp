@@ -36,7 +36,7 @@ void ParticleMove::predefined::down(ParticleMove::MoveState &lastMoveState)  {
 void ParticleMove::predefined::randomLR(MoveState& lastMoveState) {
     // if (lastMoveState.step >= 1) lastMoveState.done = true;
     lastMoveState.step++;
-    lastMoveState.positionToTry = Left;
+    lastMoveState.positionToTry = Right;
 }
 
 void ParticleMove::predefined::randomFB(MoveState& lastMoveState) {
