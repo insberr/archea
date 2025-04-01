@@ -411,7 +411,7 @@ bool ParticlesChunk::loadChunkData()
         std::ifstream file(filenameForChunk.str(), std::ios::binary);
 
         if (file) {
-            std::cout << "Reading: " << filenameForChunk.str() << std::endl;
+            // std::cout << "Reading: " << filenameForChunk.str() << std::endl;
 
             file.read(reinterpret_cast<char*>(&dimensions), sizeof(dimensions));
             file.seekg(sizeof(separator), std::ios::cur);
@@ -438,6 +438,7 @@ bool ParticlesChunk::loadChunkData()
 
                 file.read(reinterpret_cast<char*>(&particlePosition), sizeof(particlePosition));
                 file.read(reinterpret_cast<char*>(&particleInformation.particleType), sizeof(particleInformation.particleType));
+                file.peek();
 
                 particleHashMap.add(particlePosition, particleInformation);
             }
