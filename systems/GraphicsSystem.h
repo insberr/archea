@@ -15,8 +15,8 @@ namespace Graphics {
     /* Implementation Here */
 
     // Some constants
-    const unsigned WindowWidth = 1280;
-    const unsigned WindowHeight = 720;
+    const unsigned WindowWidth = 1920;
+    const unsigned WindowHeight = 1080;
 
     // Get the window value created by glfw
     GLFWwindow* GetWindow();
