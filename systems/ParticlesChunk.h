@@ -4,6 +4,7 @@
 
 
 #pragma once
+#include <atomic>
 #include <mutex>
 #include <queue>
 #include <unordered_set>
