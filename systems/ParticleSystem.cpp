@@ -39,12 +39,12 @@ namespace ParticleSystem {
     void Done();
     System AsSystem() {
         return {
-            Setup,
-            Init,
-            Update,
-            Render,
-            Exit,
-            Done
+            .Setup = Setup,
+            .Init = Init,
+            .Update = Update,
+            .Render = Render,
+            .Exit = Exit,
+            .Done = Done,
         };
     }
 
@@ -202,25 +202,6 @@ void ParticleSystem::Update(float dt) {
         chunksLock.unlock();
     }
 }
-
-//struct Particel {
-//    Type t;
-//    glm::vec4 color;
-//    float temperature;
-//};
-//class Particles {
-//    Particel GetParticle(glm::vec3 pos) {
-//        return {
-//            particles[pos.z * (50 * 50) + pos.y * (50) + pos.x],
-//            color,
-//            10.0f
-//        };
-//    }
-//private:
-//
-//    std::vector<glm::vec4> particles;
-//
-//};
 
 void ParticleSystem::Render() {
     auto window = Graphics::GetWindow();

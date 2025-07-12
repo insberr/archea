@@ -52,8 +52,6 @@ add_executable(archea
         systems/particle_types/SandParticle_Type.h
         systems/particle_types/ParticleTypeSystem.cpp
         systems/particle_types/ParticleTypeSystem.h
-        systems/TestSingletonSystem.cpp
-        systems/TestSingletonSystem.h
         systems/GraphicsSystem.cpp
         systems/GraphicsSystem.h
         systems/particle_types/DebugParticle_Type.h

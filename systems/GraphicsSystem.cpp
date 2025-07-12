@@ -13,18 +13,14 @@ namespace Graphics {
     /* System Function Declarations */
     int Setup();
     void Init();
-    // void Update(float dt);
-    // void Render();
     void Exit();
     void Done();
     System AsSystem() {
         return {
-                Setup,
-                Init,
-                nullptr, // Update,
-                nullptr, // Render,
-                Exit,
-                Done
+                .Setup = Setup,
+                .Init = Init,
+                .Exit = Exit,
+                .Done = Done,
         };
     }
 

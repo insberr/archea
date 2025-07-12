@@ -18,14 +18,14 @@ App::~App() {
     // Make sure we call in reverse order
     // Already in reverse order from Exit call
     // std::reverse(systems.begin(), systems.end());
-    for (auto &system: systems) {
+    for (const System &system: systems) {
         if (system.Done) system.Done();
     }
 };
 
 int App::Run() {
     // Initialize all systems
-    for (auto &system: systems) {
+    for (const System &system: systems) {
         if (system.Init) system.Init();
     }
 
@@ -40,34 +40,38 @@ int App::Run() {
         // std::chrono::milliseconds timespan(waitMS);
         // std::this_thread::sleep_for(timespan);
 
+        for (const System &system: systems) {
+            if (system.PrePollEvents) system.PrePollEvents();
+        }
+
         // Poll for events
         glfwPollEvents();
 
-        for (auto &system: systems) {
+        for (const System &system: systems) {
             if (system.Update) system.Update(dt);
         }
 
         // CLear the window
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        // Start Imgui Frame
-        ImGuiSystem::StartFrame();
+        for (const System &system: systems) {
+            if (system.PreRender) system.PreRender();
+        }
 
-        // ImGui::ShowDemoWindow(); // Show demo window! :)
+        // Do drawing here
+        for (const System &system: systems) {
+            if (system.Render) system.Render();
+        }
+
         if (ImGui::Begin("Stats")) {
             ImGui::Text("FPS %.2f", ImGui::GetIO().Framerate);
             ImGui::Text("Delta %.4f", dt);
         }
         ImGui::End();
 
-
-        // Do drawing here
-        for (auto &system: systems) {
-            if (system.Render) system.Render();
+        for (const System &system: systems) {
+            if (system.PostRender) system.PostRender();
         }
-
-        // Rendering Imgui
-        ImGuiSystem::EndFrame();
 
         // Swap the buffers
         glfwSwapBuffers(Graphics::GetWindow());
