@@ -58,7 +58,7 @@ namespace ParticleSystem {
     // int maxRaySteps { 400 };
     // bool enableOutlines { false };
     // init ParticlesChunk static values
-    int simulationStepInterval { 200 };
+    int simulationStepInterval { 20 };
     float simulationStepDelta { 1.0f };
 
     // Chunks
@@ -206,11 +206,8 @@ void ParticleSystem::Update(float dt) {
 void ParticleSystem::Render() {
     auto window = Graphics::GetWindow();
 
-    player.render();
-
     // Set the shader program
     glUseProgram(shaderProgram);
-
 
     auto projection = CameraSystem::GetProjection();
     auto view = CameraSystem::GetView();
@@ -230,6 +227,8 @@ void ParticleSystem::Render() {
     for (const auto& chunk : std::views::values(particleChunks)) {
         chunk->Render(window, shaderProgram, particlesColrosBuffer);
     }
+
+    player.render();
 
     if (ImGui::Begin("Rendering Controls")) {
         if (ImGui::Button("Reload Chunk Shaders")) {
