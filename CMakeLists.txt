@@ -39,7 +39,6 @@ add_executable(archea
         App.cpp App.h
         systems/System.h
         shaders.cpp shaders.h
-        systems/ParticleSystem.cpp systems/ParticleSystem.h
         systems/InputSystem.cpp
         systems/InputSystem.h
         EngineTimer.cpp
@@ -69,6 +68,12 @@ add_executable(archea
         systems/particle_types/StoneParticleType.h
         systems/particle_types/SteamParticleType.h
         systems/particle_types/LavaParticleType.h
+        systems/SceneSystem.cpp
+        systems/SceneSystem.h
+        scenes/MainMenuScene.cpp
+        scenes/MainMenuScene.h
+        scenes/SandboxScene.cpp
+        scenes/SandboxScene.h
 )
 
 # Link libraries

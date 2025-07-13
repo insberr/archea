@@ -10,9 +10,12 @@
 // #include <thread>
 
 // Systems
+#include "scenes/MainMenuScene.h"
 #include "systems/GraphicsSystem.h"
 #include "systems/ImGuiSystem.h"
+#include "systems/SceneSystem.h"
 
+static bool do_shutdown = false;
 
 App::~App() {
     // Make sure we call in reverse order
@@ -21,6 +24,8 @@ App::~App() {
     for (const System &system: systems) {
         if (system.Done) system.Done();
     }
+
+    do_shutdown = false;
 };
 
 int App::Run() {
@@ -29,8 +34,11 @@ int App::Run() {
         if (system.Init) system.Init();
     }
 
+    SceneSystem::AddScene(new MainMenuScene());
+    SceneSystem::SwitchActiveScene("MainMenuScene");
+
     float dt = 0.0f;
-    while (!glfwWindowShouldClose(Graphics::GetWindow())) {
+    while (!glfwWindowShouldClose(Graphics::GetWindow()) && !do_shutdown) {
         dt = timer.Mark();
 
         // todo: frame cap
@@ -90,4 +98,8 @@ int App::AddSystem(const System &system) {
     int setupCode = system.Setup ? system.Setup() : 0;
     systems.push_back(system);
     return setupCode;
+}
+
+void App::Shutdown() {
+    do_shutdown = true;
 }

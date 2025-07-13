@@ -10,7 +10,7 @@
 #include "systems/ImGuiSystem.h"
 #include "systems/CameraSystem.h"
 #include "systems/particle_types/ParticleTypeSystem.h"
-#include "systems/ParticleSystem.h"
+#include "systems/SceneSystem.h"
 
 
 int main() {
@@ -30,9 +30,10 @@ int main() {
     app.AddSystem(CameraSystem::AsSystem());
 
     // Add Particle Type System
+    // TODO: Move into chunk manager or somewhere else that is not an engine system
     app.AddSystem(ParticleTypeSystem::AsSystem());
-    // Particle Simulation
-    app.AddSystem(ParticleSystem::AsSystem());
+
+    app.AddSystem(SceneSystem::AsSystem());
 
     return app.Run();
 }

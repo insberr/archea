@@ -1,13 +1,13 @@
 //
-// Created by insberr on 5/21/24.
+// Created by insberr on 7/12/25.
 //
 
-#include "ParticleSystem.h"
+#include "SandboxScene.h"
 
 #include <algorithm>
 #include <vector>
 
-#include "GraphicsSystem.h"
+#include "../systems/GraphicsSystem.h"
 #include "../shaders.h"
 // glm
 #include <iostream>
@@ -16,38 +16,21 @@
 #include <thread>
 #include <ranges>
 
-#include "InputSystem.h"
-#include "CameraSystem.h"
-#include "ImGuiSystem.h"
-#include "ParticleData.h"
-#include "ParticlesChunk.h"
-#include "Player.h"
-#include "Shapes.h"
-#include "particle_types/ParticleTypeSystem.h"
-#include "particle_types/ParticleType.h"
+#include "../systems/InputSystem.h"
+#include "../systems/CameraSystem.h"
+#include "../systems/ImGuiSystem.h"
+#include "../systems/ParticleData.h"
+#include "../systems/ParticlesChunk.h"
+#include "../systems/Player.h"
+#include "../systems/Shapes.h"
+#include "../systems/particle_types/ParticleTypeSystem.h"
+#include "../systems/particle_types/ParticleType.h"
 // Enable glm vector hashing
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/hash.hpp>
 
-namespace ParticleSystem {
-    /* System Function Declarations */
-    int Setup();
-    void Init();
-    void Update(float dt);
-    void Render();
-    void Exit();
-    void Done();
-    System AsSystem() {
-        return {
-            .Setup = Setup,
-            .Init = Init,
-            .Update = Update,
-            .Render = Render,
-            .Exit = Exit,
-            .Done = Done,
-        };
-    }
 
+namespace SandboxVars {
     /* Private Variables And Functions */
     GLuint shaderProgram { 0 };
 
@@ -70,10 +53,11 @@ namespace ParticleSystem {
 
     Player player {};
 
-};
+}
 
-int ParticleSystem::Setup() { return 0; }
-void ParticleSystem::Init() {
+using namespace SandboxVars;
+
+void SandboxScene::Init() {
     player.initGraphics();
 
     // Load the contents of the shaders
@@ -144,7 +128,7 @@ void ParticleSystem::Init() {
     std::cout << chunksThread.get_id() << std::endl;
 }
 
-void ParticleSystem::Update(float dt) {
+void SandboxScene::Update(float dt) {
     if (dt == 0.0f) return;
 
     // TODO: FIXME: It's not great having to pass this to the player update function
@@ -203,7 +187,7 @@ void ParticleSystem::Update(float dt) {
     }
 }
 
-void ParticleSystem::Render() {
+void SandboxScene::Render() {
     auto window = Graphics::GetWindow();
 
     // Set the shader program
@@ -263,11 +247,12 @@ void ParticleSystem::Render() {
     ImGui::End();
 }
 
-void ParticleSystem::Exit() {
+void SandboxScene::Exit() {
     chunksThread.request_stop();
     chunksThread.join();
 }
-void ParticleSystem::Done() {
+
+SandboxScene::~SandboxScene() {
     for (auto& [chunkPosition, chunk] : particleChunks) {
         if (chunk == nullptr) {
             throw std::invalid_argument("Chunk is null during deconstruction. There should not ever be a null chunk");
@@ -276,8 +261,3 @@ void ParticleSystem::Done() {
         delete chunk;
     }
 }
-
-/* Public Function Implementation */
-
-
-/* Private Function Implementation */

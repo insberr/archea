@@ -12,11 +12,11 @@
 #include "GraphicsSystem.h"
 #include "ImGuiSystem.h"
 #include "InputSystem.h"
-#include "../scenes/ParticleSystem.h"
 #include "particle_types/ParticleTypeSystem.h"
 #include "particle_types/ParticleType.h"
 #include "../shaders.h"
 #include "Shapes.h"
+#include "../scenes/SandboxScene.h"
 
 int div_euclid(float a, float b) {
 
@@ -221,13 +221,13 @@ void Player::handleParticlePlacing(float dt, const std::unordered_map<glm::ivec3
 
     // todo: it might be good to store the converted particle coordinate camPos and camTarget positions
     // lookingAtParticlePos = lookingAt / particleScale;
-    lookingAtParticlePos.x = div_euclid(lookingAt.x, ParticleSystem::particleScale);
-    lookingAtParticlePos.y = div_euclid(lookingAt.y, ParticleSystem::particleScale);
-    lookingAtParticlePos.z = div_euclid(lookingAt.z, ParticleSystem::particleScale);
+    lookingAtParticlePos.x = div_euclid(lookingAt.x, SandboxVars::particleScale);
+    lookingAtParticlePos.y = div_euclid(lookingAt.y, SandboxVars::particleScale);
+    lookingAtParticlePos.z = div_euclid(lookingAt.z, SandboxVars::particleScale);
 
     const glm::ivec3 drawingChunkPos = PositionConversion::ParticleGridToChunkGrid(
         lookingAtParticlePos,
-        glm::uvec3(ParticleSystem::chunkSize)
+        glm::uvec3(SandboxVars::chunkSize)
     );
 
     if (InputSystem::IsMouseButtonHeld(GLFW_MOUSE_BUTTON_LEFT)) {
@@ -263,7 +263,7 @@ void Player::drawGhostCube() const {
     auto view = CameraSystem::GetView();
     auto projection = CameraSystem::GetProjection();
     glUniform1ui(particleTypeLoc, drawType);
-    glUniform1f(particleScaleLoc, ParticleSystem::particleScale);
+    glUniform1f(particleScaleLoc, SandboxVars::particleScale);
     glUniform3f(positionLoc, lookingAtParticlePos.x, lookingAtParticlePos.y, lookingAtParticlePos.z);
     glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
     glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
