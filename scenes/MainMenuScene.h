@@ -3,11 +3,14 @@
 //
 
 #pragma once
+#include "SandboxScene.h"
 #include "../systems/SceneSystem.h"
 
 class MainMenuScene final : public SceneSystem::Scene {
 public:
-    MainMenuScene() : Scene("MainMenuScene") {};
+    MainMenuScene() : Scene("MainMenuScene") {
+        SceneSystem::AddScene(new SandboxScene());
+    };
     ~MainMenuScene() override;
 
     void Init() override;

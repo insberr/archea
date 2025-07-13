@@ -11,8 +11,6 @@
 static int button = 0;
 
 void MainMenuScene::Init() {
-    SceneSystem::AddScene(new SandboxScene());
-
     button = GUI::CreateButton(glm::vec2(1920/2, 1080/2), glm::vec2(300.0f, 100.0f), "Sandbox");
 }
 
@@ -37,7 +35,7 @@ void MainMenuScene::Render() {
 }
 
 void MainMenuScene::Exit() {
+    GUI::RemoveElement(button);
 }
 
-MainMenuScene::~MainMenuScene() {
-}
+MainMenuScene::~MainMenuScene() = default;

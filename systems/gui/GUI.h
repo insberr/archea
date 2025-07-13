@@ -17,6 +17,7 @@ namespace GUI {
         glm::vec2 position;
         glm::vec2 size;
         std::string title;
+        bool disabled;
         bool isHovered;
         bool isPressed;
         bool isReleased;
@@ -24,6 +25,9 @@ namespace GUI {
     };
 
     Element GetElementById(const int id);
+    void RemoveElement(const int id);
+    void DisableElement(const int id);
+    void EnableElement(const int id);
 
     int CreateButton(
         const glm::vec2& position,

@@ -33,6 +33,7 @@ namespace SceneSystem {
 };
 
 void SceneSystem::AddScene(Scene* scene) {
+    // TODO: Check and make sure nothing is already added for the scene
     Scenes.insert({ scene->name, scene });
 }
 void SceneSystem::RemoveScene(const std::string& sceneName) {
@@ -65,7 +66,6 @@ void SceneSystem::PrePollEvents() {
 void SceneSystem::Update(float dt) {
     if (NextScene != nullptr) {
         CurrentScene->Exit();
-
         CurrentScene = NextScene;
         NextScene = nullptr;
 

@@ -16,6 +16,9 @@ include_directories(${OPENGL_INCLUDE_DIRS} ${GLEW_INCLUDE_DIRS} ${GLFW_INCLUDE_D
 include_directories(include/imgui)
 include_directories(include/imgui/backends)
 
+# Add FreeType as subdirectory
+add_subdirectory(include/freetype)
+
 # Create EXE
 add_executable(archea
         main.cpp
@@ -79,7 +82,7 @@ add_executable(archea
 )
 
 # Link libraries
-target_link_libraries(archea ${OPENGL_LIBRARIES} ${GLEW_LIBRARIES} glfw glm::glm)
+target_link_libraries(archea ${OPENGL_LIBRARIES} ${GLEW_LIBRARIES} glfw glm::glm freetype)
 
 ### Copy shader files when they are changed
 # Find all shader files

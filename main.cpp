@@ -13,6 +13,8 @@
 #include "systems/SceneSystem.h"
 #include "systems/gui/GUI.h"
 
+#include <ft2build.h>
+#include FT_FREETYPE_H
 
 int main() {
     auto app = App{};

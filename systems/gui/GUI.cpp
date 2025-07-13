@@ -29,6 +29,8 @@ namespace GUI {
 
 void GUI::Update(float dt) {
     for (auto& element : Elements | std::ranges::views::values) {
+        if (element.disabled) continue;
+
         const Element lastFrameElement = element;
 
         // Update hovered, pressed, and released
@@ -66,6 +68,7 @@ void GUI::Update(float dt) {
 
 void GUI::Render() {
     for (const auto& element : Elements | std::ranges::views::values) {
+        if (element.disabled) continue;
         // Render a rect at position with size. using opengl
         Graphics::Draw2D::DrawRectangle(element.position, element.size, glm::vec4(0));
     }
@@ -77,6 +80,18 @@ void GUI::Done() {
 
 GUI::Element GUI::GetElementById(const int id) {
     return GUI::Elements.at(id);
+}
+
+void GUI::RemoveElement(const int id) {
+    Elements.erase(id);
+}
+
+void GUI::DisableElement(const int id) {
+    Elements.at(id).disabled = true;
+}
+
+void GUI::EnableElement(const int id) {
+    Elements.at(id).disabled = false;
 }
 
 int GUI::CreateButton(
@@ -91,6 +106,7 @@ int GUI::CreateButton(
         position,
         size,
         text,
+        false,
         false,
         false,
         false
