@@ -12,7 +12,7 @@
 #include "GraphicsSystem.h"
 #include "ImGuiSystem.h"
 #include "InputSystem.h"
-#include "ParticleSystem.h"
+#include "../scenes/ParticleSystem.h"
 #include "particle_types/ParticleTypeSystem.h"
 #include "particle_types/ParticleType.h"
 #include "../shaders.h"
@@ -119,7 +119,7 @@ void Player::render() {
         ImGui::Text("Hold Right Mouse Button to erase");
 
         ImGui::Text("Drawing Position %i %i %i", lookingAtParticlePos.x, lookingAtParticlePos.y, lookingAtParticlePos.z);
-        ImGui::SliderInt("Draw Type", reinterpret_cast<int *>(&drawType), 1, ParticleTypeSystem::GetParticleTypeCount(), ParticleTypeSystem::GetParticleTypeInfo(drawType).nameId);
+        ImGui::SliderInt("Draw Type", reinterpret_cast<int *>(&drawType), 1, ParticleTypeSystem::GetParticleTypeCount() - 1, ParticleTypeSystem::GetParticleTypeInfo(drawType).nameId);
     }
     ImGui::End();
 }
