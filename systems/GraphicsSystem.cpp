@@ -7,6 +7,8 @@
 #include <iostream>
 
 #include "CameraSystem.h"
+#include "Shapes.h"
+#include "../shaders.h"
 
 // Private values
 namespace Graphics {
@@ -36,6 +38,46 @@ namespace Graphics {
 
     // Some callback for frame buffer size
     void framebufferSizeCallback(GLFWwindow* window, int width, int height);
+}
+
+namespace Graphics::Draw2D {
+    GLuint VAO, VBO, EBO;
+    GLuint shaderProgram;
+
+    void setupRectBuffers() {
+        glGenVertexArrays(1, &VAO);
+        glGenBuffers(1, &VBO);
+        glGenBuffers(1, &EBO);
+
+        glBindVertexArray(VAO);
+
+        glBindBuffer(GL_ARRAY_BUFFER, VBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(Shapes::Rect::rectVertices), Shapes::Rect::rectVertices, GL_STATIC_DRAW);
+
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(Shapes::Rect::rectIndices), Shapes::Rect::rectIndices, GL_STATIC_DRAW);
+
+        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+        glEnableVertexAttribArray(0);
+
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindVertexArray(0);
+    }
+
+    void DrawRectangle(const glm::vec2 &position, const glm::vec2 &size, const glm::vec4 &color) {
+        glUseProgram(shaderProgram);
+
+        // Set uniforms
+        glUniform2f(glGetUniformLocation(shaderProgram, "u_position"), position.x, position.y);
+        glUniform2f(glGetUniformLocation(shaderProgram, "u_size"), size.x, size.y);
+        // TODO: Dont hard code this...
+        glUniform2f(glGetUniformLocation(shaderProgram, "u_resolution"), 1920, 1080);
+        glUniform3f(glGetUniformLocation(shaderProgram, "u_color"), color.r, color.g, color.b);
+
+        glBindVertexArray(VAO);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        glBindVertexArray(0);
+    }
 }
 
 int Graphics::Setup() {
@@ -90,7 +132,18 @@ int Graphics::Setup() {
     return 0;
 }
 
-void Graphics::Init() {}
+void Graphics::Init() {
+    Draw2D::setupRectBuffers();
+    // Load the contents of the shaders
+    std::string vertexShaderSource = readShaderFile("shaders/vertex_rect.glsl");
+    std::string fragmentShaderSource = readShaderFile("shaders/fragment_rect.glsl");
+
+    // Make sure they arent empty
+    if (!vertexShaderSource.empty() && !fragmentShaderSource.empty()) {
+        // Create the shader program
+        Draw2D::shaderProgram = createShaderProgram(vertexShaderSource, fragmentShaderSource);
+    }
+}
 void Graphics::Exit() {}
 
 void Graphics::Done() {

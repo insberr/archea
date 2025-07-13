@@ -11,6 +11,7 @@
 #include "systems/CameraSystem.h"
 #include "systems/particle_types/ParticleTypeSystem.h"
 #include "systems/SceneSystem.h"
+#include "systems/gui/GUI.h"
 
 
 int main() {
@@ -28,6 +29,8 @@ int main() {
 
     // Camera System
     app.AddSystem(CameraSystem::AsSystem());
+
+    app.AddSystem(GUI::AsSystem());
 
     // Add Particle Type System
     // TODO: Move into chunk manager or somewhere else that is not an engine system

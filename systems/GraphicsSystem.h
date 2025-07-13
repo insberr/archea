@@ -6,8 +6,11 @@
 #include "System.h"
 
 // Include OpenGL Stuff
+#include <string>
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
+#include <glm/vec2.hpp>
+#include <glm/vec4.hpp>
 
 namespace Graphics {
     System AsSystem();
@@ -23,6 +26,17 @@ namespace Graphics {
 
     // Generate a shader program
     GLuint CreateShaderProgram();
+
+    namespace Draw2D {
+        // void DrawLine(int x1, int y1, int x2, int y2, int color);
+        void DrawRectangle(const glm::vec2& position, const glm::vec2& size, const glm::vec4& color);
+        // void DrawCircle(int x1, int y1, int x2, int y2, int color);
+        // void DrawTriangle(int x1, int y1, int x2, int y2, int x3, int y3, int color);
+        // void DrawCircle(int x1, int y1, int x2, int y2, int color);
+        //
+        // void DrawText(std::string text, int x, int y, int color);
+        // void DrawImage(std::string image, int x, int y, int color);
+    }
 
     // todo add more graphics wrapper here
 }

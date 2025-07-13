@@ -250,9 +250,7 @@ void SandboxScene::Render() {
 void SandboxScene::Exit() {
     chunksThread.request_stop();
     chunksThread.join();
-}
 
-SandboxScene::~SandboxScene() {
     for (auto& [chunkPosition, chunk] : particleChunks) {
         if (chunk == nullptr) {
             throw std::invalid_argument("Chunk is null during deconstruction. There should not ever be a null chunk");
@@ -261,3 +259,5 @@ SandboxScene::~SandboxScene() {
         delete chunk;
     }
 }
+
+SandboxScene::~SandboxScene() {}

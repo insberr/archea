@@ -74,6 +74,8 @@ add_executable(archea
         scenes/MainMenuScene.h
         scenes/SandboxScene.cpp
         scenes/SandboxScene.h
+        systems/gui/GUI.cpp
+        systems/gui/GUI.h
 )
 
 # Link libraries

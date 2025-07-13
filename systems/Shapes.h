@@ -86,3 +86,17 @@ namespace Shapes::Cube {
         22, 23, 20
     };
 }
+
+namespace Shapes::Rect {
+    constexpr float rectVertices[8] = {
+        -0.5f, -0.5f,
+         0.5f, -0.5f,
+         0.5f,  0.5f,
+        -0.5f,  0.5f
+    };
+
+    constexpr unsigned int rectIndices[6] = {
+        0, 1, 2,
+        2, 3, 0
+    };
+}
