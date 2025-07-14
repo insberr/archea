@@ -102,3 +102,22 @@ foreach(SHADER_FILE ${SHADER_FILES})
 endforeach()
 add_custom_target(copy_shaders DEPENDS ${COPIED_SHADERS})
 add_dependencies(archea copy_shaders)
+
+### Copy shader files when they are changed
+# Find all shader files
+file(GLOB FONT_FILES "${CMAKE_SOURCE_DIR}/fonts/*")
+set(COPIED_FONTS "")
+foreach(FONT_FILE ${FONT_FILES})
+    get_filename_component(FONT_NAME ${FONT_FILE} NAME)
+    set(FONT_OUT "${CMAKE_BINARY_DIR}/fonts/${FONT_NAME}")
+    add_custom_command(
+            OUTPUT ${FONT_OUT}
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different ${FONT_FILE} ${FONT_OUT}
+            DEPENDS ${FONT_FILE}
+            COMMENT "Copying font ${FONT_NAME} if changed"
+            VERBATIM
+    )
+    list(APPEND COPIED_FONTS ${FONT_OUT})
+endforeach()
+add_custom_target(copy_fonts DEPENDS ${COPIED_FONTS})
+add_dependencies(archea copy_fonts)

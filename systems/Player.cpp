@@ -267,17 +267,32 @@ void Player::handleParticlePlacing(float dt, const std::unordered_map<glm::ivec3
 
     if (InputSystem::IsMouseButtonHeld(GLFW_MOUSE_BUTTON_LEFT)) {
         if (particleChunks.contains(drawingChunkPos)) {
-            particleChunks.at(drawingChunkPos)->tryPlaceParticleAt(
-                lookingAtParticlePos, { drawType, 0.0f }
-            );
+            for (int offx = -2; offx < 2; offx++) {
+                for (int offy = -2; offy < 2; offy++) {
+                    for (int offz = -2; offz < 2; offz++) {
+                        const glm::ivec3 drawingPos = lookingAtParticlePos + glm::ivec3(offx, offy, offz);
+                        particleChunks.at(drawingChunkPos)->tryPlaceParticleAt(
+                            drawingPos, { drawType, 0.0f }
+                        );
+                    }
+                }
+            }
         }
     }
 
     if (InputSystem::IsMouseButtonHeld(GLFW_MOUSE_BUTTON_RIGHT)) {
         if (particleChunks.contains(drawingChunkPos)) {
-            particleChunks.at(drawingChunkPos)->tryPlaceParticleAt(
-                lookingAtParticlePos, { 0, 0.0f }
-            );
+            for (int offx = -2; offx < 2; offx++) {
+                for (int offy = -2; offy < 2; offy++) {
+                    for (int offz = -2; offz < 2; offz++) {
+                        const glm::ivec3 drawingPos = lookingAtParticlePos + glm::ivec3(offx, offy, offz);
+                        particleChunks.at(drawingChunkPos)->tryPlaceParticleAt(
+                            drawingPos, { 0, 0.0f }
+                        );
+                    }
+                }
+            }
+
         }
     }
 }
