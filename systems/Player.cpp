@@ -88,6 +88,16 @@ void Player::update(float dt, const std::unordered_map<glm::ivec3, ParticlesChun
     // Update camera position
     CameraSystem::set(position, front);
 
+    // Handle changing the selected particle type
+    if (InputSystem::IsKeyTriggered(GLFW_KEY_LEFT)) {
+        drawType -= 1;
+        drawType = std::max(1u, drawType);
+    }
+    if (InputSystem::IsKeyTriggered(GLFW_KEY_RIGHT)) {
+        drawType += 1;
+        drawType = std::min(ParticleTypeSystem::GetParticleTypeCount() - 1, drawType);
+    }
+
     // Handle placing particles
     handleParticlePlacing(dt, particleChunks);
 }
@@ -122,6 +132,31 @@ void Player::render() {
         ImGui::SliderInt("Draw Type", reinterpret_cast<int *>(&drawType), 1, ParticleTypeSystem::GetParticleTypeCount() - 1, ParticleTypeSystem::GetParticleTypeInfo(drawType).nameId);
     }
     ImGui::End();
+
+    glDisable(GL_DEPTH_TEST);
+    Graphics::Draw2D::DrawRectangle(
+        glm::vec2(250, 50),
+        glm::vec2(500, 100),
+        glm::vec4(1.0f, 1.0f, 1.0f, 0.8f)
+    );
+    const NormColor drawParticleColor = ParticleTypeSystem::GetParticleTypeInfo(drawType).color.normalized();
+    Graphics::Draw2D::DrawRectangle(
+        glm::vec2(50, 50),
+        glm::vec2(50),
+        glm::vec4(
+            drawParticleColor.r,
+            drawParticleColor.g,
+            drawParticleColor.b,
+            drawParticleColor.a
+        )
+    );
+    Graphics::Draw2D::DrawText(
+        std::string("Draw Type: ") + ParticleTypeSystem::GetParticleTypeInfo(drawType).nameId,
+        glm::vec2(100, 30),
+        1.0f,
+        glm::vec4(0.0f, 0.0f, 0.0f, 1.0f)
+    );
+    glEnable(GL_DEPTH_TEST);
 }
 
 glm::vec3 Player::getPosition() {

@@ -9,6 +9,7 @@
 #include <unordered_map>
 #include <glm/vec2.hpp>
 
+#include "imgui.h"
 #include "../GraphicsSystem.h"
 #include "../InputSystem.h"
 
@@ -35,11 +36,13 @@ void GUI::Update(float dt) {
 
         // Update hovered, pressed, and released
         // Hovered: Is mouse inside bounding box?
+        const glm::ivec2 windowSize = Graphics::GetWindowSize();
         if (const auto [mouseX, mouseY] = InputSystem::MousePosition();
             (mouseX > element.position.x - (element.size.x / 2)) &&
             (mouseX < element.position.x + (element.size.x / 2)) &&
-            (mouseY > element.position.y - (element.size.y / 2)) &&
-            (mouseY < element.position.y + (element.size.y / 2))
+            // For some reason drawing, up is positive y, but mouse down is positive y
+            (windowSize.y - mouseY > element.position.y - (element.size.y / 2)) &&
+            (windowSize.y - mouseY < element.position.y + (element.size.y / 2))
         ) {
             element.isHovered = true;
         } else {
@@ -70,7 +73,10 @@ void GUI::Render() {
     for (const auto& element : Elements | std::ranges::views::values) {
         if (element.disabled) continue;
         // Render a rect at position with size. using opengl
-        Graphics::Draw2D::DrawRectangle(element.position, element.size, glm::vec4(0));
+        glDisable(GL_DEPTH_TEST);
+        Graphics::Draw2D::DrawRectangle(element.position, element.size, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+        Graphics::Draw2D::DrawText(element.title, element.position - (element.size / 4.0f), 1.0f, glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+        glEnable(GL_DEPTH_TEST);
     }
 }
 

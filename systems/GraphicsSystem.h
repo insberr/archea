@@ -23,6 +23,7 @@ namespace Graphics {
 
     // Get the window value created by glfw
     GLFWwindow* GetWindow();
+    glm::ivec2 GetWindowSize();
 
     // Generate a shader program
     GLuint CreateShaderProgram();
@@ -33,8 +34,8 @@ namespace Graphics {
         // void DrawCircle(int x1, int y1, int x2, int y2, int color);
         // void DrawTriangle(int x1, int y1, int x2, int y2, int x3, int y3, int color);
         // void DrawCircle(int x1, int y1, int x2, int y2, int color);
-        //
-        // void DrawText(std::string text, int x, int y, int color);
+
+        void DrawText(const std::string& text, const glm::vec2& position, float scale, const glm::vec4& color);
         // void DrawImage(std::string image, int x, int y, int color);
     }
 
