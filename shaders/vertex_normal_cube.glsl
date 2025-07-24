@@ -19,5 +19,5 @@ void main() {
     vec3 world = (position + vec3(0.5)) * particleScale + (aPos * particleScale);
     gl_Position = projection * view * vec4(world, 1.0);
     fragVertexColor = colors[particleType];
-    fragVertexColor.a -= 0.5;
+    fragVertexColor.a = 0.6;
 }

@@ -9,19 +9,16 @@
 namespace ImGuiSystem {
     /* System Function Declarations */
     int Setup();
-    // void Init();
-    void Update(float dt);
-    void Render();
-    // void Exit();
+
+    void PreRender();
+    void PostRender();
     void Done();
     System AsSystem() {
         return {
-                Setup,
-                nullptr, // Init,
-                Update,
-                Render,
-                nullptr, // Exit,
-                Done
+                .Setup = Setup,
+                .PreRender = PreRender,
+                .PostRender = PostRender,
+                .Done = Done
         };
     }
 
@@ -47,29 +44,14 @@ int ImGuiSystem::Setup() {
     return 0;
 }
 
-void ImGuiSystem::Update(float dt) {
-
-}
-
-void ImGuiSystem::Render() {
-
-}
-
-void ImGuiSystem::Done() {
-    // Shutdown Imgui
-    ImGui_ImplOpenGL3_Shutdown();
-    ImGui_ImplGlfw_Shutdown();
-    ImGui::DestroyContext();
-}
-
-void ImGuiSystem::StartFrame() {
+void ImGuiSystem::PreRender() {
     // Start the Dear ImGui frame
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 }
 
-void ImGuiSystem::EndFrame() {
+void ImGuiSystem::PostRender() {
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
@@ -83,6 +65,13 @@ void ImGuiSystem::EndFrame() {
         ImGui::RenderPlatformWindowsDefault();
         glfwMakeContextCurrent(backup_current_context);
     }
+}
+
+void ImGuiSystem::Done() {
+    // Shutdown Imgui
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
 }
 
 void ImGuiSystem::EnableImGui() {

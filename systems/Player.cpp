@@ -12,11 +12,11 @@
 #include "GraphicsSystem.h"
 #include "ImGuiSystem.h"
 #include "InputSystem.h"
-#include "ParticleSystem.h"
 #include "particle_types/ParticleTypeSystem.h"
 #include "particle_types/ParticleType.h"
 #include "../shaders.h"
 #include "Shapes.h"
+#include "../scenes/SandboxScene.h"
 
 int div_euclid(float a, float b) {
 
@@ -88,6 +88,16 @@ void Player::update(float dt, const std::unordered_map<glm::ivec3, ParticlesChun
     // Update camera position
     CameraSystem::set(position, front);
 
+    // Handle changing the selected particle type
+    if (InputSystem::IsKeyTriggered(GLFW_KEY_LEFT)) {
+        drawType -= 1;
+        drawType = std::max(1u, drawType);
+    }
+    if (InputSystem::IsKeyTriggered(GLFW_KEY_RIGHT)) {
+        drawType += 1;
+        drawType = std::min(ParticleTypeSystem::GetParticleTypeCount() - 1, drawType);
+    }
+
     // Handle placing particles
     handleParticlePlacing(dt, particleChunks);
 }
@@ -119,9 +129,34 @@ void Player::render() {
         ImGui::Text("Hold Right Mouse Button to erase");
 
         ImGui::Text("Drawing Position %i %i %i", lookingAtParticlePos.x, lookingAtParticlePos.y, lookingAtParticlePos.z);
-        ImGui::SliderInt("Draw Type", reinterpret_cast<int *>(&drawType), 1, ParticleTypeSystem::GetParticleTypeCount(), ParticleTypeSystem::GetParticleTypeInfo(drawType).nameId);
+        ImGui::SliderInt("Draw Type", reinterpret_cast<int *>(&drawType), 1, ParticleTypeSystem::GetParticleTypeCount() - 1, ParticleTypeSystem::GetParticleTypeInfo(drawType).nameId);
     }
     ImGui::End();
+
+    glDisable(GL_DEPTH_TEST);
+    Graphics::Draw2D::DrawRectangle(
+        glm::vec2(250, 50),
+        glm::vec2(500, 100),
+        glm::vec4(1.0f, 1.0f, 1.0f, 0.8f)
+    );
+    const NormColor drawParticleColor = ParticleTypeSystem::GetParticleTypeInfo(drawType).color.normalized();
+    Graphics::Draw2D::DrawRectangle(
+        glm::vec2(50, 50),
+        glm::vec2(50),
+        glm::vec4(
+            drawParticleColor.r,
+            drawParticleColor.g,
+            drawParticleColor.b,
+            drawParticleColor.a
+        )
+    );
+    Graphics::Draw2D::DrawText(
+        std::string("Draw Type: ") + ParticleTypeSystem::GetParticleTypeInfo(drawType).nameId,
+        glm::vec2(100, 30),
+        1.0f,
+        glm::vec4(0.0f, 0.0f, 0.0f, 1.0f)
+    );
+    glEnable(GL_DEPTH_TEST);
 }
 
 glm::vec3 Player::getPosition() {
@@ -221,28 +256,43 @@ void Player::handleParticlePlacing(float dt, const std::unordered_map<glm::ivec3
 
     // todo: it might be good to store the converted particle coordinate camPos and camTarget positions
     // lookingAtParticlePos = lookingAt / particleScale;
-    lookingAtParticlePos.x = div_euclid(lookingAt.x, ParticleSystem::particleScale);
-    lookingAtParticlePos.y = div_euclid(lookingAt.y, ParticleSystem::particleScale);
-    lookingAtParticlePos.z = div_euclid(lookingAt.z, ParticleSystem::particleScale);
+    lookingAtParticlePos.x = div_euclid(lookingAt.x, SandboxVars::particleScale);
+    lookingAtParticlePos.y = div_euclid(lookingAt.y, SandboxVars::particleScale);
+    lookingAtParticlePos.z = div_euclid(lookingAt.z, SandboxVars::particleScale);
 
     const glm::ivec3 drawingChunkPos = PositionConversion::ParticleGridToChunkGrid(
         lookingAtParticlePos,
-        glm::uvec3(ParticleSystem::chunkSize)
+        glm::uvec3(SandboxVars::chunkSize)
     );
 
     if (InputSystem::IsMouseButtonHeld(GLFW_MOUSE_BUTTON_LEFT)) {
         if (particleChunks.contains(drawingChunkPos)) {
-            particleChunks.at(drawingChunkPos)->tryPlaceParticleAt(
-                lookingAtParticlePos, { drawType, 0.0f }
-            );
+            for (int offx = -2; offx < 2; offx++) {
+                for (int offy = -2; offy < 2; offy++) {
+                    for (int offz = -2; offz < 2; offz++) {
+                        const glm::ivec3 drawingPos = lookingAtParticlePos + glm::ivec3(offx, offy, offz);
+                        particleChunks.at(drawingChunkPos)->tryPlaceParticleAt(
+                            drawingPos, { drawType, 0.0f }
+                        );
+                    }
+                }
+            }
         }
     }
 
     if (InputSystem::IsMouseButtonHeld(GLFW_MOUSE_BUTTON_RIGHT)) {
         if (particleChunks.contains(drawingChunkPos)) {
-            particleChunks.at(drawingChunkPos)->tryPlaceParticleAt(
-                lookingAtParticlePos, { 0, 0.0f }
-            );
+            for (int offx = -2; offx < 2; offx++) {
+                for (int offy = -2; offy < 2; offy++) {
+                    for (int offz = -2; offz < 2; offz++) {
+                        const glm::ivec3 drawingPos = lookingAtParticlePos + glm::ivec3(offx, offy, offz);
+                        particleChunks.at(drawingChunkPos)->tryPlaceParticleAt(
+                            drawingPos, { 0, 0.0f }
+                        );
+                    }
+                }
+            }
+
         }
     }
 }
@@ -263,7 +313,7 @@ void Player::drawGhostCube() const {
     auto view = CameraSystem::GetView();
     auto projection = CameraSystem::GetProjection();
     glUniform1ui(particleTypeLoc, drawType);
-    glUniform1f(particleScaleLoc, ParticleSystem::particleScale);
+    glUniform1f(particleScaleLoc, SandboxVars::particleScale);
     glUniform3f(positionLoc, lookingAtParticlePos.x, lookingAtParticlePos.y, lookingAtParticlePos.z);
     glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
     glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));

@@ -16,6 +16,9 @@ include_directories(${OPENGL_INCLUDE_DIRS} ${GLEW_INCLUDE_DIRS} ${GLFW_INCLUDE_D
 include_directories(include/imgui)
 include_directories(include/imgui/backends)
 
+# Add FreeType as subdirectory
+add_subdirectory(include/freetype)
+
 # Create EXE
 add_executable(archea
         main.cpp
@@ -39,7 +42,6 @@ add_executable(archea
         App.cpp App.h
         systems/System.h
         shaders.cpp shaders.h
-        systems/ParticleSystem.cpp systems/ParticleSystem.h
         systems/InputSystem.cpp
         systems/InputSystem.h
         EngineTimer.cpp
@@ -52,8 +54,6 @@ add_executable(archea
         systems/particle_types/SandParticle_Type.h
         systems/particle_types/ParticleTypeSystem.cpp
         systems/particle_types/ParticleTypeSystem.h
-        systems/TestSingletonSystem.cpp
-        systems/TestSingletonSystem.h
         systems/GraphicsSystem.cpp
         systems/GraphicsSystem.h
         systems/particle_types/DebugParticle_Type.h
@@ -71,10 +71,18 @@ add_executable(archea
         systems/particle_types/StoneParticleType.h
         systems/particle_types/SteamParticleType.h
         systems/particle_types/LavaParticleType.h
+        systems/SceneSystem.cpp
+        systems/SceneSystem.h
+        scenes/MainMenuScene.cpp
+        scenes/MainMenuScene.h
+        scenes/SandboxScene.cpp
+        scenes/SandboxScene.h
+        systems/gui/GUI.cpp
+        systems/gui/GUI.h
 )
 
 # Link libraries
-target_link_libraries(archea ${OPENGL_LIBRARIES} ${GLEW_LIBRARIES} glfw glm::glm)
+target_link_libraries(archea ${OPENGL_LIBRARIES} ${GLEW_LIBRARIES} glfw glm::glm freetype)
 
 ### Copy shader files when they are changed
 # Find all shader files
@@ -94,3 +102,22 @@ foreach(SHADER_FILE ${SHADER_FILES})
 endforeach()
 add_custom_target(copy_shaders DEPENDS ${COPIED_SHADERS})
 add_dependencies(archea copy_shaders)
+
+### Copy shader files when they are changed
+# Find all shader files
+file(GLOB FONT_FILES "${CMAKE_SOURCE_DIR}/fonts/*")
+set(COPIED_FONTS "")
+foreach(FONT_FILE ${FONT_FILES})
+    get_filename_component(FONT_NAME ${FONT_FILE} NAME)
+    set(FONT_OUT "${CMAKE_BINARY_DIR}/fonts/${FONT_NAME}")
+    add_custom_command(
+            OUTPUT ${FONT_OUT}
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different ${FONT_FILE} ${FONT_OUT}
+            DEPENDS ${FONT_FILE}
+            COMMENT "Copying font ${FONT_NAME} if changed"
+            VERBATIM
+    )
+    list(APPEND COPIED_FONTS ${FONT_OUT})
+endforeach()
+add_custom_target(copy_fonts DEPENDS ${COPIED_FONTS})
+add_dependencies(archea copy_fonts)

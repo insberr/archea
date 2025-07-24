@@ -17,20 +17,12 @@
 
 namespace CameraSystem {
     /* System Function Declarations */
-    // int Setup();
     void Init();
-    // void Update(float dt);
     void Render();
-    // void Exit();
-    // void Done();
     System AsSystem() {
         return {
-                nullptr, // Setup,
-                Init,
-                nullptr,
-                Render,
-                nullptr,
-                nullptr, // Done
+                .Init = Init,
+                .Render = Render
         };
     }
 

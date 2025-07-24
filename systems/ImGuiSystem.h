@@ -14,9 +14,6 @@ namespace ImGuiSystem {
 
     /* Implementation Here */
 
-    void StartFrame();
-    void EndFrame();
-
     void EnableImGui();
     void DisableImGui();
     bool IsImGuiEnabled();

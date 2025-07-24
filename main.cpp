@@ -10,8 +10,11 @@
 #include "systems/ImGuiSystem.h"
 #include "systems/CameraSystem.h"
 #include "systems/particle_types/ParticleTypeSystem.h"
-#include "systems/ParticleSystem.h"
+#include "systems/SceneSystem.h"
+#include "systems/gui/GUI.h"
 
+#include <ft2build.h>
+#include FT_FREETYPE_H
 
 int main() {
     auto app = App{};
@@ -29,10 +32,13 @@ int main() {
     // Camera System
     app.AddSystem(CameraSystem::AsSystem());
 
+    app.AddSystem(GUI::AsSystem());
+
     // Add Particle Type System
+    // TODO: Move into chunk manager or somewhere else that is not an engine system
     app.AddSystem(ParticleTypeSystem::AsSystem());
-    // Particle Simulation
-    app.AddSystem(ParticleSystem::AsSystem());
+
+    app.AddSystem(SceneSystem::AsSystem());
 
     return app.Run();
 }

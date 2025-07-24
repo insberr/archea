@@ -18,6 +18,8 @@ public:
     // Add a system to the engine.
     // Returns a status code from the system Setup function
     int AddSystem(const System& system);
+
+    static void Shutdown();
 private:
     EngineTimer timer;
 

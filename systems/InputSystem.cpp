@@ -10,20 +10,13 @@
 
 namespace InputSystem {
     /* System Function Declarations */
-    // int Setup();
     void Init();
-    void Update(float dt);
-    void Render();
-    void Exit();
-    // void Done();
+    void PrePollEvents();
+
     System AsSystem() {
         return {
-            nullptr,
-            Init,
-            Update,
-            Render,
-            Exit,
-            nullptr
+            .Init = Init,
+            .PrePollEvents = PrePollEvents,
         };
     }
 
@@ -65,11 +58,7 @@ void InputSystem::Init() {
     }
 }
 
-void InputSystem::Update(float dt) {
-}
-
-void InputSystem::Render()
-{
+void InputSystem::PrePollEvents() {
     keysLastFrame = keysThisFrame;
     mouseButtonLastFrame = mouseButtonThisFrame;
     mousePositionLastFrame = mousePositionThisFrame;
@@ -77,7 +66,7 @@ void InputSystem::Render()
     mouseScrollLastFrame = mouseScrollThisFrame;
     mouseScrollThisFrame = { 0, 0 }; // todo: this cant be right...
 }
-void InputSystem::Exit() {}
+
 
 bool InputSystem::IsKeyTriggered(int key) {
     auto stateLast = keysLastFrame.find(key);
