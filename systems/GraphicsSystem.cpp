@@ -26,14 +26,16 @@ namespace Graphics {
     /* System Function Declarations */
     int Setup();
     void Init();
-    void Exit();
+    void PrePollEvents();
+    void Update(float dt);
     void Done();
     System AsSystem() {
         return {
-                .Setup = Setup,
-                .Init = Init,
-                .Exit = Exit,
-                .Done = Done,
+            .Setup = Setup,
+            .Init = Init,
+            .PrePollEvents = PrePollEvents,
+            .Update = Update,
+            .Done = Done,
         };
     }
 
@@ -41,6 +43,9 @@ namespace Graphics {
 
     // The GLFW window
     GLFWwindow* window { nullptr };
+
+    // Did window resize
+    bool didWindowResize { false };
 
     /* Internal Functions */
 
@@ -52,7 +57,7 @@ namespace Graphics {
 }
 
 namespace Graphics::Draw2D {
-    const glm::mat4 projection = glm::ortho(0.0f, 1920.0f, 0.0f, 1080.0f);
+    glm::mat4 projection = glm::ortho(0.0f, 1920.0f, 0.0f, 1080.0f);
     // This flips things the way they are supposed to be smh
     // glm::mat4 projection = glm::ortho(0.0f, 1920.0f, 1080.0f, 0.0f, -1.0f, 1.0f);
 
@@ -88,7 +93,7 @@ namespace Graphics::Draw2D {
         glUniform2f(glGetUniformLocation(RectGL::shaderProgram, "u_position"), position.x, position.y);
         glUniform2f(glGetUniformLocation(RectGL::shaderProgram, "u_size"), size.x, size.y);
         const glm::ivec2 windowSize = GetWindowSize();
-        glUniform2f(glGetUniformLocation(RectGL::shaderProgram, "u_resolution"), 1920.0f, 1080.0f);
+        glUniform2f(glGetUniformLocation(RectGL::shaderProgram, "u_resolution"), windowSize.x, windowSize.y);
         glUniform4f(glGetUniformLocation(RectGL::shaderProgram, "u_color"), color.r, color.g, color.b, color.a);
 
         glBindVertexArray(RectGL::VAO);
@@ -214,14 +219,23 @@ namespace Graphics::Draw2D {
         glActiveTexture(GL_TEXTURE0);
         glBindVertexArray(TextGL::VAO);
 
+        // iterate through all characters to find total width for text centering
+        unsigned int totalWidth = 0;
+        std::string::const_iterator cw;
+        for (cw = text.begin(); cw != text.end(); cw++) {
+            TextGL::Character ch = TextGL::Characters[*cw];
+            totalWidth += (ch.Advance >> 6) * scale; // bitshift by 6 to get value in pixels (2^6 = 64)
+        }
+        float totalWidthHalf = totalWidth / 2;
+
         // iterate through all characters
         std::string::const_iterator c;
         for (c = text.begin(); c != text.end(); c++)
         {
             TextGL::Character ch = TextGL::Characters[*c];
 
-            float xpos = x + ch.Bearing.x * scale;
-            float ypos = y - (ch.Size.y - ch.Bearing.y) * scale;
+            float xpos = (x - totalWidthHalf) + ch.Bearing.x * scale;
+            float ypos = (y - (ch.Size.y - ch.Bearing.y) * scale) - (48 / 4);
 
             float w = ch.Size.x * scale;
             float h = ch.Size.y * scale;
@@ -464,7 +478,31 @@ void Graphics::Init() {
 
     Draw2D::TextureGL::Init();
 }
-void Graphics::Exit() {}
+
+void Graphics::PrePollEvents() {
+    didWindowResize = false;
+}
+
+void Graphics::Update(float dt) {
+    glm::ivec2 windowSize = GetWindowSize();
+    Draw2D::projection = glm::ortho(0.0f, static_cast<float>(windowSize.x), 0.0f, static_cast<float>(windowSize.y));
+
+    glUseProgram(Draw2D::TextGL::shaderProgram);
+    glUniformMatrix4fv(
+        glGetUniformLocation(Draw2D::TextGL::shaderProgram, "projection"),
+        1,
+        GL_FALSE,
+        glm::value_ptr(Draw2D::projection)
+    );
+
+    glUseProgram(Draw2D::TextureGL::shaderProgram);
+    glUniformMatrix4fv(
+        glGetUniformLocation(Draw2D::TextureGL::shaderProgram, "projection"),
+        1,
+        GL_FALSE,
+        glm::value_ptr(Draw2D::projection)
+    );
+}
 
 void Graphics::Done() {
     // Free GLFW window, GLFW, and GLEW if needed
@@ -484,6 +522,10 @@ glm::ivec2 Graphics::GetWindowSize() {
     return windowSize;
 }
 
+bool Graphics::DidWindowResize() {
+    return didWindowResize;
+}
+
 GLuint Graphics::CreateShaderProgram() {
     return 0; // todo
 }
@@ -496,4 +538,5 @@ void Graphics::errorCallback(int error, const char *description) {
 void Graphics::framebufferSizeCallback(GLFWwindow* wind, int width, int height) {
     glViewport(0, 0, width, height);
     CameraSystem::setAspectRatio(static_cast<float>(width) / static_cast<float>(height));
+    didWindowResize = true;
 }

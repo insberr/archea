@@ -29,6 +29,9 @@ namespace GUI {
     void DisableElement(const int id);
     void EnableElement(const int id);
 
+    void UpdateElementPosition(int id, const glm::vec2& position);
+    void UpdateElementSize(int id, const glm::vec2& size);
+
     int CreateButton(
         const glm::vec2& position,
         const glm::vec2& size,

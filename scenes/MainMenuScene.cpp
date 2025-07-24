@@ -25,6 +25,12 @@ void MainMenuScene::Init() {
 }
 
 void MainMenuScene::Update(float dt) {
+    if (Graphics::DidWindowResize()) {
+        glm::ivec2 windowSize = Graphics::GetWindowSize();
+        GUI::UpdateElementPosition(sandboxButton, glm::vec2(windowSize.x/2, windowSize.y/2));
+        GUI::UpdateElementPosition(quitButton, glm::vec2(windowSize.x/2, windowSize.y/2 - 150));
+    }
+
     const GUI::Element sandboxButtonElm = GUI::GetElementById(sandboxButton);
     if (sandboxButtonElm.isTriggered) {
         SceneSystem::SwitchActiveScene("SandboxScene");

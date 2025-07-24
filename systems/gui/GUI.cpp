@@ -87,7 +87,7 @@ void GUI::PostRender() {
             0.0f,
             color
         );
-        Graphics::Draw2D::DrawText(element.title, element.position - (element.size / 4.0f), 1.0f, glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+        Graphics::Draw2D::DrawText(element.title, element.position, 1.0f, glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
         glEnable(GL_DEPTH_TEST);
     }
 }
@@ -110,6 +110,14 @@ void GUI::DisableElement(const int id) {
 
 void GUI::EnableElement(const int id) {
     Elements.at(id).disabled = false;
+}
+
+void GUI::UpdateElementPosition(int id, const glm::vec2 &position) {
+    Elements.at(id).position = position;
+}
+
+void GUI::UpdateElementSize(int id, const glm::vec2 &size) {
+    Elements.at(id).size = size;
 }
 
 int GUI::CreateButton(

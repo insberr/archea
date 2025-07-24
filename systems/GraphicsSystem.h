@@ -26,6 +26,8 @@ namespace Graphics {
     GLFWwindow* GetWindow();
     glm::ivec2 GetWindowSize();
 
+    bool DidWindowResize();
+
     // Generate a shader program
     GLuint CreateShaderProgram();
 
