@@ -152,7 +152,7 @@ void Player::render() {
     );
     Graphics::Draw2D::DrawText(
         std::string("Draw Type: ") + ParticleTypeSystem::GetParticleTypeInfo(drawType).nameId,
-        glm::vec2(100, 30),
+        glm::vec2(280, 50),
         1.0f,
         glm::vec4(0.0f, 0.0f, 0.0f, 1.0f)
     );
