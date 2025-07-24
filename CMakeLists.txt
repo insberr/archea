@@ -19,6 +19,9 @@ include_directories(include/imgui/backends)
 # Add FreeType as subdirectory
 add_subdirectory(include/freetype)
 
+# Add stb_image
+include_directories(include/stb_image)
+
 # Create EXE
 add_executable(archea
         main.cpp
@@ -121,3 +124,23 @@ foreach(FONT_FILE ${FONT_FILES})
 endforeach()
 add_custom_target(copy_fonts DEPENDS ${COPIED_FONTS})
 add_dependencies(archea copy_fonts)
+
+### Copy shader files when they are changed
+# Find all shader files
+file(GLOB SPRITE_FILES "${CMAKE_SOURCE_DIR}/sprites/*")
+set(COPIED_SPRITES "")
+foreach(SPRITE_FILE ${SPRITE_FILES})
+    get_filename_component(SPRITE_NAME ${SPRITE_FILE} NAME)
+    set(SPRITE_OUT "${CMAKE_BINARY_DIR}/sprites/${SPRITE_NAME}")
+    add_custom_command(
+            OUTPUT ${SPRITE_OUT}
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different ${SPRITE_FILE} ${SPRITE_OUT}
+            DEPENDS ${SPRITE_FILE}
+            COMMENT "Copying font ${SPRITE_NAME} if changed"
+            VERBATIM
+    )
+    list(APPEND COPIED_SPRITES ${SPRITE_OUT})
+endforeach()
+add_custom_target(copy_sprites DEPENDS ${COPIED_SPRITES})
+add_dependencies(archea copy_sprites)
+

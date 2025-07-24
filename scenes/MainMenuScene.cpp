@@ -10,6 +10,7 @@
 #include "../App.h"
 #include "imgui.h"
 #include "SandboxScene.h"
+#include "../systems/GraphicsSystem.h"
 #include "../systems/gui/GUI.h"
 
 static int sandboxButton = 0;
