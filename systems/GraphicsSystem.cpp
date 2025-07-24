@@ -16,6 +16,11 @@
 #include "Shapes.h"
 #include "../shaders.h"
 
+#define STB_IMAGE_IMPLEMENTATION
+#include <unordered_map>
+
+#include "stb_image.h"
+
 // Private values
 namespace Graphics {
     /* System Function Declarations */
@@ -47,6 +52,10 @@ namespace Graphics {
 }
 
 namespace Graphics::Draw2D {
+    const glm::mat4 projection = glm::ortho(0.0f, 1920.0f, 0.0f, 1080.0f);
+    // This flips things the way they are supposed to be smh
+    // glm::mat4 projection = glm::ortho(0.0f, 1920.0f, 1080.0f, 0.0f, -1.0f, 1.0f);
+
     namespace RectGL {
         GLuint VAO, VBO, EBO;
         GLuint shaderProgram;
@@ -79,7 +88,7 @@ namespace Graphics::Draw2D {
         glUniform2f(glGetUniformLocation(RectGL::shaderProgram, "u_position"), position.x, position.y);
         glUniform2f(glGetUniformLocation(RectGL::shaderProgram, "u_size"), size.x, size.y);
         const glm::ivec2 windowSize = GetWindowSize();
-        glUniform2f(glGetUniformLocation(RectGL::shaderProgram, "u_resolution"), windowSize.x, windowSize.y);
+        glUniform2f(glGetUniformLocation(RectGL::shaderProgram, "u_resolution"), 1920.0f, 1080.0f);
         glUniform4f(glGetUniformLocation(RectGL::shaderProgram, "u_color"), color.r, color.g, color.b, color.a);
 
         glBindVertexArray(RectGL::VAO);
@@ -96,9 +105,6 @@ namespace Graphics::Draw2D {
         };
 
         std::map<char, Character> Characters;
-
-        // TODO: Set the shader uniform
-        const glm::mat4 projection = glm::ortho(0.0f, 1920.0f, 0.0f, 1080.0f);
 
         unsigned int VAO, VBO;
         GLuint shaderProgram;
@@ -243,6 +249,152 @@ namespace Graphics::Draw2D {
         glBindVertexArray(0);
         glBindTexture(GL_TEXTURE_2D, 0);
     }
+
+    namespace TextureGL {
+        struct Texture {
+            GLuint ID;
+            unsigned int width, height;
+            // texture Format
+            unsigned int Internal_Format; // format of texture object
+            unsigned int Image_Format; // format of loaded image
+            // texture configuration
+            unsigned int Wrap_S; // wrapping mode on S axis
+            unsigned int Wrap_T; // wrapping mode on T axis
+            unsigned int Filter_Min; // filtering mode if texture pixels < screen pixels
+            unsigned int Filter_Max; // filtering mode if texture pixels > screen pixels
+        };
+
+        std::unordered_map<std::string, Texture> textures;
+        GLuint VAO, VBO;
+        GLuint shaderProgram;
+        void Init() {
+            float vertices[] = {
+                // pos      // tex
+                0.0f, 1.0f, 0.0f, 1.0f,
+                1.0f, 0.0f, 1.0f, 0.0f,
+                0.0f, 0.0f, 0.0f, 0.0f,
+
+                0.0f, 1.0f, 0.0f, 1.0f,
+                1.0f, 1.0f, 1.0f, 1.0f,
+                1.0f, 0.0f, 1.0f, 0.0f
+            };
+
+            glGenVertexArrays(1, &VAO);
+            glGenBuffers(1, &VBO);
+
+            glBindBuffer(GL_ARRAY_BUFFER, VBO);
+            glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+            glBindVertexArray(VAO);
+            glEnableVertexAttribArray(0);
+            glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+            glBindBuffer(GL_ARRAY_BUFFER, 0);
+            glBindVertexArray(0);
+
+            // Shader Program
+            // Load the contents of the shaders
+            std::string vertexShaderSource = readShaderFile("shaders/vertex_sprite.glsl");
+            std::string fragmentShaderSource = readShaderFile("shaders/fragment_sprite.glsl");
+
+            // Make sure they arent empty
+            if (!vertexShaderSource.empty() && !fragmentShaderSource.empty()) {
+                // Create the shader program
+                TextureGL::shaderProgram = createShaderProgram(vertexShaderSource, fragmentShaderSource);
+            }
+            glUseProgram(TextureGL::shaderProgram);
+            glUniform1i(glGetUniformLocation(TextureGL::shaderProgram, "image"), 0);
+            glUniformMatrix4fv(
+                glGetUniformLocation(TextureGL::shaderProgram, "projection"),
+                1,
+                GL_FALSE,
+                glm::value_ptr(projection)
+            );
+        }
+
+        Texture loadTextureFromFile(const std::string &filePath, bool alpha) {
+            if (textures.contains(filePath)) {
+                return textures[filePath];
+            }
+
+            // First, load image using stb
+            Texture texture {
+                .ID = 0,
+                .width = 0,
+                .height = 0,
+                .Internal_Format = GL_RGB,
+                .Image_Format = GL_RGB,
+                .Wrap_S = GL_CLAMP_TO_EDGE,
+                .Wrap_T = GL_CLAMP_TO_EDGE,
+                .Filter_Min = GL_NEAREST,
+                .Filter_Max = GL_NEAREST
+            };
+            // Generate texture
+            glGenTextures(1, &texture.ID);
+            // Load image into texture
+            if (alpha)
+            {
+                texture.Internal_Format = GL_RGBA;
+                texture.Image_Format = GL_RGBA;
+            }
+            // load image
+            int width, height, nrChannels;
+            unsigned char* data = stbi_load(filePath.c_str(), &width, &height, &nrChannels, 0);
+            // now generate texture
+            texture.width = width;
+            texture.height = height;
+            // create Texture
+            glBindTexture(GL_TEXTURE_2D, texture.ID);
+            glTexImage2D(GL_TEXTURE_2D, 0, texture.Internal_Format, width, height, 0, texture.Image_Format, GL_UNSIGNED_BYTE, data);
+            // set Texture wrap and filter modes
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, texture.Wrap_S);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, texture.Wrap_T);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, texture.Filter_Min);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, texture.Filter_Max);
+            // unbind texture
+            glBindTexture(GL_TEXTURE_2D, 0);
+            // and finally free image data
+            stbi_image_free(data);
+            textures[filePath] = texture;
+            return texture;
+        }
+        void destroyTexture(const std::string& filePath) {}
+        void destroyTexture(Texture* texture) {}
+    }
+    void DrawSprite(
+        const std::string& filePath,
+        const glm::vec2& position,
+        const glm::vec2& size,
+        float rotate,
+        const glm::vec3& color
+    ) {
+        TextureGL::Texture texture = TextureGL::loadTextureFromFile(filePath, true);
+
+        // prepare transformations
+        glUseProgram(TextureGL::shaderProgram);
+        glm::mat4 model = glm::mat4(1.0f);
+        model = glm::translate(model, glm::vec3(position, 0.0f));
+
+        model = glm::translate(model, glm::vec3(0.5f * size.x, 0.5f * size.y, 0.0f));
+        model = glm::rotate(model, glm::radians(rotate), glm::vec3(0.0f, 0.0f, 1.0f));
+        model = glm::translate(model, glm::vec3(-0.5f * size.x, -0.5f * size.y, 0.0f));
+
+        model = glm::scale(model, glm::vec3(size, 1.0f));
+
+        glUniformMatrix4fv(
+            glGetUniformLocation(TextureGL::shaderProgram, "model"),
+            1,
+            GL_FALSE,
+            glm::value_ptr(model)
+        );
+        glUniform3f(glGetUniformLocation(TextureGL::shaderProgram, "spriteColor"), color.x, color.y, color.z);
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, texture.ID);
+
+        glBindVertexArray(TextureGL::VAO);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+        glBindVertexArray(0);
+    }
 }
 
 int Graphics::Setup() {
@@ -309,6 +461,8 @@ void Graphics::Init() {
         Draw2D::RectGL::shaderProgram = createShaderProgram(vertexShaderSource, fragmentShaderSource);
     }
     Draw2D::TextGL::setupText();
+
+    Draw2D::TextureGL::Init();
 }
 void Graphics::Exit() {}
 

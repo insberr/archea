@@ -15,12 +15,13 @@
 
 namespace GUI {
     void Update(float dt);
-    void Render();
+    void PostRender();
     void Done();
     System AsSystem() {
         return {
             .Update = Update,
-            .Render = Render,
+            // .Render = Render,
+            .PostRender = PostRender,
             .Done = Done,
         };
     }
@@ -69,12 +70,23 @@ void GUI::Update(float dt) {
     }
 }
 
-void GUI::Render() {
+void GUI::PostRender() {
     for (const auto& element : Elements | std::ranges::views::values) {
         if (element.disabled) continue;
         // Render a rect at position with size. using opengl
         glDisable(GL_DEPTH_TEST);
-        Graphics::Draw2D::DrawRectangle(element.position, element.size, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+        // Graphics::Draw2D::DrawRectangle(element.position, element.size, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+        glm::vec3 color = glm::vec3(1.0f);
+        if (element.isHovered) {
+            color = glm::vec3(0.5f);
+        }
+        Graphics::Draw2D::DrawSprite(
+            "./sprites/button.png",
+            element.position - (element.size / 2.0f),
+            element.size,
+            0.0f,
+            color
+        );
         Graphics::Draw2D::DrawText(element.title, element.position - (element.size / 4.0f), 1.0f, glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
         glEnable(GL_DEPTH_TEST);
     }
