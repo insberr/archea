@@ -55,11 +55,6 @@ ParticlesChunk::ParticlesChunk(
 {
     worldPosition = glm::vec3(chunkGridPosition) * static_cast<float>(dimensions.x); // TODO : VERY BAD
 
-    // Set up vertex data and buffers and configure vertex attributes
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
-    glGenBuffers(1, &EBO);
-
 
     if (!loadChunkData() && chunkGridPosition.y == 0)
     {
@@ -118,6 +113,13 @@ ParticlesChunk::ParticlesChunk(
 ParticlesChunk::~ParticlesChunk() {
     const std::lock_guard guard(lock);
     saveChunkData();
+}
+
+void ParticlesChunk::InitGraphics() {
+    // Set up vertex data and buffers and configure vertex attributes
+    glGenVertexArrays(1, &VAO);
+    glGenBuffers(1, &VBO);
+    glGenBuffers(1, &EBO);
 }
 
 void ParticlesChunk::Update(float dt) {

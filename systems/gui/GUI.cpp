@@ -27,6 +27,7 @@ namespace GUI {
     }
 
     std::unordered_map<int, Element> Elements;
+    int lastID = 0;
 }
 
 void GUI::Update(float dt) {
@@ -125,7 +126,7 @@ int GUI::CreateButton(
     const glm::vec2& size,
     const std::string& text
 ) {
-    const int id = Elements.size();
+    int id = ++lastID;
 
     Element element = {
         id,

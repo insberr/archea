@@ -526,6 +526,19 @@ bool Graphics::DidWindowResize() {
     return didWindowResize;
 }
 
+void Graphics::LockCursor() {
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+}
+
+void Graphics::UnLockCursor() {
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+
+}
+
+bool Graphics::IsCursorLocked() {
+    return glfwGetInputMode(window, GLFW_CURSOR) == GLFW_CURSOR_DISABLED;
+}
+
 GLuint Graphics::CreateShaderProgram() {
     return 0; // todo
 }

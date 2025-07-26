@@ -44,6 +44,7 @@ public:
 
     ~ParticlesChunk();
 
+    void InitGraphics();
     void Update(float dt);
     void Render(GLFWwindow* window, GLuint shaderProgram, GLuint particlesColorsBuffer);
 

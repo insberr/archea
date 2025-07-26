@@ -29,6 +29,9 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/hash.hpp>
 
+#include "../App.h"
+#include "../systems/gui/GUI.h"
+
 
 namespace SandboxVars {
     /* Private Variables And Functions */
@@ -53,90 +56,10 @@ namespace SandboxVars {
 
     Player player {};
 
-}
-
-using namespace SandboxVars;
-
-void SandboxScene::Init() {
-    player.initGraphics();
-
-    // Load the contents of the shaders
-    std::string vertexShaderSource = readShaderFile("shaders/vertex_chunk.glsl");
-    std::string fragmentShaderSource = readShaderFile("shaders/fragment_chunk.glsl");
-
-    // Make sure they arent empty
-    if (vertexShaderSource.empty() || fragmentShaderSource.empty()) {
-        return;
-    }
-
-    // Create the shader program
-    shaderProgram = createShaderProgram(vertexShaderSource, fragmentShaderSource);
-    if (shaderProgram == 0) return;
-
-    glCreateBuffers(1, &particlesColrosBuffer);
-    auto particleColors = ParticleTypeSystem::GetParticleColorIndexesForShader();
-    glNamedBufferStorage(
-        particlesColrosBuffer,
-        sizeof(NormColor) * particleColors.size(),
-        (const void*)particleColors.data(),
-        GL_DYNAMIC_STORAGE_BIT
-    );
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, particlesColrosBuffer);
-
-    // ChunkConfig::EnableOutlines = false;
-
-    for (unsigned x = 0; x < 2; ++x) {
-        for (unsigned y = 0; y < 2; ++y) {
-            for (unsigned z = 0; z < 2; ++z) {
-                const glm::ivec3 chunkPos = glm::ivec3(x, y, z);
-
-                std::cout << "Init chunk at pos " << x << " " << y << " " << z << std::endl;
-
-                particleChunks[chunkPos] = new ParticlesChunk(glm::ivec3(x, y, z), glm::uvec3(chunkSize));
-            }
-        }
-    }
-
-    // todo: multithreading stuff
-    chunksThread = std::jthread([](const std::stop_token& stoken) {
-        while (true)
-        {
-            if (stoken.stop_requested()) {
-                std::cout << "Stop requested for chunks thread" << std::endl;
-
-                return;
-            }
-
-            std::this_thread::sleep_for(std::chrono::milliseconds(simulationStepInterval));
-
-            std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
-            chunksLock.lock();
-            for (const auto& chunk : std::views::values(particleChunks)) {
-                // std::cout << chunk << std::endl;
-                chunk->ProcessNextSimulationStep(particleChunks);
-            }
-            for (const auto& chunk : std::views::values(particleChunks)) {
-                chunk->ProcessPostSimulationStep();
-            }
-            chunksLock.unlock();
-            std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-            std::chrono::duration<float> duration = end - start;
-            simulationStepDelta = duration.count();
-        }
-    });
-
-    std::cout << chunksThread.get_id() << std::endl;
-}
-
-void SandboxScene::Update(float dt) {
-    if (dt == 0.0f) return;
-
-    // TODO: FIXME: It's not great having to pass this to the player update function
-    player.update(dt, particleChunks);
-
-    auto cameraChunkPosition = PositionConversion::WorldPositionToChunkPosition(CameraSystem::GetPosition() / particleScale, glm::uvec3(chunkSize));
-    // std::cout << "Camera is in chunk " << cameraChunkPosition.x << " " << cameraChunkPosition.y << " " << cameraChunkPosition.z << std::endl;
-    const int chunkDistance = 5; // Distance to load chunks around the player
+    // GUI
+    int mainMenuButton = 0;
+    int settingsMenuButton = 0;
+    int quitButton = 0;
 
     struct IVec3Comparator {
         bool operator()(const glm::ivec3& a, const glm::ivec3& b) const {
@@ -145,6 +68,15 @@ void SandboxScene::Update(float dt) {
             return a.z < b.z;
         }
     };
+}
+
+using namespace SandboxVars;
+
+void handleChunksAroundPlayer() {
+    auto cameraChunkPosition = PositionConversion::WorldPositionToChunkPosition(CameraSystem::GetPosition() / particleScale, glm::uvec3(chunkSize));
+    // std::cout << "Camera is in chunk " << cameraChunkPosition.x << " " << cameraChunkPosition.y << " " << cameraChunkPosition.z << std::endl;
+    const int chunkDistance = 5; // Distance to load chunks around the player
+
     // Determine the required chunk positions around the camera
     std::set<glm::ivec3, IVec3Comparator> requiredChunkPositions;
     for (int x = -chunkDistance; x <= chunkDistance; ++x) {
@@ -179,12 +111,161 @@ void SandboxScene::Update(float dt) {
 
         // Add missing chunks
         for (const auto& pos : requiredChunkPositions) {
+            printf("Loading chunk at position %i %i %i\n", pos.x, pos.y, pos.z);
             updatedChunks[pos] = new ParticlesChunk(pos, glm::uvec3(chunkSize));
+            updatedChunks[pos]->InitGraphics();
         }
 
         particleChunks = std::move(updatedChunks);
         chunksLock.unlock();
     }
+}
+
+void SandboxScene::Init() {
+    handleChunksAroundPlayer();
+
+    printf("Loaded %lu chunks.\n", particleChunks.size());
+
+    // todo: multithreading stuff
+    chunksThread = std::jthread([](const std::stop_token& stoken) {
+        while (true)
+        {
+            if (stoken.stop_requested()) {
+                std::cout << "Stop requested for chunks thread" << std::endl;
+
+                return;
+            }
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(simulationStepInterval));
+
+            std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+            chunksLock.lock();
+            for (const auto& chunk : std::views::values(particleChunks)) {
+                // std::cout << chunk << std::endl;
+                chunk->ProcessNextSimulationStep(particleChunks);
+            }
+            for (const auto& chunk : std::views::values(particleChunks)) {
+                chunk->ProcessPostSimulationStep();
+            }
+            chunksLock.unlock();
+            std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+            std::chrono::duration<float> duration = end - start;
+            simulationStepDelta = duration.count();
+        }
+    });
+
+    std::cout << chunksThread.get_id() << std::endl;
+
+    // Create Pause Menu Stuff
+    const glm::ivec2 windowSizeD2 = Graphics::GetWindowSize() / 2;
+    mainMenuButton = GUI::CreateButton(
+        windowSizeD2,
+        glm::vec2(300.0f, 100.0f),
+        std::string("Main Menu")
+    );
+    settingsMenuButton = GUI::CreateButton(
+        windowSizeD2 - glm::ivec2(0, 150),
+        glm::vec2(300.0f, 100.0f),
+        std::string("Settings")
+    );
+    quitButton = GUI::CreateButton(
+        windowSizeD2 - glm::ivec2(0, 300),
+        glm::vec2(300.0f, 100.0f),
+        std::string("Quit")
+    );
+    GUI::DisableElement(mainMenuButton);
+    GUI::DisableElement(settingsMenuButton);
+    GUI::DisableElement(quitButton);
+
+    // Lock the cursor
+    Graphics::LockCursor();
+}
+
+void SandboxScene::InitGraphics() {
+    player.initGraphics();
+
+    // Load the contents of the shaders
+    std::string vertexShaderSource = readShaderFile("shaders/vertex_chunk.glsl");
+    std::string fragmentShaderSource = readShaderFile("shaders/fragment_chunk.glsl");
+
+    // Make sure they arent empty
+    if (vertexShaderSource.empty() || fragmentShaderSource.empty()) {
+        return;
+    }
+
+    // Create the shader program
+    shaderProgram = createShaderProgram(vertexShaderSource, fragmentShaderSource);
+    if (shaderProgram == 0) return;
+
+    glCreateBuffers(1, &particlesColrosBuffer);
+    auto particleColors = ParticleTypeSystem::GetParticleColorIndexesForShader();
+    glNamedBufferStorage(
+        particlesColrosBuffer,
+        sizeof(NormColor) * particleColors.size(),
+        (const void*)particleColors.data(),
+        GL_DYNAMIC_STORAGE_BIT
+    );
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, particlesColrosBuffer);
+
+    // ChunkConfig::EnableOutlines = false;
+
+    for (const auto& chunk : std::views::values(particleChunks)) {
+        chunk->InitGraphics();
+    }
+}
+
+void SandboxScene::Update(float dt) {
+    if (dt == 0.0f) return;
+
+    // Check window focus
+    if (!glfwGetWindowAttrib(Graphics::GetWindow(), GLFW_FOCUSED)) {
+        // Unlock the cursor and show it
+        Graphics::UnLockCursor();
+        ImGuiSystem::EnableImGui();
+
+        GUI::EnableElement(mainMenuButton);
+        GUI::EnableElement(settingsMenuButton);
+        GUI::EnableElement(quitButton);
+    }
+
+    if (InputSystem::IsKeyTriggered(GLFW_KEY_ESCAPE)) {
+        if (Graphics::IsCursorLocked()) {
+            // Unlock the cursor and show it
+            Graphics::UnLockCursor();
+            ImGuiSystem::EnableImGui();
+
+            GUI::EnableElement(mainMenuButton);
+            GUI::EnableElement(settingsMenuButton);
+            GUI::EnableElement(quitButton);
+        } else {
+            // Lock the cursor and hide it
+            Graphics::LockCursor();
+            ImGuiSystem::DisableImGui();
+
+            GUI::DisableElement(mainMenuButton);
+            GUI::DisableElement(settingsMenuButton);
+            GUI::DisableElement(quitButton);
+        }
+    }
+
+    if (GUI::GetElementById(mainMenuButton).isTriggered) {
+        SceneSystem::SwitchActiveScene("MainMenuScene");
+    }
+    if (GUI::GetElementById(settingsMenuButton).isTriggered) {
+        // Do nothing yet
+    }
+    if (GUI::GetElementById(quitButton).isTriggered) {
+        App::Shutdown();
+    }
+
+    if (!Graphics::IsCursorLocked()) {
+        return;
+    }
+
+    // TODO: FIXME: It's not great having to pass this to the player update function
+    player.update(dt, particleChunks);
+
+    handleChunksAroundPlayer();
 }
 
 void SandboxScene::Render() {
@@ -208,11 +289,21 @@ void SandboxScene::Render() {
     // const GLint enableOutlinesLoc = glGetUniformLocation(shaderProgram, "EnableOutlines");
     // glUniform1ui(enableOutlinesLoc, ChunkConfig::EnableOutlines);
 
+    printf("Rendering %lu chunks\n", particleChunks.size());
     for (const auto& chunk : std::views::values(particleChunks)) {
         chunk->Render(window, shaderProgram, particlesColrosBuffer);
     }
 
     player.render();
+
+    if (!Graphics::IsCursorLocked()) {
+        const glm::ivec2 windowSize = Graphics::GetWindowSize();
+        Graphics::Draw2D::DrawRectangle(
+            windowSize / 2,
+            windowSize,
+            glm::vec4(0.2f, 0.2f, 0.2f, 0.7f)
+        );
+    }
 
     if (ImGui::Begin("Rendering Controls")) {
         if (ImGui::Button("Reload Chunk Shaders")) {
@@ -248,6 +339,10 @@ void SandboxScene::Render() {
 }
 
 void SandboxScene::Exit() {
+    GUI::RemoveElement(mainMenuButton);
+    GUI::RemoveElement(settingsMenuButton);
+    GUI::RemoveElement(quitButton);
+
     chunksThread.request_stop();
     chunksThread.join();
 
@@ -257,7 +352,10 @@ void SandboxScene::Exit() {
             continue;
         }
         delete chunk;
+        chunk = nullptr;
     }
+
+    particleChunks.clear();
 }
 
 SandboxScene::~SandboxScene() {}

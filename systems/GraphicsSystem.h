@@ -27,6 +27,9 @@ namespace Graphics {
     glm::ivec2 GetWindowSize();
 
     bool DidWindowResize();
+    void LockCursor();
+    void UnLockCursor();
+    bool IsCursorLocked();
 
     // Generate a shader program
     GLuint CreateShaderProgram();

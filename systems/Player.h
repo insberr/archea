@@ -50,7 +50,6 @@ private:
     glm::vec3 Gravity { 0.0f, -9.8f, 0.0f };
 
     const glm::vec3 UpVector { 0.0f, 1.0f, 0.0f };
-    bool cursorLocked = false;
 
     /* Particle Placing */
     glm::ivec3 lookingAtParticlePos;

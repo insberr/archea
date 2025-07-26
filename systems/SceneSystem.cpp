@@ -5,6 +5,7 @@
 #include "SceneSystem.h"
 
 #include <ranges>
+#include <thread>
 #include <unordered_map>
 #include <stdexcept>
 
@@ -31,6 +32,9 @@ namespace SceneSystem {
     std::unordered_map<std::string, Scene*> Scenes;
     Scene* CurrentScene = nullptr;
     Scene* NextScene = nullptr;
+    std::atomic isNextSceneLoading = false;
+    std::atomic isNextSceneLoaded = false;
+    std::jthread loadingThread;
 };
 
 void SceneSystem::AddScene(Scene* scene) {
@@ -51,6 +55,7 @@ void SceneSystem::SwitchActiveScene(const std::string& sceneName) {
             NextScene = nullptr;
 
             CurrentScene->Init();
+            CurrentScene->InitGraphics();
         }
     } catch (const std::out_of_range& e) {
         std::printf("Scene %s not found\n", sceneName.c_str());
@@ -65,12 +70,37 @@ void SceneSystem::PrePollEvents() {
 }
 
 void SceneSystem::Update(float dt) {
-    if (NextScene != nullptr) {
+    if (NextScene != nullptr && isNextSceneLoading.load() == false && isNextSceneLoaded.load() == false) {
+        // create thread and start init
+        isNextSceneLoading.store(true);
+
+        loadingThread = std::jthread([]() {
+            std::printf("Scene %s Loading\n", NextScene->name.c_str());
+
+            NextScene->Init();
+
+            // std::this_thread::sleep_for(std::chrono::seconds(2));
+            std::printf("Scene %s Loaded\n", NextScene->name.c_str());
+            isNextSceneLoading.store(false);
+            isNextSceneLoaded.store(true);
+            return 0;
+        });
+    }
+
+    if (isNextSceneLoading.load() == true) {
+        // Anything to do while scene is loading?
+    }
+
+    if (NextScene != nullptr && isNextSceneLoaded.load() == true) {
+        NextScene->InitGraphics();
+
         CurrentScene->Exit();
+
         CurrentScene = NextScene;
         NextScene = nullptr;
 
-        CurrentScene->Init();
+        isNextSceneLoading.store(false);
+        isNextSceneLoaded.store(false);
     }
 
     CurrentScene->Update(dt);

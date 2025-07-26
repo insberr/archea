@@ -14,6 +14,7 @@ public:
     ~MainMenuScene() override;
 
     void Init() override;
+    void InitGraphics() override;
 
     // void PrePollEvents() override;
     void Update(float dt) override;
