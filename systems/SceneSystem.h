@@ -38,8 +38,11 @@ namespace SceneSystem {
         // Called when the scene is destroyed
         virtual ~Scene() = default;
 
-        // Called when the scene becomes active
+        // Called when the scene becomes active. Must be thread safe
         virtual void Init() {};
+        // Called outside of the Init thread when loading. This must run fast
+        //  otherwise visual hangs may happen
+        virtual void InitGraphics() {};
 
         virtual void PrePollEvents() {};
 

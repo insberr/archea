@@ -164,23 +164,8 @@ glm::vec3 Player::getPosition() {
 }
 
 void Player::updatePhysics(float dt) {
-    auto window = Graphics::GetWindow();
-
-    if (InputSystem::IsKeyTriggered(GLFW_KEY_ESCAPE)) {
-        if (cursorLocked) {
-            // Unlock the cursor and show it
-            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-            ImGuiSystem::EnableImGui();
-        } else {
-            // Lock the cursor and hide it
-            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-            ImGuiSystem::DisableImGui();
-        }
-        cursorLocked = !cursorLocked;
-    }
-
     // Dont update look position
-    if (cursorLocked) {
+    if (Graphics::IsCursorLocked()) {
         // TODO: Does the camera movement need to be multiplied by dt?
         auto [mouseX, mouseY] = InputSystem::MousePosition();
         auto [lastX, lastY] = InputSystem::MousePositionLast();
@@ -204,7 +189,7 @@ void Player::updatePhysics(float dt) {
 
     glm::vec3 acceleration(0);
 
-    if (cursorLocked) {
+    if (Graphics::IsCursorLocked()) {
         if (InputSystem::IsKeyHeld(GLFW_KEY_W)) {
             acceleration += glm::vec3(0, 0, -dt);
         }
