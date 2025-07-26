@@ -6,6 +6,7 @@
 
 #include <ranges>
 #include <unordered_map>
+#include <stdexcept>
 
 namespace SceneSystem {
     void PrePollEvents();
