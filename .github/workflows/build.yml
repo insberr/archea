@@ -36,6 +36,11 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Checkout code
+        uses: lukka/get-cmake@latest
+        with:
+          cmakeVersion: 3.28
+
       - name: Set reusable strings
         id: strings
         shell: bash
