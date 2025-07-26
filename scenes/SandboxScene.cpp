@@ -29,6 +29,9 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/hash.hpp>
 
+#include "../App.h"
+#include "../systems/gui/GUI.h"
+
 
 namespace SandboxVars {
     /* Private Variables And Functions */
@@ -52,6 +55,11 @@ namespace SandboxVars {
     std::jthread chunksThread;
 
     Player player {};
+
+    // GUI
+    int mainMenuButton = 0;
+    int settingsMenuButton = 0;
+    int quitButton = 0;
 
     struct IVec3Comparator {
         bool operator()(const glm::ivec3& a, const glm::ivec3& b) const {
@@ -105,6 +113,7 @@ void handleChunksAroundPlayer() {
         for (const auto& pos : requiredChunkPositions) {
             printf("Loading chunk at position %i %i %i\n", pos.x, pos.y, pos.z);
             updatedChunks[pos] = new ParticlesChunk(pos, glm::uvec3(chunkSize));
+            updatedChunks[pos]->InitGraphics();
         }
 
         particleChunks = std::move(updatedChunks);
@@ -147,6 +156,28 @@ void SandboxScene::Init() {
 
     std::cout << chunksThread.get_id() << std::endl;
 
+    // Create Pause Menu Stuff
+    const glm::ivec2 windowSizeD2 = Graphics::GetWindowSize() / 2;
+    mainMenuButton = GUI::CreateButton(
+        windowSizeD2,
+        glm::vec2(300.0f, 100.0f),
+        std::string("Main Menu")
+    );
+    settingsMenuButton = GUI::CreateButton(
+        windowSizeD2 - glm::ivec2(0, 150),
+        glm::vec2(300.0f, 100.0f),
+        std::string("Settings")
+    );
+    quitButton = GUI::CreateButton(
+        windowSizeD2 - glm::ivec2(0, 300),
+        glm::vec2(300.0f, 100.0f),
+        std::string("Quit")
+    );
+    GUI::DisableElement(mainMenuButton);
+    GUI::DisableElement(settingsMenuButton);
+    GUI::DisableElement(quitButton);
+
+    // Lock the cursor
     Graphics::LockCursor();
 }
 
@@ -186,16 +217,45 @@ void SandboxScene::InitGraphics() {
 void SandboxScene::Update(float dt) {
     if (dt == 0.0f) return;
 
+    // Check window focus
+    if (!glfwGetWindowAttrib(Graphics::GetWindow(), GLFW_FOCUSED)) {
+        // Unlock the cursor and show it
+        Graphics::UnLockCursor();
+        ImGuiSystem::EnableImGui();
+
+        GUI::EnableElement(mainMenuButton);
+        GUI::EnableElement(settingsMenuButton);
+        GUI::EnableElement(quitButton);
+    }
+
     if (InputSystem::IsKeyTriggered(GLFW_KEY_ESCAPE)) {
         if (Graphics::IsCursorLocked()) {
             // Unlock the cursor and show it
             Graphics::UnLockCursor();
             ImGuiSystem::EnableImGui();
+
+            GUI::EnableElement(mainMenuButton);
+            GUI::EnableElement(settingsMenuButton);
+            GUI::EnableElement(quitButton);
         } else {
             // Lock the cursor and hide it
             Graphics::LockCursor();
             ImGuiSystem::DisableImGui();
+
+            GUI::DisableElement(mainMenuButton);
+            GUI::DisableElement(settingsMenuButton);
+            GUI::DisableElement(quitButton);
         }
+    }
+
+    if (GUI::GetElementById(mainMenuButton).isTriggered) {
+        SceneSystem::SwitchActiveScene("MainMenuScene");
+    }
+    if (GUI::GetElementById(settingsMenuButton).isTriggered) {
+        // Do nothing yet
+    }
+    if (GUI::GetElementById(quitButton).isTriggered) {
+        App::Shutdown();
     }
 
     if (!Graphics::IsCursorLocked()) {
@@ -229,11 +289,21 @@ void SandboxScene::Render() {
     // const GLint enableOutlinesLoc = glGetUniformLocation(shaderProgram, "EnableOutlines");
     // glUniform1ui(enableOutlinesLoc, ChunkConfig::EnableOutlines);
 
+    printf("Rendering %lu chunks\n", particleChunks.size());
     for (const auto& chunk : std::views::values(particleChunks)) {
         chunk->Render(window, shaderProgram, particlesColrosBuffer);
     }
 
     player.render();
+
+    if (!Graphics::IsCursorLocked()) {
+        const glm::ivec2 windowSize = Graphics::GetWindowSize();
+        Graphics::Draw2D::DrawRectangle(
+            windowSize / 2,
+            windowSize,
+            glm::vec4(0.2f, 0.2f, 0.2f, 0.7f)
+        );
+    }
 
     if (ImGui::Begin("Rendering Controls")) {
         if (ImGui::Button("Reload Chunk Shaders")) {
@@ -269,6 +339,10 @@ void SandboxScene::Render() {
 }
 
 void SandboxScene::Exit() {
+    GUI::RemoveElement(mainMenuButton);
+    GUI::RemoveElement(settingsMenuButton);
+    GUI::RemoveElement(quitButton);
+
     chunksThread.request_stop();
     chunksThread.join();
 
@@ -278,7 +352,10 @@ void SandboxScene::Exit() {
             continue;
         }
         delete chunk;
+        chunk = nullptr;
     }
+
+    particleChunks.clear();
 }
 
 SandboxScene::~SandboxScene() {}

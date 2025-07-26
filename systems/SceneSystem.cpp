@@ -54,6 +54,7 @@ void SceneSystem::SwitchActiveScene(const std::string& sceneName) {
             NextScene = nullptr;
 
             CurrentScene->Init();
+            CurrentScene->InitGraphics();
         }
     } catch (const std::out_of_range& e) {
         std::printf("Scene %s not found\n", sceneName.c_str());
@@ -73,12 +74,12 @@ void SceneSystem::Update(float dt) {
         isNextSceneLoading.store(true);
 
         loadingThread = std::jthread([]() {
-            std::printf("Scene Loading........???\n");
+            std::printf("Scene %s Loading\n", NextScene->name.c_str());
 
             NextScene->Init();
 
             // std::this_thread::sleep_for(std::chrono::seconds(2));
-            std::printf("Scene Loaded????........???\n");
+            std::printf("Scene %s Loaded\n", NextScene->name.c_str());
             isNextSceneLoading.store(false);
             isNextSceneLoaded.store(true);
             return 0;
