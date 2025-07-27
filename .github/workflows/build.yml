@@ -122,9 +122,12 @@ jobs:
   create-release:
     needs: build
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    if: github.ref_type == 'tag'
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Download Linux artifact
         uses: actions/download-artifact@v4
         with:
@@ -139,14 +142,13 @@ jobs:
 
       - name: Create release archives
         run: |
-          cd linux-build && tar -czf ../archea-linux.tar.gz * && cd ..
-          cd windows-build && zip -r ../archea-windows.zip * && cd ..
+          cd linux-build && tar -czf ../archea-linux-${{ github.ref_name }}.tar.gz * && cd ..
+          cd windows-build && zip -r ../archea-windows-${{ github.ref_name }}.zip * && cd ..
 
-      - name: Upload combined artifacts
-        uses: actions/upload-artifact@v4
+      - name: Release
+        uses: softprops/action-gh-release@v2
         with:
-          name: archea-all-platforms
-          path: |
-            archea-linux.tar.gz
-            archea-windows.zip
-          retention-days: 30
+          files: |
+            archea-linux-${{ github.ref_name }}.tar.gz
+            archea-windows-${{ github.ref_name }}.zip
+          generate_release_notes: true
