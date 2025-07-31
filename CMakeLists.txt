@@ -106,8 +106,8 @@ endforeach()
 add_custom_target(copy_shaders DEPENDS ${COPIED_SHADERS})
 add_dependencies(archea copy_shaders)
 
-### Copy shader files when they are changed
-# Find all shader files
+### Copy font files when they are changed
+# Find all font files
 file(GLOB FONT_FILES "${CMAKE_SOURCE_DIR}/fonts/*")
 set(COPIED_FONTS "")
 foreach(FONT_FILE ${FONT_FILES})
@@ -125,8 +125,8 @@ endforeach()
 add_custom_target(copy_fonts DEPENDS ${COPIED_FONTS})
 add_dependencies(archea copy_fonts)
 
-### Copy shader files when they are changed
-# Find all shader files
+### Copy sprite files when they are changed
+# Find all sprite files
 file(GLOB SPRITE_FILES "${CMAKE_SOURCE_DIR}/sprites/*")
 set(COPIED_SPRITES "")
 foreach(SPRITE_FILE ${SPRITE_FILES})
@@ -136,7 +136,7 @@ foreach(SPRITE_FILE ${SPRITE_FILES})
             OUTPUT ${SPRITE_OUT}
             COMMAND ${CMAKE_COMMAND} -E copy_if_different ${SPRITE_FILE} ${SPRITE_OUT}
             DEPENDS ${SPRITE_FILE}
-            COMMENT "Copying font ${SPRITE_NAME} if changed"
+            COMMENT "Copying sprite ${SPRITE_NAME} if changed"
             VERBATIM
     )
     list(APPEND COPIED_SPRITES ${SPRITE_OUT})
