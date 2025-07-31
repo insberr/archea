@@ -115,7 +115,7 @@ jobs:
           # Copy any other resources if they exist
           if (Test-Path "${{ steps.strings.outputs.build-output-dir }}/fonts") { Copy-Item -Path "${{ steps.strings.outputs.build-output-dir }}/fonts" -Destination "artifact/" -Recurse }
           if (Test-Path "${{ steps.strings.outputs.build-output-dir }}/sprites") { Copy-Item -Path "${{ steps.strings.outputs.build-output-dir }}/sprites" -Destination "artifact/" -Recurse }
-          Copy-Item "${{ steps.strings.outputs.build-output-dir }}/Release/glew32d.dll" "artifact/" -ErrorAction SilentlyContinue
+          Copy-Item "${{ steps.strings.outputs.build-output-dir }}/Release/glew32.dll" "artifact/" -ErrorAction SilentlyContinue
           Copy-Item "${{ steps.strings.outputs.build-output-dir }}/Release/glfw3.dll" "artifact/" -ErrorAction SilentlyContinue
         shell: powershell
 
