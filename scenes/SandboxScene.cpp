@@ -308,8 +308,8 @@ void SandboxScene::Render() {
     if (ImGui::Begin("Rendering Controls")) {
         if (ImGui::Button("Reload Chunk Shaders")) {
             // Load the contents of the shaders
-            std::string vertexShaderSource = readShaderFile("../shaders/vertex_chunk.glsl");
-            std::string fragmentShaderSource = readShaderFile("../shaders/fragment_chunk.glsl");
+            std::string vertexShaderSource = readShaderFile("shaders/vertex_chunk.glsl");
+            std::string fragmentShaderSource = readShaderFile("shaders/fragment_chunk.glsl");
 
             // Make sure they arent empty
             if (vertexShaderSource.empty() || fragmentShaderSource.empty()) {
